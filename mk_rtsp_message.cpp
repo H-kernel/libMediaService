@@ -183,7 +183,7 @@ int32_t CRtspMessage::decodeMessage(CRtspPacket& objRtspPacket)
     objRtspPacket.getContent(m_strBody);
     objRtspPacket.getContentType(m_strContetType);
 
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 int32_t CRtspMessage::encodeMessage(std::string &strMessage)
@@ -194,7 +194,7 @@ int32_t CRtspMessage::encodeMessage(std::string &strMessage)
         {
             SVS_LOG(SVS_LOG_WARNING,"encode rtsp request fail, method type[%d] invalid.",
                             getMethodType());
-            return RET_FAIL;
+            return AS_ERROR_CODE_FAIL;
         }
 
         strMessage += CRtspProtocol::m_strRtspMethod[getMethodType()];
@@ -208,7 +208,7 @@ int32_t CRtspMessage::encodeMessage(std::string &strMessage)
         {
             SVS_LOG(SVS_LOG_WARNING,"encode rtsp response fail, status code[%u] invalid.",
                             m_unStatusCode);
-            return RET_FAIL;
+            return AS_ERROR_CODE_FAIL;
         }
         strMessage = RTSP_PROTOCOL_VERSION;
         strMessage += " ";
@@ -251,5 +251,5 @@ int32_t CRtspMessage::encodeMessage(std::string &strMessage)
         strMessage += RTSP_END_TAG;
     }
 
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }

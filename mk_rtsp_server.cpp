@@ -33,17 +33,17 @@ mk_rtsp_server::~mk_rtsp_server()
 
 int32_t mk_rtsp_server::open()
 {
-    int32_t nRet = RET_OK;
+    int32_t nRet = AS_ERROR_CODE_OK;
 
     m_RtspAddr.set(CStreamConfig::instance()->getRtspServerPort());
     nRet = m_RtspAcceptor.open(m_RtspAddr, 1);
-    if (RET_OK != nRet)
+    if (AS_ERROR_CODE_OK != nRet)
     {
         SVS_LOG(SVS_LOG_WARNING,"open rtsp server port[%s:%d] fail, errno[%d].",
                 m_RtspAddr.get_host_addr(),
                 m_RtspAddr.get_port_number(),
                 errno);
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     if (0 != m_RtspAcceptor.enable(ACE_NONBLOCK))
@@ -53,25 +53,25 @@ int32_t mk_rtsp_server::open()
                 m_RtspAddr.get_port_number(),
                 errno);
 
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     ACE_Reactor *pReactor = ACE_Reactor::instance();
     if (!pReactor)
     {
         SVS_LOG(SVS_LOG_WARNING,"open rtsp server fail, can't find reactor instance.");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     nRet = pReactor->register_handler(m_RtspAcceptor.get_handle(),
                                       this,
                                       ACE_Event_Handler::ACCEPT_MASK);
 
-    if (RET_OK != nRet)
+    if (AS_ERROR_CODE_OK != nRet)
     {
         SVS_LOG(SVS_LOG_WARNING,"open rtsp server fail, register accept mask fail[%d].",
                         ACE_OS::last_error());
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     ACE_Time_Value tv(STREAM_STATUS_CHECK_INTERVAL, 0);
@@ -79,14 +79,14 @@ int32_t mk_rtsp_server::open()
     if (-1 == m_ulCheckTimerId)
     {
         SVS_LOG(SVS_LOG_WARNING,"start session status check timer fail.");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     SVS_LOG(SVS_LOG_INFO,"open rtsp server ip[%s] port[%d] success. check timer id[%d]",
                     m_RtspAddr.get_host_addr(),
                     m_RtspAddr.get_port_number(),
                     m_ulCheckTimerId);
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 void mk_rtsp_server::close() const
@@ -122,7 +122,7 @@ int32_t mk_rtsp_server::handleSvsMessage(CStreamSvsMessage &message)
         SVS_LOG(SVS_LOG_WARNING,"rtsp service handle svs message fail, MsgType[0x%x] invalid.",
                         message.getMsgType());
 
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     ACE_Guard<ACE_Thread_Mutex> locker(m_MapMutex);
@@ -131,7 +131,7 @@ int32_t mk_rtsp_server::handleSvsMessage(CStreamSvsMessage &message)
     {
         SVS_LOG(SVS_LOG_WARNING,"rtsp service handle svs message fail, can't find rtsp push session[%u].",
                          ulLocalIndex);
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     mk_rtsp_client *pSession = iter->second;
@@ -139,7 +139,7 @@ int32_t mk_rtsp_server::handleSvsMessage(CStreamSvsMessage &message)
     {
         SVS_LOG(SVS_LOG_WARNING,"rtsp service handle svs message fail, rtsp push session[%u] is null.",
                          ulLocalIndex);
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     return pSession->handleSvsMessage(message);
@@ -193,7 +193,7 @@ int32_t mk_rtsp_server::handle_input(ACE_HANDLE handle)
     ACE_INET_Addr localAddr;
     stream.get_local_addr(localAddr);
     pSession->setHandle(stream.get_handle(), localAddr);
-    if (RET_OK != pSession->open(getLocalSessionIndex(), addr))
+    if (AS_ERROR_CODE_OK != pSession->open(getLocalSessionIndex(), addr))
     {
         SVS_LOG(SVS_LOG_WARNING,"rtsp server create new push session fail.");
         delete pSession;
@@ -222,7 +222,7 @@ int32_t mk_rtsp_server::handle_close(ACE_HANDLE /*handle*/, ACE_Reactor_Mask /*c
     int32_t nRet = pReactor->remove_handler(m_RtspAcceptor.get_handle(),
                                         ACE_Event_Handler::ACCEPT_MASK
                                         | ACE_Event_Handler::DONT_CALL);
-    if (RET_OK != nRet)
+    if (AS_ERROR_CODE_OK != nRet)
     {
         SVS_LOG(SVS_LOG_WARNING,"rtsp server handle close fail, unregist handle fail.");
         return -1;
@@ -262,7 +262,7 @@ void mk_rtsp_server::checkSession()
     for (iter = m_RtspSessionMap.begin(); iter != m_RtspSessionMap.end();)
     {
         pSession = iter->second;
-        if (pSession->check() != RET_OK)
+        if (pSession->check() != AS_ERROR_CODE_OK)
         {
             m_RtspSessionMap.erase(iter++);
 

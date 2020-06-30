@@ -22,15 +22,15 @@ int32_t CRtspTeardownMessage::encodeMessage(std::string &strMessage)
     strMessage.clear();
 
     // ֱ�ӵ��ø������CSeq��User-Agent
-    if (RET_OK != CRtspMessage::encodeMessage(strMessage))
+    if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
         SVS_LOG(SVS_LOG_WARNING,"encode rtsp teardown message fail.");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     // End
     strMessage += RTSP_END_TAG;
 
     SVS_LOG(SVS_LOG_DEBUG,"encode rtsp teardown message:\n%s", strMessage.c_str());
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }

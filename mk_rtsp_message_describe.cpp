@@ -23,25 +23,25 @@ CRtspDescribeMessage::~CRtspDescribeMessage()
 int32_t CRtspDescribeMessage::decodeMessage(CRtspPacket& objRtspPacket)
 {
     int32_t nRet = CRtspMessage::decodeMessage(objRtspPacket);
-    if (RET_OK != nRet)
+    if (AS_ERROR_CODE_OK != nRet)
     {
         SVS_LOG(SVS_LOG_WARNING,"decode rtsp play message fail.");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     objRtspPacket.getContent(m_strSDP);
 
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 int32_t CRtspDescribeMessage::encodeMessage(std::string &strMessage)
 {
     strMessage.clear();
 
     // ֱ�ӵ��ø������CSeq��User-Agent
-    if (RET_OK != CRtspMessage::encodeMessage(strMessage))
+    if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
         SVS_LOG(SVS_LOG_WARNING,"encode rtsp describe request message fail.");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     if (RTSP_MSG_RSP == getMsgType())
@@ -55,7 +55,7 @@ int32_t CRtspDescribeMessage::encodeMessage(std::string &strMessage)
             {
                 SVS_LOG(SVS_LOG_WARNING,"encode rtsp describe message fail, no sdp info.");
 
-                return RET_FAIL;
+                return AS_ERROR_CODE_FAIL;
             }
 
             strMessage += RTSP_TOKEN_STR_CONTENT_LENGTH;
@@ -95,7 +95,7 @@ int32_t CRtspDescribeMessage::encodeMessage(std::string &strMessage)
     }
     SVS_LOG(SVS_LOG_DEBUG,"encode rtsp describe message:\n%s",
                      strMessage.c_str());
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 void CRtspDescribeMessage::setSdp(const std::string &strSdp)

@@ -30,10 +30,10 @@ int32_t CRtspOptionsMessage::encodeMessage(std::string &strMessage)
 {
     strMessage.clear();
 
-    if (RET_OK != CRtspMessage::encodeMessage(strMessage))
+    if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
         SVS_LOG(SVS_LOG_WARNING,"encode rtsp options message fail.");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     if (RTSP_MSG_RSP == getMsgType())
@@ -64,5 +64,5 @@ int32_t CRtspOptionsMessage::encodeMessage(std::string &strMessage)
 
     SVS_LOG(SVS_LOG_DEBUG,"encode rtsp options message:\n%s",
                 strMessage.c_str());
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }

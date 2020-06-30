@@ -39,7 +39,7 @@ CRtspProtocol::~CRtspProtocol()
 
 int32_t CRtspProtocol::init() const
 {
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 
@@ -56,12 +56,12 @@ int32_t CRtspProtocol::saveSendReq(uint32_t unCSeq, uint32_t unReqMethodType)
     {
         SVS_LOG(SVS_LOG_WARNING,"save request message fail, cseq[%u] already saved, method[%u].",
                         unCSeq, unReqMethodType);
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     m_CseqReqMap[unCSeq] = unReqMethodType;
     SVS_LOG(SVS_LOG_INFO,"save request message cseq[%u] method[%u].", unCSeq, unReqMethodType);
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 
@@ -95,7 +95,7 @@ int32_t CRtspProtocol::DecodeRtspMessage(const char* pMsgData,
 {
     if ((NULL == pMsgData) || (0 == unDataLen))
     {
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     pMsg = NULL;
@@ -108,10 +108,10 @@ int32_t CRtspProtocol::DecodeRtspMessage(const char* pMsgData,
     if (0 != objRtspPacket.parse(pMsgData,unDataLen))
     {
         SVS_LOG(SVS_LOG_WARNING,"decode rtsp message fail");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
-    int32_t nRet = RET_OK;
+    int32_t nRet = AS_ERROR_CODE_OK;
     if (RtspResponseMethod > objRtspPacket.getMethodIndex())
     {
         nRet = parseRtspRequest(objRtspPacket, pMsg);
@@ -123,7 +123,7 @@ int32_t CRtspProtocol::DecodeRtspMessage(const char* pMsgData,
     else
     {
         SVS_LOG(SVS_LOG_WARNING,"decode rtsp message fail, choice[%d] invalid.", objRtspPacket.getMethodIndex());
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
     return nRet;
 }
@@ -177,16 +177,16 @@ int32_t CRtspProtocol::parseRtspRequest(CRtspPacket& objRtspPacket,
     {
         SVS_LOG(SVS_LOG_WARNING,"rtsp protocol create rtsp request message fail, method[%u].",
                             objRtspPacket.getMethodIndex());
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
-    if (RET_OK != pMessage->decodeMessage(objRtspPacket))
+    if (AS_ERROR_CODE_OK != pMessage->decodeMessage(objRtspPacket))
     {
         delete pMessage;
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 int32_t CRtspProtocol::parseRtspResponse(CRtspPacket& objRtspPacket,
@@ -199,7 +199,7 @@ int32_t CRtspProtocol::parseRtspResponse(CRtspPacket& objRtspPacket,
     if (m_CseqReqMap.end() == iter)
     {
         SVS_LOG(SVS_LOG_WARNING,"No corresponding request to this response msg, cseq=%u.", unCseq);
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     uint32_t unMethodType = iter->second;
@@ -246,14 +246,14 @@ int32_t CRtspProtocol::parseRtspResponse(CRtspPacket& objRtspPacket,
     {
         SVS_LOG(SVS_LOG_WARNING,"rtsp protocol create rtsp response message fail, CSeq[%u].",
                         unCseq);
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
-    if (RET_OK != pMessage->decodeMessage(objRtspPacket))
+    if (AS_ERROR_CODE_OK != pMessage->decodeMessage(objRtspPacket))
     {
         delete pMessage;
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }

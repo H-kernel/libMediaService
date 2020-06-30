@@ -70,11 +70,11 @@ protected:
 
     int32_t stopMediaPort();
 
-    int32_t sendNatResponse(CStreamNatMessage &natMsg){return RET_OK;};
+    int32_t sendNatResponse(CStreamNatMessage &natMsg){return AS_ERROR_CODE_OK;};
 
     bool checkMediaChannelStatus();
 
-    int32_t setRemoteAddress(uint16_t Deviceport, char* setRemoteAddress){return RET_OK;};
+    int32_t setRemoteAddress(uint16_t Deviceport, char* setRemoteAddress){return AS_ERROR_CODE_OK;};
 
 private:
     bool checkIsDisconnect(int32_t nErrNo) const;

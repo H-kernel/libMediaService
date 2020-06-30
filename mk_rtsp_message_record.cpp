@@ -25,24 +25,24 @@ CRtspRecordMessage::~CRtspRecordMessage()
 int32_t CRtspRecordMessage::decodeMessage(CRtspPacket& objRtspPacket)
 {
     int32_t nRet = CRtspMessage::decodeMessage(objRtspPacket);
-    if (RET_OK != nRet)
+    if (AS_ERROR_CODE_OK != nRet)
     {
         SVS_LOG(SVS_LOG_WARNING,"decode rtsp play message fail.");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 int32_t CRtspRecordMessage::encodeMessage(std::string &strMessage)
 {
-    if (RET_OK != CRtspMessage::encodeMessage(strMessage))
+    if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
         SVS_LOG(SVS_LOG_WARNING,"encode rtsp play message fail.");
-        return RET_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 int32_t CRtspRecordMessage::encodeRangeField(std::string &strMessage)
@@ -50,5 +50,5 @@ int32_t CRtspRecordMessage::encodeRangeField(std::string &strMessage)
 
     strMessage += RTSP_END_TAG;
 
-    return RET_OK;
+    return AS_ERROR_CODE_OK;
 }

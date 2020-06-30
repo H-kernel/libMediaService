@@ -39,6 +39,8 @@ public:
 public:
     int32_t open(uint32_t unIndex, const ACE_INET_Addr &peerAddr);
 
+    int32_t open(const char* pszUrl);
+
     void close();
 
     int32_t handleSvsMessage(CStreamSvsMessage &message);
