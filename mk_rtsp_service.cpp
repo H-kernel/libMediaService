@@ -15,83 +15,47 @@
 
 
 
-int32_t CRtspSessionCheckTimer::handle_timeout(const ACE_Time_Value& tv, const void* arg)
-{
-    mk_rtsp_service::instance().checkSession();
-    return 0;
-}
-
 mk_rtsp_service::mk_rtsp_service()
 {
-    m_unLocalSessionIndex = 0;
-    m_ulCheckTimerId      = 0;
+    m_ulUdpPairCount      = 0;
+    m_pUdpRtpArray        = NULL;
+    m_pUdpRtcpArray       = NULL;
 }
 
 mk_rtsp_service::~mk_rtsp_service()
 {
 }
 
-int32_t mk_rtsp_service::open()
+int32_t mk_rtsp_service::init(uint16_t udpPort,uint32_t count)
 {
     int32_t nRet = AS_ERROR_CODE_OK;
-
-    m_RtspAddr.set(CStreamConfig::instance()->getRtspServerPort());
-    nRet = m_RtspAcceptor.open(m_RtspAddr, 1);
+    m_ConnMgr.setLogWriter(&m_connLog);
+    nRet = m_ConnMgr.init(DEFAULT_SELECT_PERIOD,AS_TRUE,AS_TRUE,AS_TRUE);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"open rtsp server port[%s:%d] fail, errno[%d].",
-                m_RtspAddr.get_host_addr(),
-                m_RtspAddr.get_port_number(),
-                errno);
+        SVS_LOG(SVS_LOG_WARNING,"init the network module fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
-    if (0 != m_RtspAcceptor.enable(ACE_NONBLOCK))
-    {
-        SVS_LOG(SVS_LOG_WARNING,"set rtsp server port[%s:%d] NONBLOCK falg fail, errno[%d].",
-                m_RtspAddr.get_host_addr(),
-                m_RtspAddr.get_port_number(),
-                errno);
-
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    ACE_Reactor *pReactor = ACE_Reactor::instance();
-    if (!pReactor)
-    {
-        SVS_LOG(SVS_LOG_WARNING,"open rtsp server fail, can't find reactor instance.");
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    nRet = pReactor->register_handler(m_RtspAcceptor.get_handle(),
-                                      this,
-                                      ACE_Event_Handler::ACCEPT_MASK);
-
+    nRet = m_ConnMgr.run();
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"open rtsp server fail, register accept mask fail[%d].",
-                        ACE_OS::last_error());
+        SVS_LOG(SVS_LOG_WARNING,"run the network module fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
-    ACE_Time_Value tv(STREAM_STATUS_CHECK_INTERVAL, 0);
-    m_ulCheckTimerId = pReactor->schedule_timer(&m_SessionCheckTimer, this, tv, tv);
-    if (-1 == m_ulCheckTimerId)
-    {
-        SVS_LOG(SVS_LOG_WARNING,"start session status check timer fail.");
-        return AS_ERROR_CODE_FAIL;
+    SVS_LOG(SVS_LOG_INFO,"init the network module success.")
+    
+    if(0 == count) {
+        SVS_LOG(SVS_LOG_INFO,"the udp port is zore,no need create udp ports.")
+        return AS_ERROR_CODE_OK;
     }
-
-    SVS_LOG(SVS_LOG_INFO,"open rtsp server ip[%s] port[%d] success. check timer id[%d]",
-                    m_RtspAddr.get_host_addr(),
-                    m_RtspAddr.get_port_number(),
-                    m_ulCheckTimerId);
-    return AS_ERROR_CODE_OK;
+    return create_rtp_rtcp_udp_pairs(udpPort,count);
 }
 
-void mk_rtsp_service::close() const
+void mk_rtsp_service::release()
 {
-     ACE_Reactor *pReactor = ACE_Reactor::instance();
+    ACE_Reactor *pReactor = ACE_Reactor::instance();
     if (!pReactor)
     {
         SVS_LOG(SVS_LOG_WARNING,"close http live stream server fail, can't find reactor instance.");
@@ -103,184 +67,77 @@ void mk_rtsp_service::close() const
     SVS_LOG(SVS_LOG_INFO,"success to close rtsp server.");
     return;
 }
-
-int32_t mk_rtsp_service::handleSvsMessage(CStreamSvsMessage &message)
+mk_rtsp_server* mk_rtsp_service::create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx)
 {
-    uint32_t ulLocalIndex = 0;
-    if (SVS_MSG_TYPE_STREAM_SESSION_SETUP_RESP == message.getMsgType())
-    {
-        CStreamMediaSetupResp* pSetupResp = (CStreamMediaSetupResp*)&message;
-        ulLocalIndex = pSetupResp->getLocalIndex();
-    }
-    else if(SVS_MSG_TYPE_STREAM_SESSION_PLAY_RESP == message.getMsgType())
-    {
-        CStreamMediaPlayResp* pPlayResp = (CStreamMediaPlayResp*)&message;
-        ulLocalIndex = pPlayResp->getLocalIndex();
-    }
-    else
-    {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp service handle svs message fail, MsgType[0x%x] invalid.",
-                        message.getMsgType());
-
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    ACE_Guard<ACE_Thread_Mutex> locker(m_MapMutex);
-    RTSP_SESSION_MAP_ITER iter = m_RtspSessionMap.find(ulLocalIndex);
-    if (m_RtspSessionMap.end() == iter)
-    {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp service handle svs message fail, can't find rtsp push session[%u].",
-                         ulLocalIndex);
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    mk_rtsp_client *pSession = iter->second;
-    if (!pSession)
-    {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp service handle svs message fail, rtsp push session[%u] is null.",
-                         ulLocalIndex);
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    return pSession->handleSvsMessage(message);
+    return NULL;
 }
-
-
-int32_t mk_rtsp_service::handle_input(ACE_HANDLE handle)
+void mk_rtsp_service::destory_rtsp_server(mk_rtsp_server* pServer)
 {
-
-    ACE_INET_Addr addr;
-    ACE_SOCK_Stream stream;
-    int32_t nRet = m_RtspAcceptor.accept(stream, &addr);
-    if (0 != nRet)
-    {
-        int32_t iErrCode = ACE_OS::last_error();
-        if ((EINTR != iErrCode) && (EWOULDBLOCK != iErrCode) && (EAGAIN
-                != iErrCode))
-        {
-            SVS_LOG(SVS_LOG_WARNING,"rtsp server [%s:%d] accept connection fail, close handle, errno[%d].",
-                    m_RtspAddr.get_host_addr(),
-                    m_RtspAddr.get_port_number(),
-                    iErrCode);
-            return -1;
-        }
-
-        SVS_LOG(SVS_LOG_WARNING,"rtsp server[%s:%d] accept connection fail, wait retry, errno[%d].",
-                m_RtspAddr.get_host_addr(),
-                m_RtspAddr.get_port_number(),
-                iErrCode);
-        return 0;
-    }
-
-    SVS_LOG(SVS_LOG_INFO,"rtsp server accepted new rtsp connect[%s:%d].",
-                    addr.get_host_addr(),
-                    addr.get_port_number());
-
-
-    mk_rtsp_client *pSession = NULL;
-    try
-    {
-        pSession = new mk_rtsp_client();
-    }
-    catch(...)
-    {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp server create new push session fail.");
-        delete pSession;
-        stream.close();
-        return 0;
-    }
-
-    ACE_INET_Addr localAddr;
-    stream.get_local_addr(localAddr);
-    pSession->setHandle(stream.get_handle(), localAddr);
-    if (AS_ERROR_CODE_OK != pSession->open(getLocalSessionIndex(), addr))
-    {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp server create new push session fail.");
-        delete pSession;
-        stream.close();
-        return 0;
-    }
-
-    {
-        ACE_Guard<ACE_Thread_Mutex> locker(m_MapMutex);
-        m_RtspSessionMap[pSession->getSessionIndex()] = pSession;
-    }
-
-    return 0;
-}
-
-
-int32_t mk_rtsp_service::handle_close(ACE_HANDLE /*handle*/, ACE_Reactor_Mask /*close_mask*/)
-{
-    ACE_Reactor *pReactor = ACE_Reactor::instance();
-    if (!pReactor)
-    {
-        SVS_LOG(SVS_LOG_WARNING,"close rtsp server fail, can't find reactor instance.");
-        return -1;
-    }
-
-    int32_t nRet = pReactor->remove_handler(m_RtspAcceptor.get_handle(),
-                                        ACE_Event_Handler::ACCEPT_MASK
-                                        | ACE_Event_Handler::DONT_CALL);
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp server handle close fail, unregist handle fail.");
-        return -1;
-    }
-    m_RtspAcceptor.close();
-
-    SVS_LOG(SVS_LOG_WARNING,"rtsp server handle close success.");
-    return 0;
-}
-
-void mk_rtsp_service::removeSession(mk_rtsp_client* pSession)
-{
-    if (NULL == pSession)
-    {
-        return;
-    }
-
-    ACE_Guard<ACE_Thread_Mutex> locker(m_MapMutex);
-    RTSP_SESSION_MAP_ITER iter = m_RtspSessionMap.find(pSession->getSessionIndex());
-    if (m_RtspSessionMap.end() != iter)
-    {
-        m_RtspSessionMap.erase(iter);
-    }
-
-    SVS_LOG(SVS_LOG_INFO,"rtsp server remove rtsp session[%u] success.",
-                    pSession->getSessionIndex());
-    delete pSession;
-
     return;
 }
-
-void mk_rtsp_service::checkSession()
+mk_rtsp_client* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_status cb,void* ctx)
 {
-    ACE_Guard<ACE_Thread_Mutex> locker(m_MapMutex);
-    RTSP_SESSION_MAP_ITER iter;
-    mk_rtsp_client* pSession = NULL;
-    for (iter = m_RtspSessionMap.begin(); iter != m_RtspSessionMap.end();)
-    {
-        pSession = iter->second;
-        if (pSession->check() != AS_ERROR_CODE_OK)
-        {
-            m_RtspSessionMap.erase(iter++);
+    return NULL;
+}
+void mk_rtsp_service::destory_rtsp_client(mk_rtsp_client* pClient)
+{
+    return;
+}
+int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs(uint16_t udpPort,uint32_t count)
+{
+    AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs,start port:[%d],count:[%d].",udpPort,count);
+    
+    uint32_t port = udpPort;
+    uint32_t pairs = count/2;
+    mk_rtsp_rtp_udp_handle*  pRtpHandle  = NULL;
+    mk_rtsp_rtcp_udp_handle* pRtcpHandle = NULL;
+    as_network_addr addr;
+    addr.m_lIpAddr = 0;
+    addr.m_usPort = 0;
+    int32_t nRet = AS_ERROR_CODE_OK;
 
-            SVS_LOG(SVS_LOG_INFO,"rtsp server remove session success. session index[%u]",
-                             pSession->getSessionIndex());
-            delete pSession;
-            continue;
-        }
-
-        ++iter;
+    m_pUdpRtpArray  = AS_NEW(m_pUdpRtpArray,pairs);
+    if(NULL == m_pUdpRtpArray) {
+        AS_LOG(AS_LOG_CRITICAL,"create rtp handle array fail.");
+        return AS_ERROR_CODE_FAIL;
+    }
+    m_pUdpRtcpArray = AS_NEW(m_pUdpRtcpArray,pairs);
+    if(NULL == m_pUdpRtcpArray) {
+        AS_LOG(AS_LOG_CRITICAL,"create rtcp handle array fail.");
+        return AS_ERROR_CODE_FAIL;
     }
 
-    SVS_LOG(SVS_LOG_INFO,"rtsp server check session success. now rtsp session num[%d]",
-        m_RtspSessionMap.size());
-}
+    m_ulUdpPairCount = pairs;
 
-uint32_t mk_rtsp_service::getLocalSessionIndex()
-{
-    return ++m_unLocalSessionIndex;
+    for(uint32_t i = 0;i < pairs;i++) {
+        pRtpHandle = AS_NEW(pRtpHandle);
+        if(NULL == pRtpHandle) {
+            AS_LOG(AS_LOG_CRITICAL,"create rtp handle object fail.");
+            return AS_ERROR_CODE_FAIL;
+        }
+        addr.m_usPort = port;
+        port++;
+        nRet = m_ConnMgr.regUdpSocket(&addr,pRtpHandle);
+        if(AS_ERROR_CODE_OK != nRet) {
+            AS_LOG(AS_LOG_ERROR,"register the rtp udp handle fail,port:[%d].",addr.m_usPort);
+            return AS_ERROR_CODE_FAIL;
+        }
+        pRtcpHandle = AS_NEW(pRtcpHandle);
+        if(NULL == pRtcpHandle) {
+            AS_LOG(AS_LOG_CRITICAL,"create rtcp handle object fail.");
+            return AS_ERROR_CODE_FAIL;
+        }
+        addr.m_usPort = port;
+        port++;
+        nRet = m_ConnMgr.regUdpSocket(&addr,pRtcpHandle);
+        if(AS_ERROR_CODE_OK != nRet) {
+            AS_LOG(AS_LOG_ERROR,"register the rtcp udp handle fail,port:[%d].",addr.m_usPort);
+            return AS_ERROR_CODE_FAIL;
+        }
+        m_pUdpRtpArray[i]  = pRtpHandle;
+        m_pUdpRtcpArray[i] = pRtcpHandle;
+        m_RtpRtcpfreeList.push_back(i);
+    }
+    AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs success.");
+    return AS_ERROR_CODE_OK;
 }
-

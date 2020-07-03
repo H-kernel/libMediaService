@@ -30,7 +30,7 @@ enum RTSP_SESSION_STATUS
 
 #define RTP_INTERLEAVE_LENGTH   4
 
-class mk_rtsp_client: public ACE_Event_Handler
+class mk_rtsp_client: public as_tcp_conn_handle
 {
 public:
     mk_rtsp_client();
