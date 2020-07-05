@@ -1,17 +1,6 @@
-/*
- * StreamRtspService.cpp
- *
- *  Created on: 2016-5-12
- *      Author:
- */
 #include <string.h>
-#include "ms_engine_svs_retcode.h"
-#include <vms.h>
 #include "svs_rtsp_service.h"
-#include "ms_engine_config.h"
-#include "svs_rtsp_protocol.h"
-#include "svs_vms_media_setup_resp.h"
-#include "svs_vms_media_play_resp.h"
+
 
 
 
@@ -55,28 +44,40 @@ int32_t mk_rtsp_service::init(uint16_t udpPort,uint32_t count)
 
 void mk_rtsp_service::release()
 {
-    ACE_Reactor *pReactor = ACE_Reactor::instance();
-    if (!pReactor)
-    {
-        SVS_LOG(SVS_LOG_WARNING,"close http live stream server fail, can't find reactor instance.");
-        return;
-    }
-    pReactor->cancel_timer(m_ulCheckTimerId);
-    ACE_OS::shutdown(m_RtspAcceptor.get_handle(), SHUT_RDWR);
-
-    SVS_LOG(SVS_LOG_INFO,"success to close rtsp server.");
+    destroy_rtp_rtcp_udp_pairs();
+    m_ConnMgr.exit();
     return;
 }
 mk_rtsp_server* mk_rtsp_service::create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx)
 {
-    return NULL;
+    mk_rtsp_server* pRtspServer = NULL;
+    pRtspServer = AS_NEW(pRtspServer);
+    if(NULL == pRtspServer) {
+        return NULL;
+    }
+    pRtspServer->set_callback(cb,ctx);
+    as_network_addr local;
+    local.m_lIpAddr = 0;
+    local.m_usPort  = port;
+    int32_t nRet = m_ConnMgr.regTcpServer(&local,pRtspServer);
+    if(AS_ERROR_CODE_OK != nRet) {
+        AS_DELETE(pRtspServer);
+        pRtspServer = NULL;
+    }
+    return pRtspServer;
 }
 void mk_rtsp_service::destory_rtsp_server(mk_rtsp_server* pServer)
 {
+    if(NULL == pServer) {
+        return;
+    }
+    m_ConnMgr.removeTcpServer(pServer);
+    AS_DELETE(pServer);
     return;
 }
 mk_rtsp_client* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_status cb,void* ctx)
 {
+    mk_rtsp_client* pClient = NULL
     return NULL;
 }
 void mk_rtsp_service::destory_rtsp_client(mk_rtsp_client* pClient)
@@ -140,4 +141,31 @@ int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs(uint16_t udpPort,uint32_t cou
     }
     AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs success.");
     return AS_ERROR_CODE_OK;
+}
+void    mk_rtsp_service::destroy_rtp_rtcp_udp_pairs()
+{
+    AS_LOG(AS_LOG_INFO,"m_pUdpRtcpArray udp rtp and rtcp pair.");
+
+    mk_rtsp_rtp_udp_handle*  pRtpHandle  = NULL;
+    mk_rtsp_rtcp_udp_handle* pRtcpHandle = NULL;
+
+    for(uint32_t i = 0;i < m_ulUdpPairCount;i++) {
+        pRtpHandle  = m_pUdpRtpArray[i];
+        pRtcpHandle = m_pUdpRtcpArray[i];
+
+        pRtpHandle = AS_NEW(pRtpHandle);
+        if(NULL != pRtpHandle) {
+            m_ConnMgr.removeUdpSocket(pRtpHandle);
+            AS_DELETE(pRtpHandle);
+            m_pUdpRtpArray[i] = NULL;
+        }
+        pRtcpHandle = AS_NEW(pRtcpHandle);
+        if(NULL != pRtpHandle) {
+            m_ConnMgr.removeUdpSocket(pRtcpHandle);
+            AS_DELETE(pRtcpHandle);
+             m_pUdpRtcpArray[i] = NULL;
+        }
+    }
+    AS_LOG(AS_LOG_INFO,"destory udp rtp and rtcp pairs success.");
+    return;
 }
