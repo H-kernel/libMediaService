@@ -77,7 +77,8 @@ void mk_rtsp_service::destory_rtsp_server(mk_rtsp_server* pServer)
 }
 mk_rtsp_client* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_status cb,void* ctx)
 {
-    mk_rtsp_client* pClient = NULL
+    mk_rtsp_client* pClient = NULL;
+    pClient = AS_NEW(pClient);
     return NULL;
 }
 void mk_rtsp_service::destory_rtsp_client(mk_rtsp_client* pClient)
