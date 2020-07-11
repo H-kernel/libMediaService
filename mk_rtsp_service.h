@@ -37,7 +37,7 @@ public:
             nLevel = AS_LOG_DEBUG;
         }
 
-        SVS_LOG(nLevel,"[connect]:%s",szLogDetail);
+        AS_LOG(nLevel,"[connect]:%s",szLogDetail);
     }
 };
 

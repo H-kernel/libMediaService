@@ -54,13 +54,13 @@ int32_t CRtspProtocol::saveSendReq(uint32_t unCSeq, uint32_t unReqMethodType)
     ACE_Guard<ACE_Thread_Mutex>    m_locker(m_MapMutex);
     if (0 != m_CseqReqMap.count(unCSeq))
     {
-        SVS_LOG(SVS_LOG_WARNING,"save request message fail, cseq[%u] already saved, method[%u].",
+        AS_LOG(AS_LOG_WARNING,"save request message fail, cseq[%u] already saved, method[%u].",
                         unCSeq, unReqMethodType);
         return AS_ERROR_CODE_FAIL;
     }
 
     m_CseqReqMap[unCSeq] = unReqMethodType;
-    SVS_LOG(SVS_LOG_INFO,"save request message cseq[%u] method[%u].", unCSeq, unReqMethodType);
+    AS_LOG(AS_LOG_INFO,"save request message cseq[%u] method[%u].", unCSeq, unReqMethodType);
     return AS_ERROR_CODE_OK;
 }
 
@@ -70,7 +70,7 @@ int32_t CRtspProtocol::IsParsable(const char* pMsgData, uint32_t unDataLen) cons
     uint32_t unMsgLen = 0;
     if (0 != CRtspPacket::checkRtsp(pMsgData,unDataLen ,unMsgLen))
     {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp protocol parse rtsp message fail.");
+        AS_LOG(AS_LOG_WARNING,"rtsp protocol parse rtsp message fail.");
         return -1;
     }
 
@@ -84,7 +84,7 @@ int32_t CRtspProtocol::IsParsable(const char* pMsgData, uint32_t unDataLen) cons
         return 0;
     }
 
-    SVS_LOG(SVS_LOG_INFO,"rtsp protocol parse rtsp return message length[%u].", unMsgLen);
+    AS_LOG(AS_LOG_INFO,"rtsp protocol parse rtsp return message length[%u].", unMsgLen);
     return (int32_t)unMsgLen;
 }
 
@@ -101,13 +101,13 @@ int32_t CRtspProtocol::DecodeRtspMessage(const char* pMsgData,
     pMsg = NULL;
     std::string strRtspMsg = "";
     strRtspMsg.append(pMsgData, unDataLen);
-    SVS_LOG(SVS_LOG_DEBUG,"start decode rtsp message:\n%s", strRtspMsg.c_str());
+    AS_LOG(AS_LOG_DEBUG,"start decode rtsp message:\n%s", strRtspMsg.c_str());
 
 
     CRtspPacket objRtspPacket;
     if (0 != objRtspPacket.parse(pMsgData,unDataLen))
     {
-        SVS_LOG(SVS_LOG_WARNING,"decode rtsp message fail");
+        AS_LOG(AS_LOG_WARNING,"decode rtsp message fail");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -122,7 +122,7 @@ int32_t CRtspProtocol::DecodeRtspMessage(const char* pMsgData,
     }
     else
     {
-        SVS_LOG(SVS_LOG_WARNING,"decode rtsp message fail, choice[%d] invalid.", objRtspPacket.getMethodIndex());
+        AS_LOG(AS_LOG_WARNING,"decode rtsp message fail, choice[%d] invalid.", objRtspPacket.getMethodIndex());
         return AS_ERROR_CODE_FAIL;
     }
     return nRet;
@@ -165,7 +165,7 @@ int32_t CRtspProtocol::parseRtspRequest(CRtspPacket& objRtspPacket,
             pMessage = new CRtspRecordMessage();
             break;
         default:
-            SVS_LOG(SVS_LOG_WARNING,"rtsp protocol not accepted method[%u].",
+            AS_LOG(AS_LOG_WARNING,"rtsp protocol not accepted method[%u].",
                     objRtspPacket.getMethodIndex());
             break;
         }
@@ -175,7 +175,7 @@ int32_t CRtspProtocol::parseRtspRequest(CRtspPacket& objRtspPacket,
 
     if (!pMessage)
     {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp protocol create rtsp request message fail, method[%u].",
+        AS_LOG(AS_LOG_WARNING,"rtsp protocol create rtsp request message fail, method[%u].",
                             objRtspPacket.getMethodIndex());
         return AS_ERROR_CODE_FAIL;
     }
@@ -198,7 +198,7 @@ int32_t CRtspProtocol::parseRtspResponse(CRtspPacket& objRtspPacket,
     REQ_TYPE_MAP_ITER iter = m_CseqReqMap.find(unCseq);
     if (m_CseqReqMap.end() == iter)
     {
-        SVS_LOG(SVS_LOG_WARNING,"No corresponding request to this response msg, cseq=%u.", unCseq);
+        AS_LOG(AS_LOG_WARNING,"No corresponding request to this response msg, cseq=%u.", unCseq);
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -244,7 +244,7 @@ int32_t CRtspProtocol::parseRtspResponse(CRtspPacket& objRtspPacket,
 
     if (!pMessage)
     {
-        SVS_LOG(SVS_LOG_WARNING,"rtsp protocol create rtsp response message fail, CSeq[%u].",
+        AS_LOG(AS_LOG_WARNING,"rtsp protocol create rtsp response message fail, CSeq[%u].",
                         unCseq);
         return AS_ERROR_CODE_FAIL;
     }

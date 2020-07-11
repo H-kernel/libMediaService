@@ -8,6 +8,7 @@
 #ifndef STREAMRTSPPUSHSESSION_H_
 #define STREAMRTSPPUSHSESSION_H_
 
+#include "as.h"
 #include "ms_engine_session.h"
 #include "svs_static_preassign_buffer.h"
 #include "svs_rtsp_protocol.h"
@@ -37,21 +38,17 @@ public:
     virtual ~mk_rtsp_client();
 
 public:
-    int32_t open(uint32_t unIndex, const ACE_INET_Addr &peerAddr);
-
     int32_t open(const char* pszUrl);
+    int32_t send_rtsp_options(); 
+    void    close();
 
-    void close();
+    const char* get_connect_addr();
+    uint16_t    get_connect_port();
 
-    int32_t handleSvsMessage(CStreamSvsMessage &message);
-
-    int32_t handle_input(ACE_HANDLE handle);
-
-    int32_t handle_output (ACE_HANDLE handle);
-
-    int32_t handle_close(ACE_HANDLE handle, ACE_Reactor_Mask close_mask);
-
-    int32_t handle_timeout(const ACE_Time_Value &tv, const void *arg);
+public:
+    /* override */
+    virtual void handle_recv(void);
+    virtual void handle_send(void);
 
     void setHandle(ACE_HANDLE handle, const ACE_INET_Addr &localAddr);
 
@@ -67,7 +64,7 @@ public:
 
     void  set_rtp_over_tcp();
 
-    void  set_status_callback(tsp_client_status cb,void* ctx);
+    void  set_status_callback(rtsp_client_status cb,void* ctx);
 
     int32_t do_recv_media_data(char* buf,uint32_t len, rtsp_client_media cb,void* ctx);
 private:
@@ -135,6 +132,12 @@ private:
     void    simulateSendRtcpMsg();
 
 private:
+    as_url_t                     m_url;
+    char                         m_RecvBuf[MAX_RTSP_PROTOCOL_MSG_LEN];
+    uint32_t                     m_ulRecvSize;
+
+
+    
     ACE_Recursive_Thread_Mutex   m_RtspMutex;
     uint32_t                     m_unSessionIndex;
     PLAY_TYPE                    m_enPlayType;
@@ -165,7 +168,8 @@ private:
     uint32_t                     m_unTransType;
     char                         m_cVideoInterleaveNum;
     char                         m_cAudioInterleaveNum;
-    CSVSMediaLink              m_pMediaLink;   
+    CSVSMediaLink                m_pMediaLink;
+  
 };
 
 #endif /* STREAMRTSPPUSHSESSION_H_ */

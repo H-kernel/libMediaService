@@ -25,7 +25,7 @@ int32_t CRtspDescribeMessage::decodeMessage(CRtspPacket& objRtspPacket)
     int32_t nRet = CRtspMessage::decodeMessage(objRtspPacket);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"decode rtsp play message fail.");
+        AS_LOG(AS_LOG_WARNING,"decode rtsp play message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -40,7 +40,7 @@ int32_t CRtspDescribeMessage::encodeMessage(std::string &strMessage)
     // ֱ�ӵ��ø������CSeq��User-Agent
     if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
-        SVS_LOG(SVS_LOG_WARNING,"encode rtsp describe request message fail.");
+        AS_LOG(AS_LOG_WARNING,"encode rtsp describe request message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -53,7 +53,7 @@ int32_t CRtspDescribeMessage::encodeMessage(std::string &strMessage)
             // Content-Length
             if (0 == m_strSDP.length())
             {
-                SVS_LOG(SVS_LOG_WARNING,"encode rtsp describe message fail, no sdp info.");
+                AS_LOG(AS_LOG_WARNING,"encode rtsp describe message fail, no sdp info.");
 
                 return AS_ERROR_CODE_FAIL;
             }
@@ -93,7 +93,7 @@ int32_t CRtspDescribeMessage::encodeMessage(std::string &strMessage)
         //end
         strMessage += RTSP_END_TAG;
     }
-    SVS_LOG(SVS_LOG_DEBUG,"encode rtsp describe message:\n%s",
+    AS_LOG(AS_LOG_DEBUG,"encode rtsp describe message:\n%s",
                      strMessage.c_str());
     return AS_ERROR_CODE_OK;
 }

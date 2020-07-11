@@ -10,7 +10,7 @@
 
 #include "svs_rtsp_message.h"
 
-// RTSP OPTIONS«Î«Û
+// RTSP OPTIONS
 class CRtspOptionsMessage: public CRtspMessage
 {
 public:

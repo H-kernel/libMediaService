@@ -25,13 +25,13 @@ int32_t CRtspPauseMessage::encodeMessage(std::string &strMessage)
     // ֱ�ӵ��ø������CSeq��User-Agent
     if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
-        SVS_LOG(SVS_LOG_WARNING,"encode rtsp pause message fail.");
+        AS_LOG(AS_LOG_WARNING,"encode rtsp pause message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
     // End
     strMessage += RTSP_END_TAG;
 
-    SVS_LOG(SVS_LOG_DEBUG,"encode rtsp pause message:\n%s", strMessage.c_str());
+    AS_LOG(AS_LOG_DEBUG,"encode rtsp pause message:\n%s", strMessage.c_str());
     return AS_ERROR_CODE_OK;
 }

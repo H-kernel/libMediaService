@@ -98,7 +98,7 @@ int32_t CRtspPlayMessage::decodeMessage(CRtspPacket& objRtspPacket)
     int32_t nRet = CRtspMessage::decodeMessage(objRtspPacket);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"decode rtsp play message fail.");
+        AS_LOG(AS_LOG_WARNING,"decode rtsp play message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -137,7 +137,7 @@ int32_t CRtspPlayMessage::encodeMessage(std::string &strMessage)
 {
     if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
-        SVS_LOG(SVS_LOG_WARNING,"encode rtsp play message fail.");
+        AS_LOG(AS_LOG_WARNING,"encode rtsp play message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -183,7 +183,7 @@ int32_t CRtspPlayMessage::encodeMessage(std::string &strMessage)
     // End
     strMessage += RTSP_END_TAG;
 
-    SVS_LOG(SVS_LOG_DEBUG,"encode rtsp play message:\n%s", strMessage.c_str());
+    AS_LOG(AS_LOG_DEBUG,"encode rtsp play message:\n%s", strMessage.c_str());
     return AS_ERROR_CODE_OK;
 }
 

@@ -63,7 +63,7 @@ int32_t CStreamStdRtpSession::initStdRtpSession(uint64_t ullPeerStreamID,
     CStreamSession *pPeerSession = CStreamSessionFactory::instance()->findSession(m_ullPeerStreamID);
     if (!pPeerSession)
     {
-        SVS_LOG(SVS_LOG_WARNING,"init std rtp session[%lld] fail, can't find peer session[%lld].",
+        AS_LOG(AS_LOG_WARNING,"init std rtp session[%lld] fail, can't find peer session[%lld].",
                 getStreamId(), ullPeerStreamID);
         return AS_ERROR_CODE_FAIL;
     }
@@ -83,7 +83,7 @@ int32_t CStreamStdRtpSession::initStdRtpSession(uint64_t ullPeerStreamID,
 
     setStatus(STREAM_SESSION_STATUS_WAIT_START);
 
-    SVS_LOG(SVS_LOG_INFO,"init std rtp session[%lld] service type[%d] success.",
+    AS_LOG(AS_LOG_INFO,"init std rtp session[%lld] service type[%d] success.",
                     getStreamId(), getPlayType());
     return AS_ERROR_CODE_OK;
 }
@@ -106,7 +106,7 @@ int32_t CStreamStdRtpSession::startStdRtpSession(const CRtspSetupMessage &rtspMe
 
         m_unTransType = rtspMessage.getTransType();
 
-        SVS_LOG(SVS_LOG_INFO,"session[%lld] start video channel transtype[%d].",
+        AS_LOG(AS_LOG_INFO,"session[%lld] start video channel transtype[%d].",
                                     getStreamId(),m_unTransType);
 
         if (TRANS_PROTOCAL_TCP == rtspMessage.getTransType())
@@ -129,7 +129,7 @@ int32_t CStreamStdRtpSession::startStdRtpSession(const CRtspSetupMessage &rtspMe
                                                 rtspMessage.getDestinationIp());
             m_UdpPeerAddr[VIDEO_RTCP_HANDLE].set(rtspMessage.getClientPort() + 1,
                                                  rtspMessage.getDestinationIp());
-            SVS_LOG(SVS_LOG_INFO,"session[%lld] start video channel[%s:%d].",
+            AS_LOG(AS_LOG_INFO,"session[%lld] start video channel[%s:%d].",
                             getStreamId(),
                             m_UdpPeerAddr[VIDEO_RTP_HANDLE].get_host_addr(),
                             m_UdpPeerAddr[VIDEO_RTP_HANDLE].get_port_number());
@@ -147,7 +147,7 @@ int32_t CStreamStdRtpSession::startStdRtpSession(const CRtspSetupMessage &rtspMe
                                                 rtspMessage.getDestinationIp());
             m_UdpPeerAddr[AUDIO_RTCP_HANDLE].set(rtspMessage.getClientPort() + 1,
                                                  rtspMessage.getDestinationIp());
-            SVS_LOG(SVS_LOG_INFO,"session[%lld] start audio channel[%s:%d].",
+            AS_LOG(AS_LOG_INFO,"session[%lld] start audio channel[%s:%d].",
                             getStreamId(),
                             m_UdpPeerAddr[AUDIO_RTP_HANDLE].get_host_addr(),
                             m_UdpPeerAddr[AUDIO_RTP_HANDLE].get_port_number());
@@ -157,7 +157,7 @@ int32_t CStreamStdRtpSession::startStdRtpSession(const CRtspSetupMessage &rtspMe
     m_unStartTime++;
 
     setStatus(STREAM_SESSION_STATUS_WAIT_CHANNEL_REDAY);
-    SVS_LOG(SVS_LOG_INFO,"start std rtp session[%lld]  success.", getStreamId());
+    AS_LOG(AS_LOG_INFO,"start std rtp session[%lld]  success.", getStreamId());
     return AS_ERROR_CODE_OK;
 }
 
@@ -196,7 +196,7 @@ int32_t CStreamStdRtpSession::sendMessage(const char* pData, uint32_t unDataSize
         int32_t nSendSize = ACE::send_n(m_rtspHandle, pData, unDataSize, &timeout);
         if (unDataSize != (uint32_t) nSendSize)
         {
-            SVS_LOG(SVS_LOG_WARNING,"session[%lld] send message fail, error[%d] close handle[%d].",
+            AS_LOG(AS_LOG_WARNING,"session[%lld] send message fail, error[%d] close handle[%d].",
                             getStreamId(), ACE_OS::last_error(), m_rtspHandle);
 
             m_rtspHandle = ACE_INVALID_HANDLE;
@@ -212,7 +212,7 @@ int32_t CStreamStdRtpSession::sendMessage(const char* pData, uint32_t unDataSize
         ACE_Message_Block *pMsgBlock = CMediaBlockBuffer::instance().allocMediaBlock();
         if (NULL == pMsgBlock)
         {
-            SVS_LOG(SVS_LOG_WARNING,"tcp connect send stream[%lld] message data fail, "
+            AS_LOG(AS_LOG_WARNING,"tcp connect send stream[%lld] message data fail, "
                     "alloc cache buffer fail, close handle.",
                     getStreamId());
             m_rtspHandle = ACE_INVALID_HANDLE;
@@ -232,7 +232,7 @@ int32_t CStreamStdRtpSession::sendMessage(const char* pData, uint32_t unDataSize
         int32_t iErrorCode = ACE_OS::last_error();
         if (checkIsDisconnect(iErrorCode))
         {
-            SVS_LOG(SVS_LOG_WARNING,"stream[%lld] connect send message fail, errno[%d] "
+            AS_LOG(AS_LOG_WARNING,"stream[%lld] connect send message fail, errno[%d] "
                             ", close handle[%d].",
                             getStreamId(),
                             iErrorCode,
@@ -259,7 +259,7 @@ int32_t CStreamStdRtpSession::sendMessage(const char* pData, uint32_t unDataSize
                 CMediaBlockBuffer::instance().allocMediaBlock();
         if (NULL == pMsgBlock)
         {
-            SVS_LOG(SVS_LOG_WARNING,"tcp connect send stream[%lld] media data fail, "
+            AS_LOG(AS_LOG_WARNING,"tcp connect send stream[%lld] media data fail, "
                     "alloc cache buffer fail, close handle.",
                     getStreamId());
             m_rtspHandle = ACE_INVALID_HANDLE;
@@ -288,7 +288,7 @@ int32_t CStreamStdRtpSession::sendMediaData(ACE_Message_Block **pMbArray, uint32
 
     if (STREAM_SESSION_STATUS_DISPATCHING != getStatus())
     {
-        SVS_LOG(SVS_LOG_INFO,"session[%lld] discard media data, the status[%d] invalid.",
+        AS_LOG(AS_LOG_INFO,"session[%lld] discard media data, the status[%d] invalid.",
                         getStreamId(), getStatus());
         return AS_ERROR_CODE_OK;
     }
@@ -322,7 +322,7 @@ int32_t CStreamStdRtpSession::sendVcrMessage(CRtspPacket &rtspPack)
         std::string::size_type nStartPos = strRtpInfo.find(";");
         if (std::string::npos == nStartPos)
         {
-            SVS_LOG(SVS_LOG_INFO,"session[%lld] send vcr message fail, RTP-Info[%s] invalid.",
+            AS_LOG(AS_LOG_INFO,"session[%lld] send vcr message fail, RTP-Info[%s] invalid.",
                             getStreamId(), strRtpInfo.c_str());
             return AS_ERROR_CODE_FAIL;
         }
@@ -337,7 +337,7 @@ int32_t CStreamStdRtpSession::sendVcrMessage(CRtspPacket &rtspPack)
     std::string strMsg;
     if (0 != rtspPack.generateRtspResp(strMsg))
     {
-        SVS_LOG(SVS_LOG_INFO,"session[%lld] send vcr message fail, generate rtsp resp message fail.",
+        AS_LOG(AS_LOG_INFO,"session[%lld] send vcr message fail, generate rtsp resp message fail.",
                 getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
@@ -352,12 +352,12 @@ int32_t CStreamStdRtpSession::sendVcrMessage(CRtspPacket &rtspPack)
     int32_t nRet = sendMessage(strMsg.c_str(), strMsg.length(),true);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"session[%lld] send vcr message fail.", getStreamId());
+        AS_LOG(AS_LOG_WARNING,"session[%lld] send vcr message fail.", getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
 
-    SVS_LOG(SVS_LOG_INFO,"session[%lld] send vcr message success.", getStreamId());
-    SVS_LOG(SVS_LOG_DEBUG,"%s", strMsg.c_str());
+    AS_LOG(AS_LOG_INFO,"session[%lld] send vcr message success.", getStreamId());
+    AS_LOG(AS_LOG_DEBUG,"%s", strMsg.c_str());
     return AS_ERROR_CODE_OK;
 }
 
@@ -372,7 +372,7 @@ int32_t CStreamStdRtpSession::sendSessionStopMessage(uint32_t unStopType)
     std::string strMsg;
     if (AS_ERROR_CODE_OK != msg.encodeMessage(strMsg))
     {
-        SVS_LOG(SVS_LOG_WARNING,"session[%lld] send vos message fail, encode announce msg fail.",
+        AS_LOG(AS_LOG_WARNING,"session[%lld] send vos message fail, encode announce msg fail.",
                         getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
@@ -408,7 +408,7 @@ int32_t CStreamStdRtpSession::handleInnerMessage(const STREAM_INNER_MSG &innerMs
                                           CStreamSession&  peerSession)
 {
     //m_ulLastRecvTime = SVS_GetSecondTime();
-    SVS_LOG(SVS_LOG_INFO,"session[%lld] ,handle inner message,time:[%u],type:[%d].",
+    AS_LOG(AS_LOG_INFO,"session[%lld] ,handle inner message,time:[%u],type:[%d].",
                                         getStreamId(), m_ulLastRecvTime,innerMsg.usMsgType);
 
     if (INNER_MSG_RTSP == innerMsg.usMsgType)
@@ -417,7 +417,7 @@ int32_t CStreamStdRtpSession::handleInnerMessage(const STREAM_INNER_MSG &innerMs
 
         setStatus(STREAM_SESSION_STATUS_DISPATCHING);
 
-        SVS_LOG(SVS_LOG_INFO,"session[%lld] handle inner rtsp message success.", getStreamId());
+        AS_LOG(AS_LOG_INFO,"session[%lld] handle inner rtsp message success.", getStreamId());
         return AS_ERROR_CODE_OK;
     }
 
@@ -439,20 +439,20 @@ int32_t CStreamStdRtpSession::handleInnerMessage(const STREAM_INNER_MSG &innerMs
 
         if ((HANDLE_TYPE_MAX <= nHandleIndex) || (NULL == m_pUdpHandle[nHandleIndex]))
         {
-            SVS_LOG(SVS_LOG_WARNING,"session[%lld] handle dummy message fail, recv handle invalid.",
+            AS_LOG(AS_LOG_WARNING,"session[%lld] handle dummy message fail, recv handle invalid.",
                     getStreamId());
             return AS_ERROR_CODE_FAIL;
         }
 
         m_UdpPeerAddr[nHandleIndex].set(innerMsg.usRemotePort, innerMsg.unRemoteIp);
-        SVS_LOG(SVS_LOG_INFO,"session[%lld] handle inner [%d]dummy message success,remoteAddr:[%s] remoteport:[%d].",
+        AS_LOG(AS_LOG_INFO,"session[%lld] handle inner [%d]dummy message success,remoteAddr:[%s] remoteport:[%d].",
                                             getStreamId(),innerMsg.usMsgType,
                                             m_UdpPeerAddr[nHandleIndex].get_host_addr(),
                                             m_UdpPeerAddr[nHandleIndex].get_port_number());
         return AS_ERROR_CODE_OK;
     }
 
-    SVS_LOG(SVS_LOG_WARNING,"session[%lld] handle not accepted inner message[%d].",
+    AS_LOG(AS_LOG_WARNING,"session[%lld] handle not accepted inner message[%d].",
                     getStreamId(), innerMsg.usMsgType);
     return AS_ERROR_CODE_FAIL;
 }
@@ -468,7 +468,7 @@ int32_t CStreamStdRtpSession::allocMediaPort()
             m_pUdpHandle[VIDEO_RTP_HANDLE], m_pUdpHandle[VIDEO_RTCP_HANDLE]);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_ERROR,"session[%lld] alloc video media port fail.", getStreamId());
+        AS_LOG(AS_LOG_ERROR,"session[%lld] alloc video media port fail.", getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
     m_VideoAddr.set(m_pUdpHandle[VIDEO_RTP_HANDLE]->getLocalAddr());
@@ -477,12 +477,12 @@ int32_t CStreamStdRtpSession::allocMediaPort()
             m_pUdpHandle[AUDIO_RTP_HANDLE], m_pUdpHandle[AUDIO_RTCP_HANDLE]);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_ERROR,"session[%lld] alloc audio media port fail.",  getStreamId());
+        AS_LOG(AS_LOG_ERROR,"session[%lld] alloc audio media port fail.",  getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
     m_AudioAddr.set(m_pUdpHandle[AUDIO_RTP_HANDLE]->getLocalAddr());
 
-    SVS_LOG(SVS_LOG_INFO,
+    AS_LOG(AS_LOG_INFO,
             "Rtp session alloc media port success. stream id[%lld] "
             "video rtp handle[%p] video rtcp handle[%p] "
             "audio rtp handle[%p] audio rtcp handle[%p].",
@@ -506,7 +506,7 @@ int32_t CStreamStdRtpSession::startMediaPort()
     if ((NULL == m_pUdpHandle[VIDEO_RTP_HANDLE])
             || (NULL == m_pUdpHandle[VIDEO_RTCP_HANDLE]))
     {
-        SVS_LOG(SVS_LOG_ERROR,"session[%lld] start video port fail, handle  is null.",
+        AS_LOG(AS_LOG_ERROR,"session[%lld] start video port fail, handle  is null.",
                 getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
@@ -514,7 +514,7 @@ int32_t CStreamStdRtpSession::startMediaPort()
                                                 m_UdpPeerAddr[VIDEO_RTP_HANDLE]);
     if (AS_ERROR_CODE_OK != iRet)
     {
-        SVS_LOG(SVS_LOG_ERROR,"session[%lld] start video rtp port fail.", getStreamId());
+        AS_LOG(AS_LOG_ERROR,"session[%lld] start video rtp port fail.", getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -522,14 +522,14 @@ int32_t CStreamStdRtpSession::startMediaPort()
                                                 m_UdpPeerAddr[VIDEO_RTCP_HANDLE]);
     if (AS_ERROR_CODE_OK != iRet)
     {
-        SVS_LOG(SVS_LOG_ERROR,"session[%lld] start video rtcp port fail.", getStreamId());
+        AS_LOG(AS_LOG_ERROR,"session[%lld] start video rtcp port fail.", getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
 
     if ((NULL == m_pUdpHandle[AUDIO_RTP_HANDLE])
             || (NULL == m_pUdpHandle[AUDIO_RTCP_HANDLE]))
     {
-        SVS_LOG(SVS_LOG_ERROR,"session[%lld] start audio port fail, handle  is null.",
+        AS_LOG(AS_LOG_ERROR,"session[%lld] start audio port fail, handle  is null.",
                 getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
@@ -537,7 +537,7 @@ int32_t CStreamStdRtpSession::startMediaPort()
                                                         m_UdpPeerAddr[AUDIO_RTP_HANDLE]);
     if (AS_ERROR_CODE_OK != iRet)
     {
-        SVS_LOG(SVS_LOG_ERROR,"session[%lld] start audio rtp port fail.", getStreamId());
+        AS_LOG(AS_LOG_ERROR,"session[%lld] start audio rtp port fail.", getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -545,11 +545,11 @@ int32_t CStreamStdRtpSession::startMediaPort()
                                                         m_UdpPeerAddr[AUDIO_RTCP_HANDLE]);
     if (AS_ERROR_CODE_OK != iRet)
     {
-        SVS_LOG(SVS_LOG_ERROR,"session[%lld] start audio rtcp port fail.", getStreamId());
+        AS_LOG(AS_LOG_ERROR,"session[%lld] start audio rtcp port fail.", getStreamId());
         return AS_ERROR_CODE_FAIL;
     }
 
-    SVS_LOG(SVS_LOG_INFO,"Start media port success. stream id[%lld].",
+    AS_LOG(AS_LOG_INFO,"Start media port success. stream id[%lld].",
             getStreamId());
     return AS_ERROR_CODE_OK;
 }
@@ -558,7 +558,7 @@ int32_t CStreamStdRtpSession::stopMediaPort()
 {
     if (TRANS_PROTOCAL_TCP == getTransProtocol())
     {
-        SVS_LOG(SVS_LOG_INFO,"session[%lld] stop tcp media port success.",
+        AS_LOG(AS_LOG_INFO,"session[%lld] stop tcp media port success.",
                 getStreamId());
         return AS_ERROR_CODE_OK;
     }
@@ -570,7 +570,7 @@ int32_t CStreamStdRtpSession::stopMediaPort()
             (void) m_pUdpHandle[i]->stopHandle(getStreamId());
         }
     }
-    SVS_LOG(SVS_LOG_INFO,"Rtp udp session stop port success. stream id[%lld].",
+    AS_LOG(AS_LOG_INFO,"Rtp udp session stop port success. stream id[%lld].",
                     getStreamId());
     return AS_ERROR_CODE_OK;
 }
@@ -607,7 +607,7 @@ int32_t CStreamStdRtpSession::saveLeastData(ACE_Message_Block ** const pMbArray,
         ACE_Message_Block *pMsgBlock = CMediaBlockBuffer::instance().allocMediaBlock();
         if (!pMsgBlock)
         {
-            SVS_LOG(SVS_LOG_WARNING,"session[%lld] alloc media data block fail, close handle[%d]",
+            AS_LOG(AS_LOG_WARNING,"session[%lld] alloc media data block fail, close handle[%d]",
                     getStreamId(), m_rtspHandle);
 
             m_rtspHandle = ACE_INVALID_HANDLE;
@@ -622,7 +622,7 @@ int32_t CStreamStdRtpSession::saveLeastData(ACE_Message_Block ** const pMbArray,
                     pMbArray[i]->length()))
             {
                 CMediaBlockBuffer::instance().freeMediaBlock(pMsgBlock);
-                SVS_LOG(SVS_LOG_WARNING,"session[%lld] save send meida fail, parse data as rtp fail, "
+                AS_LOG(AS_LOG_WARNING,"session[%lld] save send meida fail, parse data as rtp fail, "
                         "msg[%p] len[%u], close handle[%d].",
                         getStreamId(), pMbArray[i], pMbArray[i]->length(), m_rtspHandle);
 
@@ -675,7 +675,7 @@ int32_t CStreamStdRtpSession::sendLeastData()
             int32_t iErrorCode = ACE_OS::last_error();
             if (checkIsDisconnect(iErrorCode))
             {
-                SVS_LOG(SVS_LOG_WARNING,"stream[%lld] send tcp least data fail, "
+                AS_LOG(AS_LOG_WARNING,"stream[%lld] send tcp least data fail, "
                                     "errno[%d], close handle[%d].",
                                     getStreamId(),
                                     iErrorCode,
@@ -726,7 +726,7 @@ int32_t CStreamStdRtpSession::sendUdpMediaData(ACE_Message_Block **pMbArray, uin
         if (AS_ERROR_CODE_OK != rtpPack.ParsePacket(pMbArray[unSendCount]->rd_ptr(),
                                           pMbArray[unSendCount]->length()))
         {
-            SVS_LOG(SVS_LOG_ERROR,
+            AS_LOG(AS_LOG_ERROR,
                 "session[%lld] send media data fail, parse rtp packet fail.",
                 getStreamId());
             return -1;
@@ -766,7 +766,7 @@ int32_t CStreamStdRtpSession::sendTcpMediaData(ACE_Message_Block **pMbArray, uin
     {
         if (NULL == pMbArray[unCount])
         {
-            SVS_LOG(SVS_LOG_WARNING,"session[%lld] send meida fail, data block is null, ",
+            AS_LOG(AS_LOG_WARNING,"session[%lld] send meida fail, data block is null, ",
                              getStreamId());
             return AS_ERROR_CODE_FAIL;
         }
@@ -774,7 +774,7 @@ int32_t CStreamStdRtpSession::sendTcpMediaData(ACE_Message_Block **pMbArray, uin
         CRtpPacket rtpPack;
         if (AS_ERROR_CODE_OK != rtpPack.ParsePacket(pMbArray[unCount]->rd_ptr(), pMbArray[unCount]->length()))
         {
-            SVS_LOG(SVS_LOG_WARNING,"session[%lld] send meida fail, parse data as rtp fail, "
+            AS_LOG(AS_LOG_WARNING,"session[%lld] send meida fail, parse data as rtp fail, "
                         "msg[%p] len[%u].",
                        getStreamId(), pMbArray[unCount], pMbArray[unCount]->length());
             return AS_ERROR_CODE_FAIL;
@@ -806,7 +806,7 @@ int32_t CStreamStdRtpSession::sendTcpMediaData(ACE_Message_Block **pMbArray, uin
             int32_t iErrorCode = ACE_OS::last_error();
             if (checkIsDisconnect(iErrorCode))
             {
-                SVS_LOG(SVS_LOG_WARNING,
+                AS_LOG(AS_LOG_WARNING,
                     "stream[%lld] send tcp least data fail, errno[%d], close handle[%d].",
                     getStreamId(), iErrorCode, m_rtspHandle);
                 m_rtspHandle = ACE_INVALID_HANDLE;
@@ -842,7 +842,7 @@ bool CStreamStdRtpSession::checkMediaChannelStatus()
     uint32_t ulCostTime = SVS_GetSecondTime() - m_ulLastRecvTime;
     if (ulCostTime > STREAM_MEDIA_CHANNEL_INVAILD_INTERVAL)
     {
-        SVS_LOG(SVS_LOG_WARNING,"std session[%lld] not recv data at [%u]s, check media channel status fail.",
+        AS_LOG(AS_LOG_WARNING,"std session[%lld] not recv data at [%u]s, check media channel status fail.",
                          getStreamId(), ulCostTime);
         return false;
     }
@@ -875,7 +875,7 @@ void CStreamStdRtpSession::sendRtcpReport()
     {
         if (!m_pUdpHandle[VIDEO_RTCP_HANDLE])
         {
-            SVS_LOG(SVS_LOG_INFO,"session[%lld] send rtcp fail, video rtcp handle invalid.", getStreamId());
+            AS_LOG(AS_LOG_INFO,"session[%lld] send rtcp fail, video rtcp handle invalid.", getStreamId());
             return;
         }
 
@@ -884,13 +884,13 @@ void CStreamStdRtpSession::sendRtcpReport()
 
         if (!m_pUdpHandle[AUDIO_RTCP_HANDLE])
         {
-            SVS_LOG(SVS_LOG_INFO,"session[%lld] send rtcp fail, audio rtcp handle invalid.", getStreamId());
+            AS_LOG(AS_LOG_INFO,"session[%lld] send rtcp fail, audio rtcp handle invalid.", getStreamId());
             return;
         }
         (void) m_pUdpHandle[AUDIO_RTCP_HANDLE]->sendMessage(getStreamId(), pRtcpBuff,
                 unRtcpLen, m_UdpPeerAddr[AUDIO_RTCP_HANDLE]);
     }
 
-    SVS_LOG(SVS_LOG_INFO,"std session[%lld] send rtcp sender report", getStreamId());
+    AS_LOG(AS_LOG_INFO,"std session[%lld] send rtcp sender report", getStreamId());
     return;
 }

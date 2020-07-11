@@ -32,7 +32,7 @@ int32_t CRtspOptionsMessage::encodeMessage(std::string &strMessage)
 
     if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
-        SVS_LOG(SVS_LOG_WARNING,"encode rtsp options message fail.");
+        AS_LOG(AS_LOG_WARNING,"encode rtsp options message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -62,7 +62,7 @@ int32_t CRtspOptionsMessage::encodeMessage(std::string &strMessage)
     // End
     strMessage += RTSP_END_TAG;
 
-    SVS_LOG(SVS_LOG_DEBUG,"encode rtsp options message:\n%s",
+    AS_LOG(AS_LOG_DEBUG,"encode rtsp options message:\n%s",
                 strMessage.c_str());
     return AS_ERROR_CODE_OK;
 }

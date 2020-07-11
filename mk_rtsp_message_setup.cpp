@@ -100,7 +100,7 @@ int32_t CRtspSetupMessage::decodeMessage(CRtspPacket& objRtspPacket)
     int32_t nRet = CRtspMessage::decodeMessage(objRtspPacket);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"decode rtsp setup message fail.");
+        AS_LOG(AS_LOG_WARNING,"decode rtsp setup message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -124,7 +124,7 @@ int32_t CRtspSetupMessage::decodeMessage(CRtspPacket& objRtspPacket)
         }
         else
         {
-            SVS_LOG(SVS_LOG_WARNING,"decode rtsp setup message fail, no interleave param.%s.",
+            AS_LOG(AS_LOG_WARNING,"decode rtsp setup message fail, no interleave param.%s.",
                              strTransport.c_str());
             return AS_ERROR_CODE_FAIL;
         }
@@ -134,7 +134,7 @@ int32_t CRtspSetupMessage::decodeMessage(CRtspPacket& objRtspPacket)
         // UDP���䷽ʽ
         if (AS_ERROR_CODE_OK != parseUdpTransParam(strTransport))
         {
-            SVS_LOG(SVS_LOG_WARNING,"decode rtsp setup message fail, parse udp trans param fail.%s.",
+            AS_LOG(AS_LOG_WARNING,"decode rtsp setup message fail, parse udp trans param fail.%s.",
                         strTransport.c_str());
             return AS_ERROR_CODE_FAIL;
         }
@@ -149,7 +149,7 @@ int32_t CRtspSetupMessage::encodeMessage(std::string &strMessage)
     strMessage.clear();
     if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
-        SVS_LOG(SVS_LOG_WARNING,"encode rtsp setup message message fail.");
+        AS_LOG(AS_LOG_WARNING,"encode rtsp setup message message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -223,7 +223,7 @@ int32_t CRtspSetupMessage::encodeMessage(std::string &strMessage)
 
     strMessage += RTSP_END_TAG; // ��Ϣ����
 
-    SVS_LOG(SVS_LOG_DEBUG,"encode setup message:\n%s", strMessage.c_str());
+    AS_LOG(AS_LOG_DEBUG,"encode setup message:\n%s", strMessage.c_str());
     return AS_ERROR_CODE_OK;
 }
 
@@ -236,11 +236,11 @@ int32_t CRtspSetupMessage::parseUdpTransParam(const std::string &strTransport)
     string strName = RTSP_TRANSPORT_CLIENT_PORT;
     if (AS_ERROR_CODE_OK != parsePort(strTransport, strName, strPort))
     {
-        SVS_LOG(SVS_LOG_WARNING,"get client_port fail.");
+        AS_LOG(AS_LOG_WARNING,"get client_port fail.");
         return AS_ERROR_CODE_FAIL;
     }
     m_usClientPort = (uint16_t)atoi(strPort.c_str());
-    SVS_LOG(SVS_LOG_INFO,"client port: %d", m_usClientPort);
+    AS_LOG(AS_LOG_INFO,"client port: %d", m_usClientPort);
 
     // ���� destination ip.
     strName = RTSP_TRANSPORT_DESTINATIION;
@@ -248,11 +248,11 @@ int32_t CRtspSetupMessage::parseUdpTransParam(const std::string &strTransport)
     {
         m_unDestIp = ACE_OS::inet_addr(strIp.c_str());
         m_unDestIp = ACE_NTOHL(m_unDestIp);
-        SVS_LOG(SVS_LOG_INFO,"destination ip: %s", strIp.c_str());
+        AS_LOG(AS_LOG_INFO,"destination ip: %s", strIp.c_str());
     }
     else
     {
-        SVS_LOG(SVS_LOG_INFO,"no destination ip in transport.");
+        AS_LOG(AS_LOG_INFO,"no destination ip in transport.");
     }
 
     // �����������Ϣ��ֱ�ӷ��أ���Ӧ��Ϣ�л���source��server_port��Ҫ����
@@ -265,11 +265,11 @@ int32_t CRtspSetupMessage::parseUdpTransParam(const std::string &strTransport)
     strName = RTSP_TRANSPORT_SERVER_PORT;
     if (AS_ERROR_CODE_OK != parsePort(strTransport, strName, strPort))
     {
-        SVS_LOG(SVS_LOG_WARNING,"get server_port fail.");
+        AS_LOG(AS_LOG_WARNING,"get server_port fail.");
         return AS_ERROR_CODE_FAIL;
     }
     m_usServerPort = (uint16_t) atoi(strPort.c_str());
-    SVS_LOG(SVS_LOG_INFO,"server port: %d", m_usServerPort);
+    AS_LOG(AS_LOG_INFO,"server port: %d", m_usServerPort);
 
     // ���� source ip.
     strName = RTSP_TRANSPORT_SOURCE;
@@ -277,11 +277,11 @@ int32_t CRtspSetupMessage::parseUdpTransParam(const std::string &strTransport)
     {
         m_unSrcIp = ACE_OS::inet_addr(strIp.c_str());
         m_unSrcIp = ACE_NTOHL(m_unSrcIp);
-        SVS_LOG(SVS_LOG_INFO,"source ip: %s", strIp.c_str());
+        AS_LOG(AS_LOG_INFO,"source ip: %s", strIp.c_str());
     }
     else
     {
-        SVS_LOG(SVS_LOG_INFO,"no source ip in transport.");
+        AS_LOG(AS_LOG_INFO,"no source ip in transport.");
     }
 
     return AS_ERROR_CODE_OK;
@@ -319,7 +319,7 @@ int32_t CRtspSetupMessage::parsePort(const string &srcStr,
     }
     else
     {
-        SVS_LOG(SVS_LOG_WARNING,"can't find[%s] in string[%s].", strValue.c_str(), srcStr.c_str());
+        AS_LOG(AS_LOG_WARNING,"can't find[%s] in string[%s].", strValue.c_str(), srcStr.c_str());
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -354,7 +354,7 @@ int32_t CRtspSetupMessage::parseIp(const string &srcStr,
         // �ж�ip�ĺϷ���.
         if (ACE_OS::inet_addr(strValue.c_str()) == 0)
         {
-            SVS_LOG(SVS_LOG_WARNING,"parse ip[%s] fail, invalid value param[%s].",
+            AS_LOG(AS_LOG_WARNING,"parse ip[%s] fail, invalid value param[%s].",
                             strName.c_str(), strValue.c_str());
             return AS_ERROR_CODE_FAIL;
         }

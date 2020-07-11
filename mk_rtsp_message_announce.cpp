@@ -23,13 +23,13 @@ int32_t CRtspAnnounceMessage::decodeMessage(CRtspPacket& objRtspPacket)
     int32_t nRet = CRtspMessage::decodeMessage(objRtspPacket);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"decode rtsp Announce message fail.");
+        AS_LOG(AS_LOG_WARNING,"decode rtsp Announce message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
     if( m_strBody.length() == 0 )
     {
-        SVS_LOG(SVS_LOG_WARNING,"decode rtsp Announce message fail, body is empty.");
+        AS_LOG(AS_LOG_WARNING,"decode rtsp Announce message fail, body is empty.");
         return AS_ERROR_CODE_FAIL;
     }
     return AS_ERROR_CODE_OK ;
@@ -41,7 +41,7 @@ int32_t CRtspAnnounceMessage::encodeMessage(std::string &strMessage)
 
     if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
     {
-        SVS_LOG(SVS_LOG_WARNING,"encode rtsp announce message fail.");
+        AS_LOG(AS_LOG_WARNING,"encode rtsp announce message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -73,7 +73,7 @@ int32_t CRtspAnnounceMessage::encodeMessage(std::string &strMessage)
         strMessage += RTSP_END_TAG;
     }
 
-    SVS_LOG(SVS_LOG_DEBUG,"encode rtsp options message:\n%s",
+    AS_LOG(AS_LOG_DEBUG,"encode rtsp options message:\n%s",
                 strMessage.c_str());
     return AS_ERROR_CODE_OK;
 }

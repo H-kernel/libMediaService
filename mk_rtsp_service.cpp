@@ -22,21 +22,21 @@ int32_t mk_rtsp_service::init(uint16_t udpPort,uint32_t count)
     nRet = m_ConnMgr.init(DEFAULT_SELECT_PERIOD,AS_TRUE,AS_TRUE,AS_TRUE);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"init the network module fail.");
+        AS_LOG(AS_LOG_WARNING,"init the network module fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
     nRet = m_ConnMgr.run();
     if (AS_ERROR_CODE_OK != nRet)
     {
-        SVS_LOG(SVS_LOG_WARNING,"run the network module fail.");
+        AS_LOG(AS_LOG_WARNING,"run the network module fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
-    SVS_LOG(SVS_LOG_INFO,"init the network module success.")
+    AS_LOG(AS_LOG_INFO,"init the network module success.")
     
     if(0 == count) {
-        SVS_LOG(SVS_LOG_INFO,"the udp port is zore,no need create udp ports.")
+        AS_LOG(AS_LOG_INFO,"the udp port is zore,no need create udp ports.")
         return AS_ERROR_CODE_OK;
     }
     return create_rtp_rtcp_udp_pairs(udpPort,count);
@@ -78,11 +78,41 @@ void mk_rtsp_service::destory_rtsp_server(mk_rtsp_server* pServer)
 mk_rtsp_client* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_status cb,void* ctx)
 {
     mk_rtsp_client* pClient = NULL;
+    as_network_addr  local;
+    as_network_addr  peer;
     pClient = AS_NEW(pClient);
-    return NULL;
+    if(NULL == pClient) {
+        return NULL;
+    }
+    pClient->set_status_callback(cb,ctx);
+    if(AS_ERROR_CODE_OK != pClient->open(url)) {
+        AS_DELETE(pClient);
+        return NULL;
+    }
+    
+    /* connect to rtsp server */
+    peer.m_lIpAddr = pClient->get_connect_addr();
+    peer.m_usPort  = pClient->get_connect_port();
+    if(AS_ERROR_CODE_OK != m_ConnMgr.regTcpClient( &local,&peer,pClient,enSyncOp,2)) {
+        AS_DELETE(pClient);
+        return NULL;
+    }
+
+    /* send rtsp option */
+    if(AS_ERROR_CODE_OK != pClient->send_rtsp_options()) {
+        m_ConnMgr.removeTcpClient(pClient);
+        AS_DELETE(pClient);
+        return NULL;
+    }
+    return pClient;
 }
 void mk_rtsp_service::destory_rtsp_client(mk_rtsp_client* pClient)
 {
+    if(NULL == pClient) {
+        return;
+    }
+    m_ConnMgr.removeTcpClient(pClient);
+    AS_DELETE(pClient);
     return;
 }
 int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs(uint16_t udpPort,uint32_t count)

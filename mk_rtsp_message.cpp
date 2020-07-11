@@ -36,7 +36,7 @@ void CRtspMessage::encodeCommonResp(uint32_t unStatusCode,
 
     if (unStatusCode >= RTSP_STATUS_CODES_BUTT)
     {
-        SVS_LOG(SVS_LOG_WARNING,"encode rtsp common response fail, status code[%u] invalid.",
+        AS_LOG(AS_LOG_WARNING,"encode rtsp common response fail, status code[%u] invalid.",
                         unStatusCode);
         return;
     }
@@ -77,7 +77,7 @@ void CRtspMessage::encodeCommonResp(uint32_t unStatusCode,
 
     strMsg += RTSP_END_TAG;
 
-    SVS_LOG(SVS_LOG_DEBUG,"success to encode common response.\n%s", strMsg.c_str());
+    AS_LOG(AS_LOG_DEBUG,"success to encode common response.\n%s", strMsg.c_str());
     return;
 }
 
@@ -192,7 +192,7 @@ int32_t CRtspMessage::encodeMessage(std::string &strMessage)
     {
         if (getMethodType() >= RTSP_REQ_METHOD_NUM)
         {
-            SVS_LOG(SVS_LOG_WARNING,"encode rtsp request fail, method type[%d] invalid.",
+            AS_LOG(AS_LOG_WARNING,"encode rtsp request fail, method type[%d] invalid.",
                             getMethodType());
             return AS_ERROR_CODE_FAIL;
         }
@@ -206,7 +206,7 @@ int32_t CRtspMessage::encodeMessage(std::string &strMessage)
 
         if (m_unStatusCode >= RTSP_STATUS_CODES_BUTT)
         {
-            SVS_LOG(SVS_LOG_WARNING,"encode rtsp response fail, status code[%u] invalid.",
+            AS_LOG(AS_LOG_WARNING,"encode rtsp response fail, status code[%u] invalid.",
                             m_unStatusCode);
             return AS_ERROR_CODE_FAIL;
         }
