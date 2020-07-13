@@ -11,7 +11,7 @@
 #include <map>
 #include <list>
 #include "as.h"
-#include "mk_rtsp_client.h"
+#include "mk_rtsp_connection.h"
 #include "mk_rtsp_server.h"
 #include "mk_rtsp_rtp_udp_handle.h"
 
@@ -55,8 +55,8 @@ public:
     void    release();
     mk_rtsp_server* create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx);
     void destory_rtsp_server(mk_rtsp_server* pServer);
-    mk_rtsp_client* create_rtsp_client(char* url,rtsp_client_status cb,void* ctx);
-    void destory_rtsp_client(mk_rtsp_client* pClient);
+    mk_rtsp_connection* create_rtsp_client(char* url,rtsp_client_status cb,void* ctx);
+    void destory_rtsp_client(mk_rtsp_connection* pClient);
 private:
     mk_rtsp_service();
     int32_t create_rtp_rtcp_udp_pairs(uint16_t udpPort,uint32_t count);

@@ -32,27 +32,21 @@ MR_API MR_CLIENT mk_create_rtsp_client_handle(char* url,rtsp_client_status cb,vo
 /* destory the media rtsp client handle */
 MR_API void      mk_destory_rtsp_client_handle(MR_CLIENT client)
 {
-    mk_rtsp_client* pClient = (mk_rtsp_client*)client;
+    mk_rtsp_connection* pClient = (mk_rtsp_connection*)client;
     mk_rtsp_service::instance().destory_rtsp_client(pClient);
     return;
 }
 /* set a media rtsp client callback */
 MR_API void      mk_create_rtsp_client_callback(MR_CLIENT client,rtsp_client_status cb,void* ctx)
 {
-    mk_rtsp_client* pClient = (mk_rtsp_client*)client;
+    mk_rtsp_connection* pClient = (mk_rtsp_connection*)client;
     pClient->set_status_callback(cb,ctx);
     return;
 }
 /* set a media rtsp client media transport tcp */
 MR_API void      mk_create_rtsp_client_set_tcp(MR_CLIENT client)
 {
-    mk_rtsp_client* pClient = (mk_rtsp_client*)client;
+    mk_rtsp_connection* pClient = (mk_rtsp_connection*)client;
     pClient->set_rtp_over_tcp();
     return;
-}
-/* do the media data recvice */
-MR_API int32_t   mk_do_recv_media_data(MR_CLIENT client, char* buf,uint32_t len, rtsp_client_media cb,void* ctx)
-{
-    mk_rtsp_client* pClient = (mk_rtsp_client*)client;
-    return pClient->do_recv_media_data(buf,len,cb,ctx);
 }

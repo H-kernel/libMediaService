@@ -31,11 +31,11 @@ enum RTSP_SESSION_STATUS
 
 #define RTP_INTERLEAVE_LENGTH   4
 
-class mk_rtsp_client: public as_tcp_conn_handle
+class mk_rtsp_connection: public as_tcp_conn_handle
 {
 public:
-    mk_rtsp_client();
-    virtual ~mk_rtsp_client();
+    mk_rtsp_connection();
+    virtual ~mk_rtsp_connection();
 
 public:
     int32_t open(const char* pszUrl);
@@ -65,8 +65,6 @@ public:
     void  set_rtp_over_tcp();
 
     void  set_status_callback(rtsp_client_status cb,void* ctx);
-
-    int32_t do_recv_media_data(char* buf,uint32_t len, rtsp_client_media cb,void* ctx);
 private:
     int32_t setSockOpt();
 
@@ -172,4 +170,17 @@ private:
   
 };
 
+class mk_rtsp_server : public as_tcp_server_handle
+{
+public:
+    mk_rtsp_server();
+    virtual ~mk_rtsp_server();
+    void set_callback(rtsp_server_request cb,void* ctx);
+public:
+    /* override */
+    virtual long handle_accept(const as_network_addr *pRemoteAddr, as_tcp_conn_handle *&pTcpConnHandle);
+private:
+    rtsp_server_request m_cb;
+    void*               m_ctx;
+};
 #endif /* STREAMRTSPPUSHSESSION_H_ */

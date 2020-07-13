@@ -75,9 +75,9 @@ void mk_rtsp_service::destory_rtsp_server(mk_rtsp_server* pServer)
     AS_DELETE(pServer);
     return;
 }
-mk_rtsp_client* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_status cb,void* ctx)
+mk_rtsp_connection* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_status cb,void* ctx)
 {
-    mk_rtsp_client* pClient = NULL;
+    mk_rtsp_connection* pClient = NULL;
     as_network_addr  local;
     as_network_addr  peer;
     pClient = AS_NEW(pClient);
@@ -106,7 +106,7 @@ mk_rtsp_client* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_status
     }
     return pClient;
 }
-void mk_rtsp_service::destory_rtsp_client(mk_rtsp_client* pClient)
+void mk_rtsp_service::destory_rtsp_client(mk_rtsp_connection* pClient)
 {
     if(NULL == pClient) {
         return;

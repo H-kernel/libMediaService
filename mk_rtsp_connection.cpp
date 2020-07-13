@@ -1,10 +1,10 @@
 
 #include <sstream>
-#include "mk_rtsp_client.h"
+#include "mk_rtsp_connection.h"
 #include "mk_rtsp_packet.h"
 #include "mk_rtsp_message_options.h"
 
-mk_rtsp_client::mk_rtsp_client()
+mk_rtsp_connection::mk_rtsp_connection()
 {
     as_init_url(&m_url);
     m_url.port        = RTSP_DEFAULT_PORT;
@@ -32,7 +32,7 @@ mk_rtsp_client::mk_rtsp_client()
     m_cAudioInterleaveNum = 0;
 }
 
-mk_rtsp_client::~mk_rtsp_client()
+mk_rtsp_connection::~mk_rtsp_connection()
 {
     m_unSessionIndex  = 0;
     m_sockHandle      = ACE_INVALID_HANDLE;
@@ -49,14 +49,14 @@ mk_rtsp_client::~mk_rtsp_client()
 }
 
 
-int32_t mk_rtsp_client::open(const char* pszUrl)
+int32_t mk_rtsp_connection::open(const char* pszUrl)
 {
     if(AS_ERROR_CODE_OK != as_parse_url(pszUrl,&m_url)) {
         return AS_ERROR_CODE_FAIL;
     }
     return AS_ERROR_CODE_OK;
 }
-int32_t mk_rtsp_client::send_rtsp_options()
+int32_t mk_rtsp_connection::send_rtsp_options()
 {
     CRtspPacket options;
     options.setCseq(1);
@@ -77,22 +77,22 @@ int32_t mk_rtsp_client::send_rtsp_options()
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_client::close()
+void mk_rtsp_connection::close()
 {
     setHandleRecv(AS_FALSE);
     AS_LOG(AS_LOG_INFO,"close rtsp client.");
     return;
 }
-const char* mk_rtsp_client::get_connect_addr()
+const char* mk_rtsp_connection::get_connect_addr()
 {
     return (const char*)&m_url.host[0];
 }
-uint16_t    mk_rtsp_client::get_connect_port()
+uint16_t    mk_rtsp_connection::get_connect_port()
 {
     return m_url.port;
 }
 
-void mk_rtsp_client::setStatus(uint32_t unStatus)
+void mk_rtsp_connection::setStatus(uint32_t unStatus)
 {
     uint32_t unOldStatus = m_unSessionStatus;
     m_unSessionStatus        = unStatus;
@@ -102,20 +102,20 @@ void mk_rtsp_client::setStatus(uint32_t unStatus)
     return;
 }
 
-uint32_t mk_rtsp_client::getStatus() const
+uint32_t mk_rtsp_connection::getStatus() const
 {
     return m_unSessionStatus;
 }
-void  mk_rtsp_client::set_rtp_over_tcp()
+void  mk_rtsp_connection::set_rtp_over_tcp()
 {
     return 
 }
 
-void  mk_rtsp_client::set_status_callback(tsp_client_status cb,void* ctx)
+void  mk_rtsp_connection::set_status_callback(tsp_client_status cb,void* ctx)
 {
 
 }
-void mk_rtsp_client::handle_recv(void)
+void mk_rtsp_connection::handle_recv(void)
 {
     int32_t iRecvLen = (int32_t) m_pRecvBuffer->size() - (int32_t) m_pRecvBuffer->length();
     if (iRecvLen <= 0)
@@ -185,13 +185,13 @@ void mk_rtsp_client::handle_recv(void)
     m_pRecvBuffer->rd_ptr((size_t) 0);
     m_pRecvBuffer->wr_ptr(dataSize);
 }
-void mk_rtsp_client::handle_send(void)
+void mk_rtsp_connection::handle_send(void)
 {
     setHandleSend(AS_FALSE);
 }
 
 
-void mk_rtsp_client::setHandle(ACE_HANDLE handle, const ACE_INET_Addr &localAddr)
+void mk_rtsp_connection::setHandle(ACE_HANDLE handle, const ACE_INET_Addr &localAddr)
 {
     m_sockHandle = handle;
     m_LocalAddr  = localAddr;
@@ -202,17 +202,17 @@ void mk_rtsp_client::setHandle(ACE_HANDLE handle, const ACE_INET_Addr &localAddr
     return;
 }
 
-ACE_HANDLE mk_rtsp_client::get_handle() const
+ACE_HANDLE mk_rtsp_connection::get_handle() const
 {
     return m_sockHandle;
 }
 
-uint32_t mk_rtsp_client::getSessionIndex() const
+uint32_t mk_rtsp_connection::getSessionIndex() const
 {
     return m_unSessionIndex;
 }
 
-int32_t mk_rtsp_client::check()
+int32_t mk_rtsp_connection::check()
 {
     uint32_t ulCostTime = SVS_GetSecondTime() - m_ulStatusTime;
     if ((RTSP_SESSION_STATUS_SETUP >= getStatus())
@@ -249,7 +249,7 @@ int32_t mk_rtsp_client::check()
     return AS_ERROR_CODE_OK;
 }
 
-int32_t mk_rtsp_client::setSockOpt()
+int32_t mk_rtsp_connection::setSockOpt()
 {
     if (ACE_INVALID_HANDLE == m_sockHandle)
     {
@@ -267,7 +267,7 @@ int32_t mk_rtsp_client::setSockOpt()
     return AS_ERROR_CODE_OK;
 }
 
-int32_t mk_rtsp_client::sendMessage(const char* pData, uint32_t unDataSize)
+int32_t mk_rtsp_connection::sendMessage(const char* pData, uint32_t unDataSize)
 {
     if (NULL != m_pRtpSession)
     {
@@ -286,7 +286,7 @@ int32_t mk_rtsp_client::sendMessage(const char* pData, uint32_t unDataSize)
     return AS_ERROR_CODE_OK;
 }
 
-int32_t mk_rtsp_client::sendMediaSetupReq(CSVSMediaLink* linkInof)
+int32_t mk_rtsp_connection::sendMediaSetupReq(CSVSMediaLink* linkInof)
 {
     std::string   strUrl = linkInof->Url();
     //uint64_t ullBusinessId = 0;
@@ -317,7 +317,7 @@ int32_t mk_rtsp_client::sendMediaSetupReq(CSVSMediaLink* linkInof)
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_client::sendMediaPlayReq()
+void mk_rtsp_connection::sendMediaPlayReq()
 {
     uint32_t unMsgLen = sizeof(SVS_MSG_STREAM_SESSION_PLAY_REQ);
 
@@ -361,7 +361,7 @@ void mk_rtsp_client::sendMediaPlayReq()
     return;
 }
 
-void mk_rtsp_client::sendKeyFrameReq()
+void mk_rtsp_connection::sendKeyFrameReq()
 {
     uint32_t unMsgLen = sizeof(SVS_MSG_STREAM_KEY_FRAME_REQ);
 
@@ -405,7 +405,7 @@ void mk_rtsp_client::sendKeyFrameReq()
     return;
 }
 
-int32_t mk_rtsp_client::createMediaSession()
+int32_t mk_rtsp_connection::createMediaSession()
 {
     CStreamSession *pSession = CStreamSessionFactory::instance()->createSession(PEER_TYPE_CU, RTSP_SESSION,true);
     if (!pSession)
@@ -500,7 +500,7 @@ int32_t mk_rtsp_client::createMediaSession()
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_client::destroyMediaSession()
+void mk_rtsp_connection::destroyMediaSession()
 {
     AS_LOG(AS_LOG_DEBUG,"rtsp push session destory media session.");
     uint64_t ullRtpSessionId  = 0;
@@ -541,7 +541,7 @@ void mk_rtsp_client::destroyMediaSession()
 }
 
 
-int32_t mk_rtsp_client::processRecvedMessage(const char* pData, uint32_t unDataSize)
+int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unDataSize)
 {
     if ((NULL == pData) || (0 == unDataSize))
     {
@@ -585,7 +585,7 @@ int32_t mk_rtsp_client::processRecvedMessage(const char* pData, uint32_t unDataS
     return nMessageLen;
 }
 
-int32_t mk_rtsp_client::handleRTPRTCPData(const char* pData, uint32_t unDataSize) const
+int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unDataSize) const
 {
     if (unDataSize < RTSP_INTERLEAVE_HEADER_LEN)
     {
@@ -629,7 +629,7 @@ int32_t mk_rtsp_client::handleRTPRTCPData(const char* pData, uint32_t unDataSize
     return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
 }
 
-void mk_rtsp_client::handleMediaData(const char* pData, uint32_t unDataSize) const
+void mk_rtsp_connection::handleMediaData(const char* pData, uint32_t unDataSize) const
 {
     uint64_t ullRtpSessionId = 0;
 
@@ -673,7 +673,7 @@ void mk_rtsp_client::handleMediaData(const char* pData, uint32_t unDataSize) con
     return;
 }
 
-int32_t mk_rtsp_client::handleRtspMessage(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspMessage(CRtspMessage &rtspMessage)
 {
     if (RTSP_MSG_REQ != rtspMessage.getMsgType())
     {
@@ -725,7 +725,7 @@ int32_t mk_rtsp_client::handleRtspMessage(CRtspMessage &rtspMessage)
     return nRet;
 }
 
-int32_t mk_rtsp_client::handleRtspOptionsReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspOptionsReq(CRtspMessage &rtspMessage)
 {
     CRtspOptionsMessage *pRequest = dynamic_cast<CRtspOptionsMessage*>(&rtspMessage);
     if (NULL == pRequest)
@@ -762,7 +762,7 @@ int32_t mk_rtsp_client::handleRtspOptionsReq(CRtspMessage &rtspMessage)
     return AS_ERROR_CODE_OK;
 }
 
-uint32_t mk_rtsp_client::getRange(const std::string strUrl,std::string & strStartTime,std::string & strStopTime)
+uint32_t mk_rtsp_connection::getRange(const std::string strUrl,std::string & strStartTime,std::string & strStopTime)
 {
     std::string::size_type nStart = 0;
     std::string::size_type nStop  = 0;
@@ -823,7 +823,7 @@ uint32_t mk_rtsp_client::getRange(const std::string strUrl,std::string & strStar
 }
 
 
-int32_t mk_rtsp_client::handleRtspDescribeReq(const CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspDescribeReq(const CRtspMessage &rtspMessage)
 {
     //CSVSMediaLink MediaLink;
     if (RTSP_SESSION_STATUS_INIT != getStatus())
@@ -1005,7 +1005,7 @@ int32_t mk_rtsp_client::handleRtspDescribeReq(const CRtspMessage &rtspMessage)
     return AS_ERROR_CODE_OK;
 }
 
-int32_t mk_rtsp_client::handleRtspSetupReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspSetupReq(CRtspMessage &rtspMessage)
 {
     std::string  strContentID;
     //CSVSMediaLink MediaLink;
@@ -1169,7 +1169,7 @@ int32_t mk_rtsp_client::handleRtspSetupReq(CRtspMessage &rtspMessage)
                             m_unSessionIndex);
     return AS_ERROR_CODE_OK;
 }
-int32_t mk_rtsp_client::handleRtspRecordReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspRecordReq(CRtspMessage &rtspMessage)
 {
     if(PLAY_TYPE_AUDIO_LIVE == m_enPlayType)
     {
@@ -1248,7 +1248,7 @@ int32_t mk_rtsp_client::handleRtspRecordReq(CRtspMessage &rtspMessage)
                         m_unSessionIndex);
     return AS_ERROR_CODE_OK;
 }
-int32_t mk_rtsp_client::handleRtspGetParameterReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspGetParameterReq(CRtspMessage &rtspMessage)
 {
     sendCommonResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
 
@@ -1260,7 +1260,7 @@ int32_t mk_rtsp_client::handleRtspGetParameterReq(CRtspMessage &rtspMessage)
 }
 
 
-int32_t mk_rtsp_client::handleRtspPlayReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspPlayReq(CRtspMessage &rtspMessage)
 {
     if (!m_pRtpSession)
     {
@@ -1359,7 +1359,7 @@ int32_t mk_rtsp_client::handleRtspPlayReq(CRtspMessage &rtspMessage)
 }
 
 
-int32_t mk_rtsp_client::handleRtspAnnounceReq(const CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspAnnounceReq(const CRtspMessage &rtspMessage)
 {
     if (RTSP_SESSION_STATUS_INIT != getStatus())
     {
@@ -1445,7 +1445,7 @@ int32_t mk_rtsp_client::handleRtspAnnounceReq(const CRtspMessage &rtspMessage)
 }
 
 
-int32_t mk_rtsp_client::handleRtspPauseReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspPauseReq(CRtspMessage &rtspMessage)
 {
     if (RTSP_SESSION_STATUS_PLAY != getStatus()
             && RTSP_SESSION_STATUS_PAUSE != getStatus())
@@ -1498,7 +1498,7 @@ int32_t mk_rtsp_client::handleRtspPauseReq(CRtspMessage &rtspMessage)
 }
 
 // TEARDOWN
-int32_t mk_rtsp_client::handleRtspTeardownReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspTeardownReq(CRtspMessage &rtspMessage)
 {
     rtspMessage.setMsgType(RTSP_MSG_RSP);
     rtspMessage.setStatusCode(RTSP_SUCCESS_OK);
@@ -1523,7 +1523,7 @@ int32_t mk_rtsp_client::handleRtspTeardownReq(CRtspMessage &rtspMessage)
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_client::sendCommonResp(uint32_t unStatusCode, uint32_t unCseq)
+void mk_rtsp_connection::sendCommonResp(uint32_t unStatusCode, uint32_t unCseq)
 {
     std::string strResp;
     CRtspMessage::encodeCommonResp(unStatusCode, unCseq, m_unSessionIndex, strResp);
@@ -1541,7 +1541,7 @@ void mk_rtsp_client::sendCommonResp(uint32_t unStatusCode, uint32_t unCseq)
     return;
 }
 
-int32_t mk_rtsp_client::cacheRtspMessage(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::cacheRtspMessage(CRtspMessage &rtspMessage)
 {
     if (m_pLastRtspMsg)
     {
@@ -1605,7 +1605,7 @@ int32_t mk_rtsp_client::cacheRtspMessage(CRtspMessage &rtspMessage)
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_client::clearRtspCachedMessage()
+void mk_rtsp_connection::clearRtspCachedMessage()
 {
     if (-1 != m_lRedoTimerId)
     {
@@ -1630,7 +1630,7 @@ void mk_rtsp_client::clearRtspCachedMessage()
     return;
 }
 
-int32_t mk_rtsp_client::checkTransDirection(uint32_t unPeerType, uint32_t unTransDirection) const
+int32_t mk_rtsp_connection::checkTransDirection(uint32_t unPeerType, uint32_t unTransDirection) const
 {
     if (PEER_TYPE_PU == unPeerType)
     {
@@ -1665,7 +1665,7 @@ int32_t mk_rtsp_client::checkTransDirection(uint32_t unPeerType, uint32_t unTran
     return AS_ERROR_CODE_FAIL;
 }
 
-int32_t mk_rtsp_client::createDistribute(CSVSMediaLink* linkinfo)
+int32_t mk_rtsp_connection::createDistribute(CSVSMediaLink* linkinfo)
 {
     std::string strUrl;
     CStreamSession *pPeerSession  = NULL;
@@ -1701,7 +1701,7 @@ int32_t mk_rtsp_client::createDistribute(CSVSMediaLink* linkinfo)
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_client::simulateSendRtcpMsg()
+void mk_rtsp_connection::simulateSendRtcpMsg()
 {
     AS_LOG(AS_LOG_INFO,"rtsp push session[%u] simulate send rtcp message begin.", m_unSessionIndex);
 
@@ -1744,4 +1744,27 @@ void mk_rtsp_client::simulateSendRtcpMsg()
     return;
 }
 
+/*******************************************************************************************************
+ * 
+ * 
+ *
+ * ****************************************************************************************************/
 
+mk_rtsp_server::mk_rtsp_server()
+{
+    m_cb  = NULL;
+    m_ctx = NULL;
+}
+
+mk_rtsp_server::~mk_rtsp_server()
+{
+}
+void mk_rtsp_server::set_callback(rtsp_server_request cb,void* ctx)
+{
+    m_cb = cb;
+    m_ctx = ctx;
+}
+long mk_rtsp_server::handle_accept(const as_network_addr *pRemoteAddr, as_tcp_conn_handle *&pTcpConnHandle)
+{
+    
+}

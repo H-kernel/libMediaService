@@ -65,8 +65,6 @@ extern "C"
     MR_API void      mk_create_rtsp_client_callback(MR_CLIENT client,rtsp_client_status cb,void* ctx);
     /* set a media rtsp client media transport tcp*/
     MR_API void      mk_create_rtsp_client_set_tcp(MR_CLIENT client);
-    /* do the media data recvice */
-    MR_API int32_t   mk_do_recv_media_data(MR_CLIENT client, char* buf,uint32_t len, rtsp_client_media cb,void* ctx);
 #ifdef __cplusplus
 #if __cplusplus
 }
