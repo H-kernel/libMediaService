@@ -19,37 +19,37 @@
 #include "svs_rtsp_record_message.h"
 #include "svs_rtsp_get_parameter_message.h"
 
-std::string CRtspProtocol::m_RtspCode[] = RTSP_CODE_STRING;
-std::string CRtspProtocol::m_strRtspMethod[] = RTSP_METHOD_STRING;
+std::string mk_rtsp_protocol::m_RtspCode[] = RTSP_CODE_STRING;
+std::string mk_rtsp_protocol::m_strRtspMethod[] = RTSP_METHOD_STRING;
 
 char *private_strchr(const char *s, char *c)
 {
     return strchr((char*)s, (int64_t)c);   //lint !e605
 }
 
-CRtspProtocol::CRtspProtocol()
+mk_rtsp_protocol::mk_rtsp_protocol()
 {
     m_unCSeq = 1;
 }
 
-CRtspProtocol::~CRtspProtocol()
+mk_rtsp_protocol::~mk_rtsp_protocol()
 {
 }
 
 
-int32_t CRtspProtocol::init() const
+int32_t mk_rtsp_protocol::init() const
 {
     return AS_ERROR_CODE_OK;
 }
 
 
-uint32_t CRtspProtocol::getCseq()
+uint32_t mk_rtsp_protocol::getCseq()
 {
     ACE_Guard<ACE_Thread_Mutex> locker(m_CseqMutex);
     return m_unCSeq++;
 }
 
-int32_t CRtspProtocol::saveSendReq(uint32_t unCSeq, uint32_t unReqMethodType)
+int32_t mk_rtsp_protocol::saveSendReq(uint32_t unCSeq, uint32_t unReqMethodType)
 {
     ACE_Guard<ACE_Thread_Mutex>    m_locker(m_MapMutex);
     if (0 != m_CseqReqMap.count(unCSeq))
@@ -65,7 +65,7 @@ int32_t CRtspProtocol::saveSendReq(uint32_t unCSeq, uint32_t unReqMethodType)
 }
 
 
-int32_t CRtspProtocol::IsParsable(const char* pMsgData, uint32_t unDataLen) const
+int32_t mk_rtsp_protocol::IsParsable(const char* pMsgData, uint32_t unDataLen) const
 {
     uint32_t unMsgLen = 0;
     if (0 != CRtspPacket::checkRtsp(pMsgData,unDataLen ,unMsgLen))
@@ -89,9 +89,9 @@ int32_t CRtspProtocol::IsParsable(const char* pMsgData, uint32_t unDataLen) cons
 }
 
 
-int32_t CRtspProtocol::DecodeRtspMessage(const char* pMsgData,
+int32_t mk_rtsp_protocol::DecodeRtspMessage(const char* pMsgData,
                                      uint32_t unDataLen,
-                                     CRtspMessage *&pMsg)
+                                     mk_rtsp_message *&pMsg)
 {
     if ((NULL == pMsgData) || (0 == unDataLen))
     {
@@ -128,8 +128,8 @@ int32_t CRtspProtocol::DecodeRtspMessage(const char* pMsgData,
     return nRet;
 }
 
-int32_t CRtspProtocol::parseRtspRequest(CRtspPacket& objRtspPacket,
-                                    CRtspMessage *&pMessage) const
+int32_t mk_rtsp_protocol::parseRtspRequest(CRtspPacket& objRtspPacket,
+                                    mk_rtsp_message *&pMessage) const
 {
 
     pMessage = NULL;
@@ -189,8 +189,8 @@ int32_t CRtspProtocol::parseRtspRequest(CRtspPacket& objRtspPacket,
     return AS_ERROR_CODE_OK;
 }
 
-int32_t CRtspProtocol::parseRtspResponse(CRtspPacket& objRtspPacket,
-                                    CRtspMessage *&pMessage)
+int32_t mk_rtsp_protocol::parseRtspResponse(CRtspPacket& objRtspPacket,
+                                    mk_rtsp_message *&pMessage)
 {
 
     uint32_t unCseq = objRtspPacket.getCseq();

@@ -10,8 +10,8 @@
 
 #include "svs_rtsp_message.h"
 
-// RTSP GET_PARAMTERÇëÇó
-class CRtspGerParamMessage: public CRtspMessage
+// RTSP GET_PARAMTERï¿½ï¿½ï¿½ï¿½
+class CRtspGerParamMessage: public mk_rtsp_message
 {
 public:
     CRtspGerParamMessage();

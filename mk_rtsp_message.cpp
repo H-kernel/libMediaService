@@ -11,7 +11,7 @@
 
 #include "svs_rtsp_message.h"
 #include "svs_rtsp_protocol.h"
-CRtspMessage::CRtspMessage()
+mk_rtsp_message::mk_rtsp_message()
 {
     m_unMethodType  = RTSP_INVALID_MSG;
     m_unMsgType     = RTSP_MSG_REQ;
@@ -24,11 +24,11 @@ CRtspMessage::CRtspMessage()
     m_strContetType   = "";
 }
 
-CRtspMessage::~CRtspMessage()
+mk_rtsp_message::~mk_rtsp_message()
 {
 }
 
-void CRtspMessage::encodeCommonResp(uint32_t unStatusCode,
+void mk_rtsp_message::encodeCommonResp(uint32_t unStatusCode,
                                      uint32_t unCseq,
                                      uint32_t unSession,
                                      std::string &strMsg)
@@ -42,7 +42,7 @@ void CRtspMessage::encodeCommonResp(uint32_t unStatusCode,
     }
     strMsg = RTSP_PROTOCOL_VERSION;
     strMsg += " ";
-    strMsg += CRtspProtocol::m_RtspCode[unStatusCode];
+    strMsg += mk_rtsp_protocol::m_RtspCode[unStatusCode];
     strMsg += RTSP_END_TAG;
 
     // Cseq
@@ -81,87 +81,87 @@ void CRtspMessage::encodeCommonResp(uint32_t unStatusCode,
     return;
 }
 
-uint32_t CRtspMessage::getMethodType() const
+uint32_t mk_rtsp_message::getMethodType() const
 {
     return m_unMethodType;
 }
 
-void CRtspMessage::setMsgType(uint32_t unMsgType)
+void mk_rtsp_message::setMsgType(uint32_t unMsgType)
 {
     m_unMsgType = unMsgType;
     return;
 }
 
-uint32_t CRtspMessage::getMsgType() const
+uint32_t mk_rtsp_message::getMsgType() const
 {
     return m_unMsgType;
 }
 
-std::string CRtspMessage::getSession() const
+std::string mk_rtsp_message::getSession() const
 {
     return m_strSession;
 }
 
-void CRtspMessage::setSession(const std::string &strSession)
+void mk_rtsp_message::setSession(const std::string &strSession)
 {
     m_strSession = strSession;
     return;
 }
 
-uint32_t CRtspMessage::getCSeq() const
+uint32_t mk_rtsp_message::getCSeq() const
 {
     return m_unCSeq;
 }
 
-void CRtspMessage::setCSeq(uint32_t unCSeq)
+void mk_rtsp_message::setCSeq(uint32_t unCSeq)
 {
     m_unCSeq = unCSeq;
     return;
 }
 
-void CRtspMessage::setStatusCode(uint32_t unCode)
+void mk_rtsp_message::setStatusCode(uint32_t unCode)
 {
     m_unStatusCode = unCode;
     return;
 }
 
-uint32_t CRtspMessage::getStatusCode() const
+uint32_t mk_rtsp_message::getStatusCode() const
 {
     return m_unStatusCode;
 }
 
 
-void CRtspMessage::setRtspUrl(const std::string &strUrl)
+void mk_rtsp_message::setRtspUrl(const std::string &strUrl)
 {
     m_strRtspUrl = strUrl;
     return;
 }
 
-std::string CRtspMessage::getRtspUrl() const
+std::string mk_rtsp_message::getRtspUrl() const
 {
     return m_strRtspUrl;
 }
 
 
-uint32_t CRtspMessage::getContentLength() const
+uint32_t mk_rtsp_message::getContentLength() const
 {
     return m_unContentLength ;
 }
-std::string CRtspMessage::getContetType() const
+std::string mk_rtsp_message::getContetType() const
 {
     return m_strContetType;
 }
-std::string CRtspMessage::getBody() const
+std::string mk_rtsp_message::getBody() const
 {
     return m_strBody ;
 }
-void CRtspMessage::setBody(std::string& strContentType,std::string& strContent)
+void mk_rtsp_message::setBody(std::string& strContentType,std::string& strContent)
 {
     m_strContetType = strContentType;
     m_unContentLength = strContent.size();
     m_strBody = strContent;
 }
-int32_t CRtspMessage::decodeMessage(CRtspPacket& objRtspPacket)
+int32_t mk_rtsp_message::decodeMessage(CRtspPacket& objRtspPacket)
 {
     if (!objRtspPacket.isResponse())
     {
@@ -186,7 +186,7 @@ int32_t CRtspMessage::decodeMessage(CRtspPacket& objRtspPacket)
     return AS_ERROR_CODE_OK;
 }
 
-int32_t CRtspMessage::encodeMessage(std::string &strMessage)
+int32_t mk_rtsp_message::encodeMessage(std::string &strMessage)
 {
     if (RTSP_MSG_REQ == m_unMsgType)
     {
@@ -197,7 +197,7 @@ int32_t CRtspMessage::encodeMessage(std::string &strMessage)
             return AS_ERROR_CODE_FAIL;
         }
 
-        strMessage += CRtspProtocol::m_strRtspMethod[getMethodType()];
+        strMessage += mk_rtsp_protocol::m_strRtspMethod[getMethodType()];
         strMessage += " " + m_strRtspUrl + " " + RTSP_PROTOCOL_VERSION;
         strMessage += RTSP_END_TAG;
     }
@@ -212,7 +212,7 @@ int32_t CRtspMessage::encodeMessage(std::string &strMessage)
         }
         strMessage = RTSP_PROTOCOL_VERSION;
         strMessage += " ";
-        strMessage += CRtspProtocol::m_RtspCode[m_unStatusCode];
+        strMessage += mk_rtsp_protocol::m_RtspCode[m_unStatusCode];
         strMessage += RTSP_END_TAG;
     }
 

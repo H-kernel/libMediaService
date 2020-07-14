@@ -10,7 +10,7 @@
 
 #include "svs_rtsp_message.h"
 
-class CRtspAnnounceMessage: public CRtspMessage
+class CRtspAnnounceMessage: public mk_rtsp_message
 {
 public:
     CRtspAnnounceMessage();

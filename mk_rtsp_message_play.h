@@ -9,28 +9,28 @@
 #define RTSPPLAYMESSAGE_H_
 
 #include "svs_rtsp_message.h"
-// Ã½Ìå²¥·Å·¶Î§µÄÊ±¼ä±íÊ¾ÀàÐÍ
+// Ã½ï¿½å²¥ï¿½Å·ï¿½Î§ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
 typedef enum
 {
-    RANGE_TYPE_NPT = 0, // NormalPlayTime(Ïà¶ÔÊ±¼ä)
-    RANGE_TYPE_UTC,     // UTC AbsoluteTime(UTC¾ø¶ÔÊ±¼ä)
-    RANGE_TYPE_SMPTE    // SMPTEÊ±¼ä£¬Ä¿Ç°ÔÝ²»Ö§³Ö
+    RANGE_TYPE_NPT = 0, // NormalPlayTime(ï¿½ï¿½ï¿½Ê±ï¿½ï¿½)
+    RANGE_TYPE_UTC,     // UTC AbsoluteTime(UTCï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½)
+    RANGE_TYPE_SMPTE    // SMPTEÊ±ï¿½ä£¬Ä¿Ç°ï¿½Ý²ï¿½Ö§ï¿½ï¿½
 }MEDIA_RANGE_TYPE_E;
 
-// ±íÊ¾Ã½Ìå²¥·Å·¶Î§µÄ½á¹¹Ìå
+// ï¿½ï¿½Ê¾Ã½ï¿½å²¥ï¿½Å·ï¿½Î§ï¿½Ä½á¹¹ï¿½ï¿½
 typedef struct
 {
-    uint32_t  MediaBeginOffset; // ¿ªÊ¼²¥·ÅÎ»ÖÃ(µ¥Î»:Ãë)
-    uint32_t  MediaEndOffset;   // ½áÊø²¥·ÅÎ»ÖÃ(µ¥Î»:Ãë)
-    uint32_t  enRangeType;      // RangeµÄÊ±¼äÀàÐÍ
+    uint32_t  MediaBeginOffset; // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½(ï¿½ï¿½Î»:ï¿½ï¿½)
+    uint32_t  MediaEndOffset;   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½(ï¿½ï¿½Î»:ï¿½ï¿½)
+    uint32_t  enRangeType;      // Rangeï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 }MEDIA_RANGE_S;
 
-// ¶¨ÒåÌØ¶¨µÄ¼¸¸öÊ±¼äÆ«ÒÆÁ¿
-#define OFFSET_BEGIN  ((uint32_t)-3) // ±íÊ¾Ã½Ìå×î¿ªÊ¼µÄÎ»ÖÃ
-#define OFFSET_CUR    ((uint32_t)-2) // ±íÊ¾Ã½Ìåµ±Ç°Î»ÖÃ
-#define OFFSET_END    ((uint32_t)-1)  // ±íÊ¾Ã½Ìå½áÊøÎ»ÖÃ
+// ï¿½ï¿½ï¿½ï¿½ï¿½Ø¶ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½
+#define OFFSET_BEGIN  ((uint32_t)-3) // ï¿½ï¿½Ê¾Ã½ï¿½ï¿½ï¿½î¿ªÊ¼ï¿½ï¿½Î»ï¿½ï¿½
+#define OFFSET_CUR    ((uint32_t)-2) // ï¿½ï¿½Ê¾Ã½ï¿½åµ±Ç°Î»ï¿½ï¿½
+#define OFFSET_END    ((uint32_t)-1)  // ï¿½ï¿½Ê¾Ã½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 
-class CRtspPlayMessage: public CRtspMessage
+class CRtspPlayMessage: public mk_rtsp_message
 {
 public:
     CRtspPlayMessage();

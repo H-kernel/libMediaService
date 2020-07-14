@@ -2,19 +2,24 @@
 #include <sstream>
 #include "mk_rtsp_connection.h"
 #include "mk_rtsp_packet.h"
+#include "mk_rtsp_service.h"
 #include "mk_rtsp_message_options.h"
+
+std::string mk_rtsp_connection::m_RtspCode[] = RTSP_CODE_STRING;
+std::string mk_rtsp_connection::m_strRtspMethod[] = RTSP_METHOD_STRING;
 
 mk_rtsp_connection::mk_rtsp_connection()
 {
     as_init_url(&m_url);
     m_url.port        = RTSP_DEFAULT_PORT;
+    m_RecvBuf         = NULL;
     m_ulRecvSize      = 0;
+    m_ulSeq           = 0;
     
     m_unSessionIndex  = 0;
     m_enPlayType      = PLAY_TYPE_LIVE;
     m_bSetUp          = false;
     m_sockHandle      = ACE_INVALID_HANDLE;
-    m_pRecvBuffer     = NULL;
     m_pRtpSession     = NULL;
     m_pPeerSession    = NULL;
     m_pLastRtspMsg    = NULL;
@@ -36,10 +41,6 @@ mk_rtsp_connection::~mk_rtsp_connection()
 {
     m_unSessionIndex  = 0;
     m_sockHandle      = ACE_INVALID_HANDLE;
-    if(NULL != m_pRecvBuffer) {
-        delete m_pRecvBuffer;
-    }
-    m_pRecvBuffer     = NULL;
     m_pRtpSession     = NULL;
     m_pPeerSession    = NULL;
     m_pLastRtspMsg    = NULL;
@@ -56,20 +57,23 @@ int32_t mk_rtsp_connection::open(const char* pszUrl)
     }
     return AS_ERROR_CODE_OK;
 }
-int32_t mk_rtsp_connection::send_rtsp_options()
+int32_t mk_rtsp_connection::send_rtsp_request()
 {
-    CRtspPacket options;
-    options.setCseq(1);
-    options.setMethodIndex(RtspOptionsMethod);
+    CRtspOptionsMessage options;
+    options.setCSeq(m_RtspProtocol.getCseq());
+    options.setMsgType(RTSP_MSG_REQ);
     options.setRtspUrl((char*)&m_url.uri[0]);
-    std::string strOption;
-    
-    if(AS_ERROR_CODE_OK != options.generateRtspReq(strOption)) {
-        AS_LOG(AS_LOG_WARNING,"options:rtsp client generateRtspReq fail.");
+    //options.setSession(m_strVideoSession);
+
+    std::string strReq;
+    if (RET_OK == options.encodeMessage(strReq)){
+        AS_LOG(AS_LOG_WARNING,"options:rtsp client encode message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
-    if(AS_ERROR_CODE_OK != this->send(strOption.c_str(),strOption.length(),enSyncOp)) {
+    (void)m_RtspProtocol.saveSendReq(options.getCSeq(), options.getMethodType());
+
+    if(AS_ERROR_CODE_OK != this->send(strReq.c_str(),strReq.length(),enSyncOp)) {
         AS_LOG(AS_LOG_WARNING,"options:rtsp client send message fail.");
         return AS_ERROR_CODE_FAIL;
     }
@@ -92,20 +96,6 @@ uint16_t    mk_rtsp_connection::get_connect_port()
     return m_url.port;
 }
 
-void mk_rtsp_connection::setStatus(uint32_t unStatus)
-{
-    uint32_t unOldStatus = m_unSessionStatus;
-    m_unSessionStatus        = unStatus;
-    m_ulStatusTime           = SVS_GetSecondTime();
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] switch status[%u] to [%u].",
-            m_unSessionIndex, unOldStatus, m_unSessionStatus);
-    return;
-}
-
-uint32_t mk_rtsp_connection::getStatus() const
-{
-    return m_unSessionStatus;
-}
 void  mk_rtsp_connection::set_rtp_over_tcp()
 {
     return 
@@ -117,73 +107,51 @@ void  mk_rtsp_connection::set_status_callback(tsp_client_status cb,void* ctx)
 }
 void mk_rtsp_connection::handle_recv(void)
 {
-    int32_t iRecvLen = (int32_t) m_pRecvBuffer->size() - (int32_t) m_pRecvBuffer->length();
+    as_network_addr peer;
+    int32_t iRecvLen = (int32_t) (MAX_BYTES_PER_RECEIVE -  m_ulRecvSize);
     if (iRecvLen <= 0)
     {
-        AS_LOG(AS_LOG_INFO,"rtsp push session[%u] recv buffer is full, size[%u] length[%u].",
-                m_unSessionIndex,
-                m_pRecvBuffer->size(),
-                m_pRecvBuffer->length());
-        return 0;
+        AS_LOG(AS_LOG_INFO,"rtsp connection,recv buffer is full, size[%u] length[%u].",
+                MAX_BYTES_PER_RECEIVE,
+                m_ulBufSize);
+        return;
     }
 
-    ACE_OS::last_error(0);
-    iRecvLen = ACE::recv(m_sockHandle, m_pRecvBuffer->wr_ptr(), (size_t) iRecvLen);
+    iRecvLen = this->recv(&m_RecvBuf[iRecvLen],&peer,iRecvLen,enAsyncOp);
     if (iRecvLen <= 0)
     {
-        int32_t iErrorCode = ACE_OS::last_error();
-        if (!(EAGAIN == iErrorCode
-                || ETIME == iErrorCode
-                || EWOULDBLOCK == iErrorCode
-                || ETIMEDOUT == iErrorCode
-                || EINTR == iErrorCode))
-        {
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] recv data fail, "
-                    "close handle[%d]. errno[%d].",
-                    m_unSessionIndex,
-                    m_sockHandle,
-                    iErrorCode);
-
-            return -1;
-        }
-
-        AS_LOG(AS_LOG_INFO,"rtsp push session[%u] recv data fail, wait retry. errno[%d].",
-                m_unSessionIndex,
-                iErrorCode);
-        return 0;
+        AS_LOG(AS_LOG_INFO,"rtsp connection recv data fail.");
+        return;
     }
 
-    m_pRecvBuffer->wr_ptr((size_t)(m_pRecvBuffer->length() + (size_t) iRecvLen));
-    m_pRecvBuffer->rd_ptr((size_t) 0);
+    m_ulRecvSize += iRecvLen;
 
-    size_t processedSize = 0;
-    size_t totalSize = m_pRecvBuffer->length();
+    uint32_t processedSize = 0;
+    uint32_t totalSize = m_ulRecvSize;
     int32_t nSize = 0;
     do
     {
-        nSize = processRecvedMessage(m_pRecvBuffer->rd_ptr() + processedSize,
-                                     m_pRecvBuffer->length() - processedSize);
-        if (nSize < 0)
-        {
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] process recv data fail, close handle[%d]. ",
-                    m_unSessionIndex,
-                    m_sockHandle);
-            return -1;
+        nSize = processRecvedMessage(&m_RecvBuf[processedSize],
+                                     m_ulRecvSize - processedSize);
+        if (nSize < 0) {
+            AS_LOG(AS_LOG_WARNING,"tsp connection process recv data fail, close handle. ");
+            return;
         }
 
-        if (0 == nSize)
-        {
+        if (0 == nSize) {
             break;
         }
 
-        processedSize += (size_t) nSize;
-    }
-    while (processedSize < totalSize);
+        processedSize += (uint32_t) nSize;
+    }while (processedSize < totalSize);
 
-    size_t dataSize = m_pRecvBuffer->length() - processedSize;
-    (void) m_pRecvBuffer->copy(m_pRecvBuffer->rd_ptr() + processedSize, dataSize);
-    m_pRecvBuffer->rd_ptr((size_t) 0);
-    m_pRecvBuffer->wr_ptr(dataSize);
+    uint32_t dataSize = m_ulRecvSize - processedSize;
+    if(0 < dataSize) {
+        memmove(&m_RecvBuf[0],&m_RecvBuf[processedSize], dataSize);
+    }
+    m_ulRecvSize = dataSize;
+    setHandleSend(AS_TRUE);
+    return;
 }
 void mk_rtsp_connection::handle_send(void)
 {
@@ -191,81 +159,6 @@ void mk_rtsp_connection::handle_send(void)
 }
 
 
-void mk_rtsp_connection::setHandle(ACE_HANDLE handle, const ACE_INET_Addr &localAddr)
-{
-    m_sockHandle = handle;
-    m_LocalAddr  = localAddr;
-
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] set handle[%d], local addr[%s:%d].",
-                    m_unSessionIndex, handle,
-                    m_LocalAddr.get_host_addr(), m_LocalAddr.get_port_number());
-    return;
-}
-
-ACE_HANDLE mk_rtsp_connection::get_handle() const
-{
-    return m_sockHandle;
-}
-
-uint32_t mk_rtsp_connection::getSessionIndex() const
-{
-    return m_unSessionIndex;
-}
-
-int32_t mk_rtsp_connection::check()
-{
-    uint32_t ulCostTime = SVS_GetSecondTime() - m_ulStatusTime;
-    if ((RTSP_SESSION_STATUS_SETUP >= getStatus())
-            && (ulCostTime > STREAM_STATUS_TIMEOUT_INTERVAL))
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] check status abnormal,"
-                " close session.",
-                m_unSessionIndex);
-        close();
-        return AS_ERROR_CODE_OK;
-    }
-
-    if (m_pRtpSession)
-    {
-        if ((STREAM_SESSION_STATUS_ABNORMAL == m_pRtpSession->getStatus())
-                || (STREAM_SESSION_STATUS_RELEASED == m_pRtpSession->getStatus()))
-        {
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] check status abnormal,"
-                    " close rtp session[%lld].",
-                    m_unSessionIndex, m_pRtpSession->getStreamId());
-            close();
-            return AS_ERROR_CODE_OK;
-        }
-    }
-
-    if ((RTSP_SESSION_STATUS_TEARDOWN == getStatus())
-            && (ulCostTime > STREAM_STATUS_ABNORMAL_INTERVAL))
-    {
-        AS_LOG(AS_LOG_INFO,"check rtsp push session[%u] teardown, release session.",
-                        m_unSessionIndex);
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    return AS_ERROR_CODE_OK;
-}
-
-int32_t mk_rtsp_connection::setSockOpt()
-{
-    if (ACE_INVALID_HANDLE == m_sockHandle)
-    {
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    if (ACE_OS::fcntl(m_sockHandle, F_SETFL, ACE_OS::fcntl(m_sockHandle, F_GETFL) | O_NONBLOCK))
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] set O_NONBLOCK fail, errno[%d].",
-                        m_unSessionIndex,
-                        errno);
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    return AS_ERROR_CODE_OK;
-}
 
 int32_t mk_rtsp_connection::sendMessage(const char* pData, uint32_t unDataSize)
 {
@@ -278,7 +171,7 @@ int32_t mk_rtsp_connection::sendMessage(const char* pData, uint32_t unDataSize)
     int32_t nSendSize = ACE::send_n(m_sockHandle, pData, unDataSize, &timeout);
     if (unDataSize != (uint32_t)nSendSize)
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] send message fail, close handle[%d].",
+        AS_LOG(AS_LOG_WARNING,"rtsp connection send message fail, close handle[%d].",
                         m_unSessionIndex, m_sockHandle);
         return AS_ERROR_CODE_FAIL;
     }
@@ -286,266 +179,12 @@ int32_t mk_rtsp_connection::sendMessage(const char* pData, uint32_t unDataSize)
     return AS_ERROR_CODE_OK;
 }
 
-int32_t mk_rtsp_connection::sendMediaSetupReq(CSVSMediaLink* linkInof)
-{
-    std::string   strUrl = linkInof->Url();
-    //uint64_t ullBusinessId = 0;
-
-    m_enPlayType    = linkInof->PlayType();
-
-    /* allocate the local session first */
-    int32_t nRet = createDistribute(linkInof);
-    if(AS_ERROR_CODE_OK != nRet) {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] set the media sdp info.rtspUrl:\n %s",
-                    m_unSessionIndex, strUrl.c_str());
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    if(NULL == m_pPeerSession) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    //ullBusinessId = m_pPeerSession->getBusinessId();
-    nRet = m_pPeerSession->sendSetup2Control(m_unSessionIndex,linkInof);
-    if(AS_ERROR_CODE_OK != nRet) {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] set the media sdp info.rtspUrl:\n %s",
-                    m_unSessionIndex, strUrl.c_str());
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    m_bSetUp = true;
-
-    return AS_ERROR_CODE_OK;
-}
-
-void mk_rtsp_connection::sendMediaPlayReq()
-{
-    uint32_t unMsgLen = sizeof(SVS_MSG_STREAM_SESSION_PLAY_REQ);
-
-    CStreamSvsMessage *pMessage = NULL;
-    int32_t nRet = CStreamMsgFactory::instance()->createSvsMsg(SVS_MSG_TYPE_STREAM_SESSION_PLAY_REQ,
-                                                    unMsgLen, 0,pMessage);
-    if ((AS_ERROR_CODE_OK != nRet) || (NULL == pMessage))
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] create play request fail.",
-                        m_unSessionIndex);
-        return ;
-    }
-
-    CStreamMediaPlayReq *pReq = dynamic_cast<CStreamMediaPlayReq*>(pMessage);
-    if ((NULL == pReq)|| (NULL == m_pPeerSession))
-    {
-        return ;
-    }
-
-    // nRet = pReq->initMsgBody((uint8_t*)m_strContentID.c_str(),m_pPeerSession->getBusinessId());
-    nRet = pReq->initMsgBody((uint8_t*)(m_pMediaLink.DeviceID()).c_str(),m_pPeerSession->getBusinessId());
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        CStreamMsgFactory::instance()->destroySvsMsg(pMessage);
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] init stream play request fail.",
-                                m_unSessionIndex);
-        return ;
-    }
-
-    if (AS_ERROR_CODE_OK != pReq->handleMessage())
-    {
-        CStreamMsgFactory::instance()->destroySvsMsg(pMessage);
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle stream play request fail.",
-                m_unSessionIndex);
-        return ;
-    }
-
-    CStreamMsgFactory::instance()->destroySvsMsg(pMessage);
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] send stream play request success.",
-            m_unSessionIndex);
-    return;
-}
-
-void mk_rtsp_connection::sendKeyFrameReq()
-{
-    uint32_t unMsgLen = sizeof(SVS_MSG_STREAM_KEY_FRAME_REQ);
-
-    CStreamSvsMessage *pMessage = NULL;
-    int32_t nRet = CStreamMsgFactory::instance()->createSvsMsg(SVS_MSG_TYPE_MEDIA_KEYFRAME_REQ,
-                                                    unMsgLen, 0,pMessage);
-    if ((AS_ERROR_CODE_OK != nRet) || (NULL == pMessage))
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] create stream key frame request fail.",
-                        m_unSessionIndex);
-        return ;
-    }
-
-    CStreamMediaKeyFrameReq *pReq = dynamic_cast<CStreamMediaKeyFrameReq*>(pMessage);
-    if ((NULL == pReq)|| (NULL == m_pPeerSession))
-    {
-        return ;
-    }
-
-    nRet = pReq->initMsgBody((uint8_t*)m_strContentID.c_str(),m_pPeerSession->getBusinessId());
-
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        CStreamMsgFactory::instance()->destroySvsMsg(pMessage);
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] init stream key frame request fail.",
-                                m_unSessionIndex);
-        return ;
-    }
-
-    if (AS_ERROR_CODE_OK != pReq->handleMessage())
-    {
-        CStreamMsgFactory::instance()->destroySvsMsg(pMessage);
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle stream key frame request fail.",
-                m_unSessionIndex);
-        return ;
-    }
-
-    CStreamMsgFactory::instance()->destroySvsMsg(pMessage);
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] send stream key frame request success.",
-            m_unSessionIndex);
-    return;
-}
-
-int32_t mk_rtsp_connection::createMediaSession()
-{
-    CStreamSession *pSession = CStreamSessionFactory::instance()->createSession(PEER_TYPE_CU, RTSP_SESSION,true);
-    if (!pSession)
-    {
-        AS_LOG(AS_LOG_ERROR,"rtsp push session[%u] create media session fail.", m_unSessionIndex);
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    CStreamStdRtpSession* pStdSession = dynamic_cast<CStreamStdRtpSession*>(pSession);
-    if (!pStdSession)
-    {
-        CStreamSessionFactory::instance()->releaseSession(pSession);
-        AS_LOG(AS_LOG_ERROR,"rtsp push session[%u] create std media session fail.", m_unSessionIndex);
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    if (!m_pPeerSession)
-    {
-        CStreamSessionFactory::instance()->releaseSession(pSession);
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle rtsp play request fail, "
-                "can't find peer session ContentID[%s]",
-                m_unSessionIndex, m_strContentID.c_str());
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    /* the peer session release by the destory the media session */
-    uint64_t ullPeerSessionId = 0;
-    ullPeerSessionId = m_pPeerSession->getStreamId();
-
-    pStdSession->setRtspHandle(m_sockHandle, m_PeerAddr);
-    uint8_t VideoPayloadType = PT_TYPE_H264;
-    uint8_t AudioPayloadType = PT_TYPE_PCMU;
-    MEDIA_INFO_LIST VideoinfoList;
-    MEDIA_INFO_LIST AudioinfoList;
-    m_RtspSdp.getVideoInfo(VideoinfoList);
-    m_RtspSdp.getAudioInfo(AudioinfoList);
-
-    if(0 <VideoinfoList.size()) {
-        VideoPayloadType = VideoinfoList.front().ucPayloadType;
-    }
-    if(0 <AudioinfoList.size()) {
-        AudioPayloadType = AudioinfoList.front().ucPayloadType;
-    }
-
-    pStdSession->setPlayLoad(VideoPayloadType,AudioPayloadType);
-    if (AS_ERROR_CODE_OK != pStdSession->initStdRtpSession(ullPeerSessionId,
-                                                 m_enPlayType,
-                                                 m_LocalAddr,
-                                                 m_PeerAddr))
-    {
-        CStreamSessionFactory::instance()->releaseSession(pSession);
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] init rtp session fail.", m_unSessionIndex);
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    m_pRtpSession = pStdSession;
-    if(NULL != m_pRtpSession)
-    {
-        m_pRtpSession->setSdpInfo(m_RtspSdp);
-        m_pRtpSession->setContentID(m_pPeerSession->getContentID());
-    }
-
-
-    CStreamBusiness *pBusiness = CStreamBusinessManager::instance()->createBusiness(ullPeerSessionId,
-                                                                        pStdSession->getStreamId(),
-                                                                        pStdSession->getPlayType());
-    if (!pBusiness)
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] create business fail, pu[%lld] cu[%lld].",
-                        m_unSessionIndex, pSession->getStreamId(), ullPeerSessionId);
-
-        CStreamSessionFactory::instance()->releaseSession(pSession);
-        m_pRtpSession = NULL;
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    if (AS_ERROR_CODE_OK != pBusiness->start())
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] start business fail, pu[%lld] cu[%lld].",
-                m_unSessionIndex, pSession->getStreamId(), ullPeerSessionId);
-
-        CStreamSessionFactory::instance()->releaseSession(pSession);
-
-        CStreamBusinessManager::instance()->releaseBusiness(pBusiness);
-        m_pRtpSession = NULL;
-        return AS_ERROR_CODE_FAIL;
-    }
-
-
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] create session success, cu[%lld] pu[%lld].",
-                    m_unSessionIndex, pSession->getStreamId(), ullPeerSessionId);
-    return AS_ERROR_CODE_OK;
-}
-
-void mk_rtsp_connection::destroyMediaSession()
-{
-    AS_LOG(AS_LOG_DEBUG,"rtsp push session destory media session.");
-    uint64_t ullRtpSessionId  = 0;
-    uint64_t ullPeerSessionId = 0;
-    uint64_t ullBusinessId = 0;
-    if (m_pRtpSession)
-    {
-        ullRtpSessionId = m_pRtpSession->getStreamId();
-        CStreamBusiness *pBusiness = CStreamBusinessManager::instance()->findBusiness(ullRtpSessionId);
-        if (!pBusiness)
-        {
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] not find the buinsess.", m_unSessionIndex);
-            return;
-        }
-
-        CStreamBusinessManager::instance()->releaseBusiness(pBusiness);
-        CStreamBusinessManager::instance()->releaseBusiness(pBusiness);
-
-        CStreamSessionFactory::instance()->releaseSession(ullRtpSessionId);
-        m_pRtpSession = NULL;
-    }
-    else
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] media session already released.", m_unSessionIndex);
-    }
-
-    if(NULL != m_pPeerSession)
-    {
-        ullPeerSessionId = m_pPeerSession->getStreamId();
-        ullBusinessId = m_pPeerSession->getBusinessId();
-        AS_LOG(AS_LOG_DEBUG,"rtsp push session:[%lld], release PeerSession:[%lld].",
-                                                          ullRtpSessionId,ullPeerSessionId);
-        CStreamSessionFactory::instance()->releaseSession(ullPeerSessionId);
-        m_pPeerSession = NULL;
-    }
-
-    return;
-}
-
 
 int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unDataSize)
 {
     if ((NULL == pData) || (0 == unDataSize))
     {
-        return -1;
+        return AS_ERROR_CODE_FAIL;
     }
 
     if (RTSP_INTERLEAVE_FLAG == pData[0])
@@ -553,35 +192,92 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
         return handleRTPRTCPData(pData, unDataSize);
     }
 
-    int32_t nMessageLen = m_RtspProtocol.IsParsable(pData, unDataSize);
-    if (0 > nMessageLen)
+    /* rtsp message */
+    uint32_t nRtspPacketLens = 0;
+    uint32_t nContentLens    = 0;
+    char*    pContentData    = NULL;
+    uint32_t nMethodsIndex   = 0;
+    for (nMethodsIndex = 0; nMethodsIndex < RTSP_REQ_METHOD_NUM; nMethodsIndex++)
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] parse rtsp message fail.", m_unSessionIndex);
-        return -1;
+        if (0 == strncmp(pszRtsp,
+                m_strRtspMethod[nMethodsIndex].c_str(),
+                m_strRtspMethod[nMethodsIndex].length()))
+        {
+            break;
+        }
     }
 
-    if (0 == nMessageLen)
+    if (nMethodsIndex >= RTSP_REQ_METHOD_NUM)
     {
-        return 0;
+        return AS_ERROR_CODE_FAIL;
     }
 
-    CRtspMessage *pMessage = NULL;
-    int32_t nRet = m_RtspProtocol.DecodeRtspMessage(pData, (uint32_t)nMessageLen, pMessage);
-    if ((AS_ERROR_CODE_OK != nRet) || (!pMessage))
+    string strRtspMsg;
+    strRtspMsg.append(pData, unDataSize);
+    string::size_type endPos = strRtspMsg.find(RTSP_END_MSG);
+    if (string::npos == endPos)
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] decode rtsp message fail.", m_unSessionIndex);
-        return nMessageLen;
+        if (MAX_RTSP_MSG_LEN <= unRtspSize)
+        {
+            AS_LOG(AS_LOG_WARNING,"msg len [%d] is too int32_t.", unRtspSize);
+            return AS_ERROR_CODE_FAIL;
+        }
+        else
+        {
+            /* need more data */
+            return nRtspPacketLens;
+        }
     }
 
+    nRtspPacketLens = (uint32_t) endPos;
+    nRtspPacketLens += 4; /* \r\n\r\n */
+
+    pContentData    = &pData[nRtspPacketLens];
+
+    string strContentLen = "0\r\n";
+    endPos = strRtspMsg.find("Content-Length:");
+    if (string::npos == endPos)
+    {
+        endPos = strRtspMsg.find("Content-length:");
+        if (string::npos != endPos)
+        {
+            strContentLen = strRtspMsg.substr(endPos + strlen("Content-length:"));
+        }
+    }
+    else {
+        strContentLen = strRtspMsg.substr(endPos + strlen("Content-Length:"));
+    }
+
+
+    string::size_type endLine = strContentLen.find(RTSP_END_LINE);
+    if (string::npos == endLine)
+    {
+        AS_LOG(AS_LOG_WARNING,"parse Content-Length fail.");
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    std::string strLength = strContentLen.substr(0, endLine);
+    trimString(strLength);
+    nContentLens = (uint32_t)atoi(strLength.c_str());
+
+    AS_LOG(AS_LOG_INFO,"need to read extra content: %d.", nContentLens);
+    nRtspPacketLens += nContentLens;
+
+    if(nRtspPacketLens > unDataSize) {
+        nRtspPacketLens = 0;
+        return nRtspPacketLens;/* need more data for content data */
+    }
+
+    /* deal the resp packet */
     if (AS_ERROR_CODE_OK != handleRtspMessage(*pMessage))
     {
         delete pMessage;
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle rtsp message fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtsp message fail.");
         return nMessageLen;
     }
 
     delete pMessage;
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] success to process rtsp message.", m_unSessionIndex);
+    AS_LOG(AS_LOG_INFO,"rtsp connection success to process rtsp message.");
     return nMessageLen;
 }
 
@@ -601,7 +297,7 @@ int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unData
     {
         if (!m_pPeerSession)
         {
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle rtcp message fail, "
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtcp message fail, "
                     "can't find peer session.",m_unSessionIndex);
 
             return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
@@ -673,13 +369,13 @@ void mk_rtsp_connection::handleMediaData(const char* pData, uint32_t unDataSize)
     return;
 }
 
-int32_t mk_rtsp_connection::handleRtspMessage(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspMessage(mk_rtsp_message &rtspMessage)
 {
     if (RTSP_MSG_REQ != rtspMessage.getMsgType())
     {
         if (RTSP_METHOD_ANNOUNCE != rtspMessage.getMethodType())
         {
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle not accepted method[%u].",
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle not accepted method[%u].",
                               m_unSessionIndex, rtspMessage.getMethodType());
             return AS_ERROR_CODE_FAIL;
         }
@@ -718,19 +414,120 @@ int32_t mk_rtsp_connection::handleRtspMessage(CRtspMessage &rtspMessage)
         nRet = handleRtspGetParameterReq(rtspMessage);
         break;
     default:
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle not accepted method[%u].",
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle not accepted method[%u].",
                         m_unSessionIndex, rtspMessage.getMethodType());
         return AS_ERROR_CODE_FAIL;
     }
     return nRet;
 }
+int32_t mk_rtsp_connection::sendRtspOptionsReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_OPTIONS,NULL,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspDescribeReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_DESCRIBE,NULL,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspSetupReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_SETUP,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspPlayReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_PLAY,NULL,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspRecordReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_RECORD,NULL,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspGetParameterReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_GETPARAMETER,NULL,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspAnnounceReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_ANNOUNCE,NULL,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspPauseReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_PAUSE,NULL,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspTeardownReq()
+{
+    return sendRtspCmdWithContent(RTSP_METHOD_TEARDOWN,NULL,NULL,0);
+}
+int32_t mk_rtsp_connection::sendRtspCmdWithContent(RtspMethodType type,char* headstr,char* content,uint32_t lens)
+{
+    char message[MAX_RTSP_MSG_LEN] = {0};
+    
+    uint32_t ulHeadLen = 0;
+    char*    start     = &message[ulHeadLen];
+    uint32_t ulBufLen  = MAX_RTSP_MSG_LEN - ulHeadLen;
+    
+    /* first line */
+    snprintf(start, ulBufLen, "%s %s RTSP/1.0\r\n"
+                              "CSeq: %d\r\n"
+                              "User-Agent: h.kernel\r\n", 
+                              m_strRtspMethod[type].c_str(), &m_url.uri[0],m_ulSeq);
+    ulHeadLen = strlen(message);
+    start     = &message[ulHeadLen];
+    ulBufLen  = MAX_RTSP_MSG_LEN - ulHeadLen;
 
-int32_t mk_rtsp_connection::handleRtspOptionsReq(CRtspMessage &rtspMessage)
+    if(NULL != headstr) {
+        snprintf(start, ulBufLen, "%s",headstr);
+        ulHeadLen = strlen(message);
+        start     = &message[ulHeadLen];
+        ulBufLen  = MAX_RTSP_MSG_LEN - ulHeadLen;
+    }
+    /*
+    if (rt->auth[0]) {
+        char *str = ff_http_auth_create_response(&rt->auth_state,
+                                                 rt->auth, url, method);
+        if (str)
+            av_strlcat(buf, str, sizeof(buf));
+        av_free(str);
+    }
+    */
+
+    /* content */
+    if (lens > 0 && content) {
+        snprintf(start, ulBufLen,"Content-Length: %d\r\n\r\n", lens);
+        ulHeadLen = strlen(message);
+        start     = &message[ulHeadLen];
+        ulBufLen  = MAX_RTSP_MSG_LEN - ulHeadLen;
+        memcpy(start,content,lens);
+        ulHeadLen += lens;
+    }
+    else {
+        snprintf(start, ulBufLen, "\r\n");
+        ulHeadLen = strlen(message);
+    }
+
+    int nSendSize = this->send(&message[0],ulHeadLen,enSyncOp);
+    if(nSendSize != ulHeadLen) {
+        AS_LOG(AS_LOG_WARNING,"rtsp client send message fail,lens:[%d].",ulHeadLen);
+        return AS_ERROR_CODE_FAIL;
+    }
+
+
+    m_CseqReqMap.insert(REQ_TYPE_MAP::value_type(m_ulSeq,type));
+    m_ulSeq++；
+
+    setHandleRecv(AS_TRUE);
+
+    return AS_ERROR_CODE_OK;
+}
+int32_t mk_rtsp_connection::handleRtspResp()
+{
+    return AS_ERROR_CODE_OK;
+}
+
+int32_t mk_rtsp_connection::handleRtspOptionsReq(mk_rtsp_message &rtspMessage)
 {
     CRtspOptionsMessage *pRequest = dynamic_cast<CRtspOptionsMessage*>(&rtspMessage);
     if (NULL == pRequest)
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle options request fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle options request fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -745,91 +542,32 @@ int32_t mk_rtsp_connection::handleRtspOptionsReq(CRtspMessage &rtspMessage)
     std::string strResp;
     if (AS_ERROR_CODE_OK != pRequest->encodeMessage(strResp))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] encode options response fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection encode options response fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
     if (AS_ERROR_CODE_OK != sendMessage(strResp.c_str(), strResp.length()))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] send options response fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection send options response fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] send options response success.", m_unSessionIndex);
+    AS_LOG(AS_LOG_INFO,"rtsp connection send options response success.");
 
     simulateSendRtcpMsg();
 
     return AS_ERROR_CODE_OK;
 }
 
-uint32_t mk_rtsp_connection::getRange(const std::string strUrl,std::string & strStartTime,std::string & strStopTime)
-{
-    std::string::size_type nStart = 0;
-    std::string::size_type nStop  = 0;
-    nStart = strUrl.find("-");
-    std::string tmp = std::string(strUrl);
-
-    for (int32_t i=0;i<3;i++)
-    {
-        nStart = tmp.find("-");
-        tmp = tmp.substr(nStart+1);
-    }
-
-    nStop  = tmp.find("&user");
-
-    tmp = tmp.substr(0,nStop);
 
 
-    nStop  = tmp.find("-");
-
-    strStartTime = "";
-    strStopTime  = "";
-
-    strStartTime = tmp.substr(0,nStop);
-    strStopTime  = tmp.substr(nStop+1);
-
-    std::stringstream strStart;
-    std::stringstream strEnd;
-
-    struct tm rangeTm;
-    memset(&rangeTm, 0x0, sizeof(rangeTm));
-
-    char* pRet = strptime(strStartTime.c_str(), "%Y%m%d%H%M%S", &rangeTm);
-    if (NULL == pRet)
-    {
-        return 0;
-    }
-
-    uint32_t iStartTime = 0;
-    iStartTime =  (uint32_t) mktime(&rangeTm);
-    strStart<<iStartTime;
-    strStart>>strStartTime;
-
-    memset(&rangeTm, 0x0, sizeof(rangeTm));
-
-    pRet = strptime(strStopTime.c_str(), "%Y%m%d%H%M%S", &rangeTm);
-    if (NULL == pRet)
-    {
-        return 0;
-    }
-
-    uint32_t iStopTime = 0;
-    iStopTime =  (uint32_t) mktime(&rangeTm);
-    strEnd<<iStopTime;
-    strEnd>>strStopTime;
-
-
-    return iStopTime-iStartTime;
-}
-
-
-int32_t mk_rtsp_connection::handleRtspDescribeReq(const CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspDescribeReq(const mk_rtsp_message &rtspMessage)
 {
     //CSVSMediaLink MediaLink;
     if (RTSP_SESSION_STATUS_INIT != getStatus())
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle describe req fail, status[%u] invalid.",
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe req fail, status[%u] invalid.",
                 m_unSessionIndex, getStatus());
         return AS_ERROR_CODE_FAIL;
     }
@@ -838,8 +576,8 @@ int32_t mk_rtsp_connection::handleRtspDescribeReq(const CRtspMessage &rtspMessag
     if((SVS_MEDIA_LINK_RESULT_SUCCESS != nRet)
         &&(SVS_MEDIA_LINK_RESULT_AUTH_FAIL != nRet))
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle describe req fail, content invalid.");
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe req fail, content invalid.");
         return AS_ERROR_CODE_FAIL;
     }
     if(SVS_MEDIA_LINK_RESULT_AUTH_FAIL == nRet)
@@ -847,7 +585,7 @@ int32_t mk_rtsp_connection::handleRtspDescribeReq(const CRtspMessage &rtspMessag
         if(CStreamConfig::instance()->getUrlEffectiveWhile())
         {
             close();
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle describe req fail, auth invalid.",m_unSessionIndex);
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe req fail, auth invalid.",m_unSessionIndex);
             return AS_ERROR_CODE_FAIL;
         }
     }
@@ -893,7 +631,7 @@ int32_t mk_rtsp_connection::handleRtspDescribeReq(const CRtspMessage &rtspMessag
             delete m_pLastRtspMsg;
             m_pLastRtspMsg = NULL;
 
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle describe request fail, "
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe request fail, "
                     "send setup request fail.",
                     m_unSessionIndex);
             return AS_ERROR_CODE_FAIL;
@@ -972,7 +710,7 @@ int32_t mk_rtsp_connection::handleRtspDescribeReq(const CRtspMessage &rtspMessag
 
     if (AS_ERROR_CODE_OK != m_RtspSdp.encodeSdp(strSdp,isplayback,strtimeRange,0,0))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] encode sdp info fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection encode sdp info fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -990,30 +728,30 @@ int32_t mk_rtsp_connection::handleRtspDescribeReq(const CRtspMessage &rtspMessag
     std::string strResp;
     if (AS_ERROR_CODE_OK != resp.encodeMessage(strResp))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] encode describe response fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection encode describe response fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
     if (AS_ERROR_CODE_OK != sendMessage(strResp.c_str(), strResp.length()))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] send describe response fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection send describe response fail.");
         return AS_ERROR_CODE_FAIL;
     }
     m_bSetUp = true;
 
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] handle describe request success.", m_unSessionIndex);
+    AS_LOG(AS_LOG_INFO,"rtsp connection handle describe request success.");
     return AS_ERROR_CODE_OK;
 }
 
-int32_t mk_rtsp_connection::handleRtspSetupReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspSetupReq(mk_rtsp_message &rtspMessage)
 {
     std::string  strContentID;
     //CSVSMediaLink MediaLink;
 
     if (RTSP_SESSION_STATUS_SETUP < getStatus())
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle setup req fail, status[%u] invalid.",
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle setup req fail, status[%u] invalid.",
                 m_unSessionIndex, getStatus());
         return AS_ERROR_CODE_FAIL;
     }
@@ -1028,8 +766,8 @@ int32_t mk_rtsp_connection::handleRtspSetupReq(CRtspMessage &rtspMessage)
     if((SVS_MEDIA_LINK_RESULT_SUCCESS != nRet)
         &&(SVS_MEDIA_LINK_RESULT_AUTH_FAIL != nRet))
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle setup req fail, content invalid.");
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle setup req fail, content invalid.");
         return AS_ERROR_CODE_FAIL;
     }
     if((!m_bSetUp)&&(SVS_MEDIA_LINK_RESULT_AUTH_FAIL == nRet))
@@ -1037,7 +775,7 @@ int32_t mk_rtsp_connection::handleRtspSetupReq(CRtspMessage &rtspMessage)
         if(CStreamConfig::instance()->getUrlEffectiveWhile())
         {
             close();
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle setup req fail, auth invalid.",m_unSessionIndex);
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle setup req fail, auth invalid.",m_unSessionIndex);
             return AS_ERROR_CODE_FAIL;
         }
     }
@@ -1077,7 +815,7 @@ int32_t mk_rtsp_connection::handleRtspSetupReq(CRtspMessage &rtspMessage)
             delete m_pLastRtspMsg;
             m_pLastRtspMsg = NULL;
 
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle describe request fail, "
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe request fail, "
                     "send setup request fail.",
                     m_unSessionIndex);
             return AS_ERROR_CODE_FAIL;
@@ -1093,13 +831,13 @@ int32_t mk_rtsp_connection::handleRtspSetupReq(CRtspMessage &rtspMessage)
     {
         if (AS_ERROR_CODE_OK != createMediaSession())
         {
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle setup request fail, "
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle setup request fail, "
                     "create media session fail.",
                     m_unSessionIndex);
             return AS_ERROR_CODE_FAIL;
         }
 
-        AS_LOG(AS_LOG_INFO,"rtsp push session[%u] create media session success.",
+        AS_LOG(AS_LOG_INFO,"rtsp connection create media session success.",
                         m_unSessionIndex);
     }
 
@@ -1110,7 +848,7 @@ int32_t mk_rtsp_connection::handleRtspSetupReq(CRtspMessage &rtspMessage)
     pReq->setSession(sessionIdex.str());
     if (AS_ERROR_CODE_OK != m_pRtpSession->startStdRtpSession(*pReq))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] start media session fail.",
+        AS_LOG(AS_LOG_WARNING,"rtsp connection start media session fail.",
                                 m_unSessionIndex);
         return AS_ERROR_CODE_FAIL;
     }
@@ -1152,24 +890,24 @@ int32_t mk_rtsp_connection::handleRtspSetupReq(CRtspMessage &rtspMessage)
     std::string strResp;
     if (AS_ERROR_CODE_OK != pReq->encodeMessage(strResp))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] encode setup response fail.",
+        AS_LOG(AS_LOG_WARNING,"rtsp connection encode setup response fail.",
                         m_unSessionIndex);
         return AS_ERROR_CODE_FAIL;
     }
 
     if (AS_ERROR_CODE_OK != sendMessage(strResp.c_str(), strResp.length()))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] send setup response fail.",
+        AS_LOG(AS_LOG_WARNING,"rtsp connection send setup response fail.",
                         m_unSessionIndex);
         return AS_ERROR_CODE_FAIL;
     }
 
     setStatus(RTSP_SESSION_STATUS_SETUP);
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] handle setup request success.",
+    AS_LOG(AS_LOG_INFO,"rtsp connection handle setup request success.",
                             m_unSessionIndex);
     return AS_ERROR_CODE_OK;
 }
-int32_t mk_rtsp_connection::handleRtspRecordReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspRecordReq(mk_rtsp_message &rtspMessage)
 {
     if(PLAY_TYPE_AUDIO_LIVE == m_enPlayType)
     {
@@ -1209,13 +947,13 @@ int32_t mk_rtsp_connection::handleRtspRecordReq(CRtspMessage &rtspMessage)
             return cacheRtspMessage(rtspMessage);
         }
         //sendMediaPlayReq();
-        sendCommonResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
+        sendRtspResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
 
         setStatus(RTSP_SESSION_STATUS_PLAY);
 
         clearRtspCachedMessage();
 
-        AS_LOG(AS_LOG_INFO,"rtsp push session[%u] handle rtsp play aduio request success.",
+        AS_LOG(AS_LOG_INFO,"rtsp connection handle rtsp play aduio request success.",
                         m_unSessionIndex);
         return  AS_ERROR_CODE_OK;
     }
@@ -1226,8 +964,8 @@ int32_t mk_rtsp_connection::handleRtspRecordReq(CRtspMessage &rtspMessage)
 
     if (RTSP_SESSION_STATUS_SETUP > getStatus())
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle record req fail, status[%u] invalid.",
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle record req fail, status[%u] invalid.",
                     m_unSessionIndex, getStatus());
         return AS_ERROR_CODE_FAIL;
     }
@@ -1238,21 +976,21 @@ int32_t mk_rtsp_connection::handleRtspRecordReq(CRtspMessage &rtspMessage)
         return AS_ERROR_CODE_FAIL;
     }
 
-    sendCommonResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
+    sendRtspResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
 
     setStatus(RTSP_SESSION_STATUS_PLAY);
 
     clearRtspCachedMessage();
 
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] handle rtsp record request success.",
+    AS_LOG(AS_LOG_INFO,"rtsp connection handle rtsp record request success.",
                         m_unSessionIndex);
     return AS_ERROR_CODE_OK;
 }
-int32_t mk_rtsp_connection::handleRtspGetParameterReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspGetParameterReq(mk_rtsp_message &rtspMessage)
 {
-    sendCommonResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
+    sendRtspResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
 
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] send get parameter response success.", m_unSessionIndex);
+    AS_LOG(AS_LOG_INFO,"rtsp connection send get parameter response success.");
 
     simulateSendRtcpMsg();
 
@@ -1260,7 +998,7 @@ int32_t mk_rtsp_connection::handleRtspGetParameterReq(CRtspMessage &rtspMessage)
 }
 
 
-int32_t mk_rtsp_connection::handleRtspPlayReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspPlayReq(mk_rtsp_message &rtspMessage)
 {
     if (!m_pRtpSession)
     {
@@ -1269,8 +1007,8 @@ int32_t mk_rtsp_connection::handleRtspPlayReq(CRtspMessage &rtspMessage)
 
     if (RTSP_SESSION_STATUS_SETUP > getStatus())
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle play req fail, status[%u] invalid.",
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle play req fail, status[%u] invalid.",
                 m_unSessionIndex, getStatus());
         return AS_ERROR_CODE_FAIL;
     }
@@ -1283,8 +1021,8 @@ int32_t mk_rtsp_connection::handleRtspPlayReq(CRtspMessage &rtspMessage)
 
     if (!m_pPeerSession)
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle rtsp play request fail, "
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtsp play request fail, "
                 "can't find peer session.",m_unSessionIndex);
         return AS_ERROR_CODE_FAIL;
     }
@@ -1337,7 +1075,7 @@ int32_t mk_rtsp_connection::handleRtspPlayReq(CRtspMessage &rtspMessage)
     }
 
 
-    sendCommonResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
+    sendRtspResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
 
 
     setStatus(RTSP_SESSION_STATUS_PLAY);
@@ -1353,18 +1091,18 @@ int32_t mk_rtsp_connection::handleRtspPlayReq(CRtspMessage &rtspMessage)
         /* Key Frame request */
         sendKeyFrameReq();
     }
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] handle rtsp play request success.",
+    AS_LOG(AS_LOG_INFO,"rtsp connection handle rtsp play request success.",
                     m_unSessionIndex);
     return AS_ERROR_CODE_OK;
 }
 
 
-int32_t mk_rtsp_connection::handleRtspAnnounceReq(const CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspAnnounceReq(const mk_rtsp_message &rtspMessage)
 {
     if (RTSP_SESSION_STATUS_INIT != getStatus())
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle describe req fail, status[%u] invalid.",
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe req fail, status[%u] invalid.",
                     m_unSessionIndex, getStatus());
         return AS_ERROR_CODE_FAIL;
     }
@@ -1374,8 +1112,8 @@ int32_t mk_rtsp_connection::handleRtspAnnounceReq(const CRtspMessage &rtspMessag
     if((SVS_MEDIA_LINK_RESULT_SUCCESS != nRet)
         &&(SVS_MEDIA_LINK_RESULT_AUTH_FAIL != nRet))
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle announce req fail, content invalid.");
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle announce req fail, content invalid.");
         return AS_ERROR_CODE_FAIL;
     }
     if(SVS_MEDIA_LINK_RESULT_AUTH_FAIL == nRet)
@@ -1383,7 +1121,7 @@ int32_t mk_rtsp_connection::handleRtspAnnounceReq(const CRtspMessage &rtspMessag
         if(CStreamConfig::instance()->getUrlEffectiveWhile())
         {
             close();
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle announce req fail, auth invalid.",m_unSessionIndex);
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle announce req fail, auth invalid.",m_unSessionIndex);
             return AS_ERROR_CODE_FAIL;
         }
     }
@@ -1423,7 +1161,7 @@ int32_t mk_rtsp_connection::handleRtspAnnounceReq(const CRtspMessage &rtspMessag
             delete m_pLastRtspMsg;
             m_pLastRtspMsg = NULL;
 
-            AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle Announce request fail, "
+            AS_LOG(AS_LOG_WARNING,"rtsp connection handle Announce request fail, "
                         "send setup request fail.",
                         m_unSessionIndex);
             return AS_ERROR_CODE_FAIL;
@@ -1438,20 +1176,20 @@ int32_t mk_rtsp_connection::handleRtspAnnounceReq(const CRtspMessage &rtspMessag
         m_RtspSdp.setUrl(rtspMessage.getRtspUrl());
     }
 
-    sendCommonResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
+    sendRtspResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
 
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] handle describe request success.", m_unSessionIndex);
+    AS_LOG(AS_LOG_INFO,"rtsp connection handle describe request success.");
     return AS_ERROR_CODE_OK;
 }
 
 
-int32_t mk_rtsp_connection::handleRtspPauseReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspPauseReq(mk_rtsp_message &rtspMessage)
 {
     if (RTSP_SESSION_STATUS_PLAY != getStatus()
             && RTSP_SESSION_STATUS_PAUSE != getStatus())
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle pause req fail, status[%u] invalid.",
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle pause req fail, status[%u] invalid.",
                 m_unSessionIndex, getStatus());
         return AS_ERROR_CODE_FAIL;
     }
@@ -1464,8 +1202,8 @@ int32_t mk_rtsp_connection::handleRtspPauseReq(CRtspMessage &rtspMessage)
 
     if (!m_pPeerSession)
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle rtsp play request fail, "
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtsp play request fail, "
                 "can't find peer session.",m_unSessionIndex);
         return AS_ERROR_CODE_FAIL;
     }
@@ -1476,7 +1214,7 @@ int32_t mk_rtsp_connection::handleRtspPauseReq(CRtspMessage &rtspMessage)
     CRtspPacket rtspPack;
     if (0 != rtspPack.parse(strRtsp.c_str(), strRtsp.length()))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle rtsp pause request fail, "
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtsp pause request fail, "
                         "parse rtsp packet fail.",
                         m_unSessionIndex);
         return AS_ERROR_CODE_FAIL;
@@ -1484,21 +1222,21 @@ int32_t mk_rtsp_connection::handleRtspPauseReq(CRtspMessage &rtspMessage)
 
     if (AS_ERROR_CODE_OK != m_pPeerSession->sendVcrMessage(rtspPack))
     {
-        sendCommonResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] handle rtsp pause request fail, "
+        sendRtspResp(RTSP_SERVER_INTERNAL, rtspMessage.getCSeq());
+        AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtsp pause request fail, "
                 "peer session send vcr message fail.",
                 m_unSessionIndex);
         return AS_ERROR_CODE_FAIL;
     }
 
     setStatus(RTSP_SESSION_STATUS_PAUSE);
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] handle rtsp pause request success.",
+    AS_LOG(AS_LOG_INFO,"rtsp connection handle rtsp pause request success.",
                      m_unSessionIndex);
     return AS_ERROR_CODE_OK;
 }
 
 // TEARDOWN
-int32_t mk_rtsp_connection::handleRtspTeardownReq(CRtspMessage &rtspMessage)
+int32_t mk_rtsp_connection::handleRtspTeardownReq(mk_rtsp_message &rtspMessage)
 {
     rtspMessage.setMsgType(RTSP_MSG_RSP);
     rtspMessage.setStatusCode(RTSP_SUCCESS_OK);
@@ -1506,243 +1244,57 @@ int32_t mk_rtsp_connection::handleRtspTeardownReq(CRtspMessage &rtspMessage)
     std::string strRtsp;
     if (AS_ERROR_CODE_OK != rtspMessage.encodeMessage(strRtsp))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] encode teardown response fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection encode teardown response fail.");
     }
 
     if (AS_ERROR_CODE_OK != sendMessage(strRtsp.c_str(), strRtsp.length()))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] send teardown response fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection send teardown response fail.");
     }
 
     //close the session
     (void)handle_close(m_sockHandle, 0);
     setStatus(RTSP_SESSION_STATUS_TEARDOWN);
 
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] handle rtsp teardown request success.",
+    AS_LOG(AS_LOG_INFO,"rtsp connection handle rtsp teardown request success.",
                      m_unSessionIndex);
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_connection::sendCommonResp(uint32_t unStatusCode, uint32_t unCseq)
+void mk_rtsp_connection::sendRtspResp(uint32_t unStatusCode, uint32_t unCseq)
 {
     std::string strResp;
-    CRtspMessage::encodeCommonResp(unStatusCode, unCseq, m_unSessionIndex, strResp);
+    mk_rtsp_message::encodeCommonResp(unStatusCode, unCseq, strResp);
 
     if (AS_ERROR_CODE_OK != sendMessage(strResp.c_str(), strResp.length()))
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] send common response fail.", m_unSessionIndex);
+        AS_LOG(AS_LOG_WARNING,"rtsp connection send common response fail.");
     }
     else
     {
-        AS_LOG(AS_LOG_INFO,"rtsp push session[%u] send common response success.", m_unSessionIndex);
+        AS_LOG(AS_LOG_INFO,"rtsp connection send common response success.");
     }
 
     AS_LOG(AS_LOG_DEBUG,"%s", strResp.c_str());
     return;
 }
 
-int32_t mk_rtsp_connection::cacheRtspMessage(CRtspMessage &rtspMessage)
+void mk_rtsp_connection::trimString(std::string& srcString) const
 {
-    if (m_pLastRtspMsg)
+    string::size_type pos = srcString.find_last_not_of(' ');
+    if (pos != string::npos)
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] cache rtsp play message fail, "
-                "last message[%p] invalid.",
-                m_unSessionIndex, m_pLastRtspMsg);
-        return AS_ERROR_CODE_FAIL;
+        (void) srcString.erase(pos + 1);
+        pos = srcString.find_first_not_of(' ');
+        if (pos != string::npos)
+            (void) srcString.erase(0, pos);
     }
+    else
+        (void) srcString.erase(srcString.begin(), srcString.end());
 
-    ACE_Reactor *pReactor = reactor();
-    if (!pReactor)
-    {
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    CRtspPlayMessage *pReq = dynamic_cast<CRtspPlayMessage*> (&rtspMessage);
-    if (!pReq)
-    {
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    CRtspPlayMessage *pPlayMsg = new CRtspPlayMessage;
-    if (!pPlayMsg)  //lint !e774
-    {
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    pPlayMsg->setMsgType(RTSP_MSG_REQ);
-    pPlayMsg->setRtspUrl(rtspMessage.getRtspUrl());
-    pPlayMsg->setCSeq(rtspMessage.getCSeq());
-    pPlayMsg->setSession(rtspMessage.getSession());
-
-    MEDIA_RANGE_S stRange;
-    pReq->getRange(stRange);
-    pPlayMsg->setRange(stRange);
-    pPlayMsg->setSpeed(pReq->getSpeed());
-    pPlayMsg->setSpeed(pReq->getScale());
-
-    m_pLastRtspMsg = pPlayMsg;
-
-
-    if (-1 != m_lRedoTimerId)
-    {
-        (void)pReactor->cancel_timer(m_lRedoTimerId);
-        AS_LOG(AS_LOG_INFO,"rtsp push session[%u] cancel redo timer[%d].",
-                m_unSessionIndex, m_lRedoTimerId);
-    }
-
-    ACE_Time_Value timeout(0, RTSP_RETRY_INTERVAL);
-    m_lRedoTimerId = pReactor->schedule_timer(this, 0, timeout, timeout);
-    if (-1 == m_lRedoTimerId)
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] cache rtsp play message, create timer fail.",
-                    m_unSessionIndex);
-        delete m_pLastRtspMsg;
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] cache rtsp play message[%p], timer id[%d].",
-            m_unSessionIndex, m_pLastRtspMsg, m_lRedoTimerId);
-    return AS_ERROR_CODE_OK;
-}
-
-void mk_rtsp_connection::clearRtspCachedMessage()
-{
-    if (-1 != m_lRedoTimerId)
-    {
-        ACE_Reactor *pReactor = reactor();
-        if (pReactor)
-        {
-            (void)pReactor->cancel_timer(m_lRedoTimerId);
-        }
-
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] cancel redo timer[%d].",
-                m_unSessionIndex, m_lRedoTimerId);
-        m_lRedoTimerId = -1;
-    }
-
-    if (m_pLastRtspMsg)
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] delete cache message[%p].",
-                        m_unSessionIndex, m_pLastRtspMsg);
-        delete m_pLastRtspMsg;
-        m_pLastRtspMsg = NULL;
-    }
     return;
 }
 
-int32_t mk_rtsp_connection::checkTransDirection(uint32_t unPeerType, uint32_t unTransDirection) const
-{
-    if (PEER_TYPE_PU == unPeerType)
-    {
-        if ((TRANS_DIRECTION_RECVONLY == unTransDirection)
-          ||(TRANS_DIRECTION_SENDRECV == unTransDirection))
-        {
-            return AS_ERROR_CODE_OK;
-        }
-    }
-    else if (PEER_TYPE_CU == unPeerType)
-    {
-        if (TRANS_DIRECTION_RECVONLY == unTransDirection)
-        {
-            return AS_ERROR_CODE_OK;
-        }
-    }
-    else if (PEER_TYPE_RECORD == unPeerType)
-    {
-        if (TRANS_DIRECTION_RECVONLY == unTransDirection)
-        {
-            return AS_ERROR_CODE_OK;
-        }
-    }
-    else if (PEER_TYPE_STREAM == unPeerType)
-    {
-        if (TRANS_DIRECTION_RECVONLY == unTransDirection)
-        {
-            return AS_ERROR_CODE_OK;
-        }
-    }
-
-    return AS_ERROR_CODE_FAIL;
-}
-
-int32_t mk_rtsp_connection::createDistribute(CSVSMediaLink* linkinfo)
-{
-    std::string strUrl;
-    CStreamSession *pPeerSession  = NULL;
-
-    if(NULL == linkinfo)
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] create distribute fail,get content fail.",m_unSessionIndex);
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_strContentID = linkinfo->ContentID();
-
-    //create the peer session first
-    if(SVS_DEV_TYPE_GB28181 == linkinfo->DevType()) {
-        pPeerSession = CStreamSessionFactory::instance()->createSourceSession(m_strContentID, PEER_TYPE_PU, RTP_SESSION,false);
-    }
-    else if(SVS_DEV_TYPE_EHOME == linkinfo->DevType()) {
-        pPeerSession = CStreamSessionFactory::instance()->createSourceSession(m_strContentID, PEER_TYPE_PU, EHOME_SESSION,false);
-    }
-    if (NULL == pPeerSession)
-    {
-        AS_LOG(AS_LOG_ERROR,"Create distribute fail, create peer session fail.");
-        return AS_ERROR_CODE_FAIL;
-    }
-    if (AS_ERROR_CODE_OK != pPeerSession->init(m_strContentID.c_str(),linkinfo->PlayType()))
-    {
-        AS_LOG(AS_LOG_ERROR,"Create distribute fail,session init fail.");
-        CStreamSessionFactory::instance()->releaseSession(pPeerSession);
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    m_pPeerSession     = pPeerSession;
-
-    return AS_ERROR_CODE_OK;
-}
-
-void mk_rtsp_connection::simulateSendRtcpMsg()
-{
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] simulate send rtcp message begin.", m_unSessionIndex);
-
-
-    uint64_t ullRtpSessionId = 0;
-
-    if(NULL == m_pRtpSession)
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] simulate Send Rtcp Msg,the rtp session is null.",
-                        m_unSessionIndex);
-        return;
-    }
-    ullRtpSessionId = m_pRtpSession->getStreamId();
-
-    ACE_Message_Block *pMsg = CMediaBlockBuffer::instance().allocMediaBlock();
-    if (NULL == pMsg)
-    {
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] simulate Send Rtcp Msg, alloc media blockfail.",
-                        m_unSessionIndex);
-        return;
-    }
-
-    fillStreamInnerMsg(pMsg->base(),
-                    ullRtpSessionId,
-                    this,
-                    m_PeerAddr.get_ip_address(),
-                    m_PeerAddr.get_port_number(),
-                    INNER_MSG_RTCP,
-                    sizeof(STREAM_INNER_MSG));
-    pMsg->wr_ptr(sizeof(STREAM_INNER_MSG));
-
-
-    if (AS_ERROR_CODE_OK != CStreamServiceTask::instance()->enqueueInnerMessage(pMsg))
-    {
-        CMediaBlockBuffer::instance().freeMediaBlock(pMsg);
-        AS_LOG(AS_LOG_WARNING,"rtsp push session[%u] simulate Send Rtcp Msg, enqueue inner message fail.",
-                         m_unSessionIndex);
-    }
-    AS_LOG(AS_LOG_INFO,"rtsp push session[%u] simulate send rtcp message end.", m_unSessionIndex);
-    return;
-}
 
 /*******************************************************************************************************
  * 

@@ -11,7 +11,7 @@
 #include "svs_rtsp_message.h"
 
 // RTSP OPTIONS
-class CRtspOptionsMessage: public CRtspMessage
+class CRtspOptionsMessage: public mk_rtsp_message
 {
 public:
     CRtspOptionsMessage();

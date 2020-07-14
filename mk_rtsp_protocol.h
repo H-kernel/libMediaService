@@ -14,14 +14,14 @@
 #include "ms_engine_rtsp_packet.h"
 
 typedef std::map<uint32_t, uint32_t>    REQ_TYPE_MAP;
-typedef REQ_TYPE_MAP::iterator                  REQ_TYPE_MAP_ITER;
+typedef REQ_TYPE_MAP::iterator          REQ_TYPE_MAP_ITER;
 
-class CRtspProtocol
+class mk_rtsp_protocol
 {
 public:
-    virtual ~CRtspProtocol();
+    virtual ~mk_rtsp_protocol();
 
-    CRtspProtocol();
+    mk_rtsp_protocol();
 
 
     int32_t init() const;
@@ -32,18 +32,18 @@ public:
 
     int32_t IsParsable(const char* pMsgData, uint32_t unDataLen) const;
 
-    int32_t DecodeRtspMessage(const char* pMsgData, uint32_t unDataLen, CRtspMessage *&pMsg);
+    int32_t DecodeRtspMessage(const char* pMsgData, uint32_t unDataLen, mk_rtsp_message *&pMsg);
 
 private:
 
-    int32_t parseRtspRequest(CRtspPacket& objRtspPacket, CRtspMessage *&pMessage) const;
+    int32_t parseRtspRequest(CRtspPacket& objRtspPacket, mk_rtsp_message *&pMessage) const;
 
-    int32_t parseRtspResponse(CRtspPacket& objRtspPacket, CRtspMessage *&pMessage);
+    int32_t parseRtspResponse(CRtspPacket& objRtspPacket, mk_rtsp_message *&pMessage);
 public:
     static std::string           m_RtspCode[];
     static std::string           m_strRtspMethod[];
 
-    uint32_t           m_unCSeq;
+    uint32_t               m_unCSeq;
     ACE_Thread_Mutex       m_CseqMutex;
 
     REQ_TYPE_MAP           m_CseqReqMap;

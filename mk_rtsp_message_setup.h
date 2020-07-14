@@ -11,7 +11,7 @@
 #include "svs_ace_header.h"
 #include "svs_rtsp_message.h"
 
-class CRtspSetupMessage: public CRtspMessage
+class CRtspSetupMessage: public mk_rtsp_message
 {
 public:
     CRtspSetupMessage();
@@ -51,11 +51,11 @@ private:
 
     int32_t parseIp(const std::string &srcStr, const std::string &strName, std::string &strValue) const;
 private:
-    uint32_t        m_unTransType;              // 传输模式: TCP/UDP
-    uint32_t        m_unInterleaveNum;         // 交织通道号，这里只用RTP通道的，RTCP默认为+1
-    uint16_t        m_usClientPort;             // Rtp端口，RTCP默认为+1
+    uint32_t        m_unTransType;              // 锟斤拷锟斤拷模式: TCP/UDP
+    uint32_t        m_unInterleaveNum;         // 锟斤拷织通锟斤拷锟脚ｏ拷锟斤拷锟斤拷只锟斤拷RTP通锟斤拷锟侥ｏ拷RTCP默锟斤拷为+1
+    uint16_t        m_usClientPort;             // Rtp锟剿口ｏ拷RTCP默锟斤拷为+1
     uint32_t        m_unDestIp;
-    uint16_t        m_usServerPort;             // Rtp端口，RTCP默认为+1
+    uint16_t        m_usServerPort;             // Rtp锟剿口ｏ拷RTCP默锟斤拷为+1
     uint32_t        m_unSrcIp;
 };
 

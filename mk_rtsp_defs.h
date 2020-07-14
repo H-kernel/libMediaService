@@ -1,14 +1,25 @@
 #ifndef __RTSPDEFS_H__
 #define __RTSPDEFS_H__
 
+#define RTSP_CONNECTION_DEFAULT 16 
+
+#define RTP_RECV_BUF_SIZE       1500
+#define RTP_RECV_BUF_COUNT      (100*RTSP_CONNECTION_DEFAULT)
+
+#define FRAME_RECV_BUF_SIZE     (1024*1024)
+#define FRAME_RECV_BUF_COUNT    (2*RTSP_CONNECTION_DEFAULT)
+
+#define RTP_RTCP_START_PORT     10000
+#define RTP_RTCP_PORT_COUNT     (4*RTSP_CONNECTION_DEFAULT)
+
 
 #define DEF_RTSP_SEND_MSG_TRY_INTERVAL 50
 
 #define DEF_RTSP_SEND_MSG_WAIT_TIME    (1 * UNIT_SECOND2MS)
 
-#define MAX_RTSP_PROTOCOL_MSG_LEN    8192
+#define MAX_RTSP_MSG_LEN             4096
 
-#define MAX_BYTES_PER_RECEIVE        4096
+#define MAX_BYTES_PER_RECEIVE        524288 /*(512*1024) */
 
 #define RTSP_INTERLEAVE_FLAG         0x24
 
@@ -98,6 +109,12 @@
 
 #define URL_SPLITER                  SIGN_SLASH
 
+#define RTSP_VERSION                "RTSP/1.0"
+#define RTSP_END_LINE               "\r\n"
+#define RTSP_END_MSG                "\r\n\r\n"
+#define RTSP_URL_PROTOCOL           "rtsp://"
+#define RTSP_DEFAULT_PORT            554
+
 #define RTSP_TOKEN_STR_CSEQ          "CSeq: "
 #define RTSP_TOKEN_STR_ACCEPT        "Accept: "
 #define RTSP_TOKEN_STR_USERAGENT     "User-Agent: "
@@ -131,7 +148,7 @@
 }
 
 
-enum _enRtspMethodType
+typedef enum _enRtspMethodType
 {
     RTSP_METHOD_OPTIONS = 0,
     RTSP_METHOD_DESCRIBE,
@@ -142,10 +159,11 @@ enum _enRtspMethodType
     RTSP_METHOD_TEARDOWN,
     RTSP_METHOD_ANNOUNCE,
     RTSP_METHOD_GETPARAMETER,
+    RTSP_METHOD_SETPARAMETER,
 
-    RTSP_REQ_METHOD_NUM,
-    RTSP_INVALID_MSG = RTSP_REQ_METHOD_NUM
-};
+    RTSP_METHOD_RESPONSE,
+    RTSP_REQ_METHOD_NUM
+}RtspMethodType;
 
 
 #define RTSP_METHOD_STRING \
@@ -157,7 +175,10 @@ enum _enRtspMethodType
     "RECORD",\
     "PAUSE",\
     "TEARDOWN",\
-    "ANNOUNCE"\
+    "ANNOUNCE",\
+    "GET_PARAMETER",\
+    "SET_PARAMETER",\
+    "RTSP/1.0"\
 }
 
 

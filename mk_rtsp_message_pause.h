@@ -10,7 +10,7 @@
 
 #include "svs_rtsp_message.h"
 
-class CRtspPauseMessage: public CRtspMessage
+class CRtspPauseMessage: public mk_rtsp_message
 {
 public:
     CRtspPauseMessage();

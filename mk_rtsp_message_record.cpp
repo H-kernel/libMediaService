@@ -24,7 +24,7 @@ CRtspRecordMessage::~CRtspRecordMessage()
 
 int32_t CRtspRecordMessage::decodeMessage(CRtspPacket& objRtspPacket)
 {
-    int32_t nRet = CRtspMessage::decodeMessage(objRtspPacket);
+    int32_t nRet = mk_rtsp_message::decodeMessage(objRtspPacket);
     if (AS_ERROR_CODE_OK != nRet)
     {
         AS_LOG(AS_LOG_WARNING,"decode rtsp play message fail.");
@@ -36,7 +36,7 @@ int32_t CRtspRecordMessage::decodeMessage(CRtspPacket& objRtspPacket)
 
 int32_t CRtspRecordMessage::encodeMessage(std::string &strMessage)
 {
-    if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
+    if (AS_ERROR_CODE_OK != mk_rtsp_message::encodeMessage(strMessage))
     {
         AS_LOG(AS_LOG_WARNING,"encode rtsp play message fail.");
         return AS_ERROR_CODE_FAIL;

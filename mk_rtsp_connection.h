@@ -39,7 +39,7 @@ public:
 
 public:
     int32_t open(const char* pszUrl);
-    int32_t send_rtsp_options(); 
+    int32_t send_rtsp_request(); 
     void    close();
 
     const char* get_connect_addr();
@@ -50,38 +50,11 @@ public:
     virtual void handle_recv(void);
     virtual void handle_send(void);
 
-    void setHandle(ACE_HANDLE handle, const ACE_INET_Addr &localAddr);
-
-    ACE_HANDLE get_handle() const;
-
-    uint32_t getSessionIndex() const;
-
-    int32_t check();
-
-    void setStatus(uint32_t unStatus);
-
-    uint32_t getStatus() const;
-
     void  set_rtp_over_tcp();
 
     void  set_status_callback(rtsp_client_status cb,void* ctx);
 private:
-    int32_t setSockOpt();
-
-    int32_t createStreamSession();
-
     int32_t sendMessage(const char* pData, uint32_t unDataSize);
-
-    int32_t sendMediaSetupReq(CSVSMediaLink* linkInof);
-
-    void    sendMediaPlayReq();
-
-    void    sendKeyFrameReq();
-
-    int32_t createMediaSession();
-
-    void    destroyMediaSession();
-
 private:
     int32_t processRecvedMessage(const char* pData, uint32_t unDataSize);
 
@@ -89,85 +62,45 @@ private:
 
     void    handleMediaData(const char* pData, uint32_t unDataSize) const;
 
-    int32_t handleRtspMessage(CRtspMessage &rtspMessage);
-
-    // OPITONS
-    int32_t handleRtspOptionsReq(CRtspMessage &rtspMessage);
-
-    // DESCRIBE
-    int32_t handleRtspDescribeReq(const CRtspMessage &rtspMessage);
-
-    // SETUP
-    int32_t handleRtspSetupReq(CRtspMessage &rtspMessage);
-
-    // PLAY
-    int32_t handleRtspPlayReq(CRtspMessage &rtspMessage);
-
-    // RECORD
-    int32_t handleRtspRecordReq(CRtspMessage &rtspMessage);
-
-    // GET_PARAMETER
-    int32_t handleRtspGetParameterReq(CRtspMessage &rtspMessage);
-
-    uint32_t getRange(const std::string strUrl,std::string & strStartTime,std::string & strStopTime);
-
-    int32_t handleRtspAnnounceReq(const CRtspMessage &rtspMessage) ;
-
-    int32_t handleRtspPauseReq(CRtspMessage &rtspMessage);
-
-    int32_t handleRtspTeardownReq(CRtspMessage &rtspMessage);
-
-    void    sendCommonResp(uint32_t unStatusCode, uint32_t unCseq);
-
-    int32_t cacheRtspMessage(CRtspMessage &rtspMessage);
-
-    void    clearRtspCachedMessage();
-
-    int32_t checkTransDirection(uint32_t unPeerType, uint32_t unTransDirection) const;
+    int32_t handleRtspMessage(mk_rtsp_message &rtspMessage);
 private:
-    int32_t createDistribute(CSVSMediaLink* linkinfo);
-
-    void    simulateSendRtcpMsg();
-
+    int32_t sendRtspOptionsReq();
+    int32_t sendRtspDescribeReq();
+    int32_t sendRtspSetupReq();
+    int32_t sendRtspPlayReq();
+    int32_t sendRtspRecordReq();
+    int32_t sendRtspGetParameterReq();
+    int32_t sendRtspAnnounceReq();
+    int32_t sendRtspPauseReq();
+    int32_t sendRtspTeardownReq();
+    int32_t sendRtspCmdWithContent(RtspMethodType type,char* headstr,char* content,uint32_t lens);
+    int32_t handleRtspResp();
 private:
-    as_url_t                     m_url;
-    char                         m_RecvBuf[MAX_RTSP_PROTOCOL_MSG_LEN];
-    uint32_t                     m_ulRecvSize;
-
-
-    
+    int32_t handleRtspOptionsReq(mk_rtsp_message &rtspMessage);
+    int32_t handleRtspDescribeReq(const mk_rtsp_message &rtspMessage);
+    int32_t handleRtspSetupReq(mk_rtsp_message &rtspMessage);
+    int32_t handleRtspPlayReq(mk_rtsp_message &rtspMessage);
+    int32_t handleRtspRecordReq(mk_rtsp_message &rtspMessage);
+    int32_t handleRtspGetParameterReq(mk_rtsp_message &rtspMessage);
+    int32_t handleRtspAnnounceReq(const mk_rtsp_message &rtspMessage);
+    int32_t handleRtspPauseReq(mk_rtsp_message &rtspMessage);
+    int32_t handleRtspTeardownReq(mk_rtsp_message &rtspMessage);
+    void    sendRtspResp(uint32_t unStatusCode, uint32_t unCseq);
+private:
+    void    trimString(std::string& srcString) const;
+private:
     ACE_Recursive_Thread_Mutex   m_RtspMutex;
-    uint32_t                     m_unSessionIndex;
-    PLAY_TYPE                    m_enPlayType;
-    bool                         m_bSetUp;
+    static std::string           m_RtspCode[];
+    static std::string           m_strRtspMethod[];
 
-    ACE_HANDLE                   m_sockHandle;
-    ACE_INET_Addr                m_PeerAddr;
-    ACE_INET_Addr                m_LocalAddr;
+    as_url_t                     m_url;
+    char*                        m_RecvBuf[MAX_BYTES_PER_RECEIVE];
+    uint32_t                     m_ulRecvSize;
+    uint32_t                     m_ulSeq;
 
-    ACE_Thread_Mutex             m_StatusMutex;
-    uint32_t                     m_unSessionStatus;
-    uint32_t                     m_ulStatusTime;
-
-    Static_PreAssign_Buffer*     m_pRecvBuffer;
-    CRtspProtocol                m_RtspProtocol;
-    CMediaSdp                    m_RtspSdp;
-
-    std::string                  m_strContentID;
-    CStreamStdRtpSession*           m_pRtpSession;
-    CStreamSession*                 m_pPeerSession;
-
-    CRtspMessage*                m_pLastRtspMsg;
-
-    bool                         m_bFirstSetupFlag;
-    std::string                  m_strPlayRange;
-    int32_t                      m_lRedoTimerId;
-
-    uint32_t                     m_unTransType;
-    char                         m_cVideoInterleaveNum;
-    char                         m_cAudioInterleaveNum;
-    CSVSMediaLink                m_pMediaLink;
-  
+    typedef std::map<uint32_t, uint32_t>    REQ_TYPE_MAP;
+    typedef REQ_TYPE_MAP::iterator          REQ_TYPE_MAP_ITER;
+    REQ_TYPE_MAP                 m_CseqReqMap;  
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

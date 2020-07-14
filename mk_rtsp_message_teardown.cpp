@@ -22,7 +22,7 @@ int32_t CRtspTeardownMessage::encodeMessage(std::string &strMessage)
     strMessage.clear();
 
     // ֱ�ӵ��ø������CSeq��User-Agent
-    if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
+    if (AS_ERROR_CODE_OK != mk_rtsp_message::encodeMessage(strMessage))
     {
         AS_LOG(AS_LOG_WARNING,"encode rtsp teardown message fail.");
         return AS_ERROR_CODE_FAIL;

@@ -97,7 +97,7 @@ uint32_t CRtspSetupMessage::getSourceIp() const
 
 int32_t CRtspSetupMessage::decodeMessage(CRtspPacket& objRtspPacket)
 {
-    int32_t nRet = CRtspMessage::decodeMessage(objRtspPacket);
+    int32_t nRet = mk_rtsp_message::decodeMessage(objRtspPacket);
     if (AS_ERROR_CODE_OK != nRet)
     {
         AS_LOG(AS_LOG_WARNING,"decode rtsp setup message fail.");
@@ -147,7 +147,7 @@ int32_t CRtspSetupMessage::decodeMessage(CRtspPacket& objRtspPacket)
 int32_t CRtspSetupMessage::encodeMessage(std::string &strMessage)
 {
     strMessage.clear();
-    if (AS_ERROR_CODE_OK != CRtspMessage::encodeMessage(strMessage))
+    if (AS_ERROR_CODE_OK != mk_rtsp_message::encodeMessage(strMessage))
     {
         AS_LOG(AS_LOG_WARNING,"encode rtsp setup message message fail.");
         return AS_ERROR_CODE_FAIL;

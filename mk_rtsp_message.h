@@ -12,12 +12,12 @@
 #include "svs_rtsp_defs.h"
 #include "ms_engine_rtsp_packet.h"
 
-class CRtspMessage
+class mk_rtsp_message
 {
 public:
-    CRtspMessage();
+    mk_rtsp_message();
 
-    virtual ~CRtspMessage();
+    virtual ~mk_rtsp_message();
 
     static void encodeCommonResp(uint32_t unStatusCode,
                                  uint32_t unCseq,
