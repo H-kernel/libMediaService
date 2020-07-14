@@ -245,13 +245,12 @@ private:
     static std::string  m_strRtspMethods[];
     static std::string  m_strRtspHeaders[];
     static std::string  m_strRtspStatusCode[];
-    static uint32_t m_unRtspCseq;
+    static uint32_t     m_unRtspCseq;
 
     RTSP_COMMON_INFO    m_RtspCommonInfo;
     uint32_t            m_ulContenLength;
     std::string         m_strContentType;
     std::string         m_strContent;
-
 
     std::string         m_strRange;
     double              m_dSpeed;
