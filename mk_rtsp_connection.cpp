@@ -191,94 +191,98 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
     {
         return handleRTPRTCPData(pData, unDataSize);
     }
-
+    
     /* rtsp message */
-    uint32_t nRtspPacketLens = 0;
-    uint32_t nContentLens    = 0;
-    char*    pContentData    = NULL;
-    uint32_t nMethodsIndex   = 0;
-    for (nMethodsIndex = 0; nMethodsIndex < RTSP_REQ_METHOD_NUM; nMethodsIndex++)
+    mk_rtsp_packet rtspPacket;
+    uint32_t ulMsgLen  = 0;
+
+    int32_t nRet = rtspPacket.checkRtsp(pData,unDataSize,ulMsgLen);
+
+    if (AS_ERROR_CODE_OK != nRet)
     {
-        if (0 == strncmp(pszRtsp,
-                m_strRtspMethod[nMethodsIndex].c_str(),
-                m_strRtspMethod[nMethodsIndex].length()))
+        AS_LOG(AS_LOG_WARNING,"rtsp connection check rtsp message fail.");
+        return AS_ERROR_CODE_FAIL;
+    }
+    if(0 == ulMsgLen) {
+        return 0; /* need more data deal */
+    }
+
+    nRet = rtspPacket.parse(pData,unDataSize);
+    if (AS_ERROR_CODE_OK != nRet)
+    {
+        AS_LOG(AS_LOG_WARNING,"rtsp connection parser rtsp message fail.");
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    switch (rtspPacket.getMethodIndex())
+    {
+        case RtspDescribeMethod:
+        {
+            nRet = handleRtspDescribeReq(rtspPacket);
+            break;
+        }
+        case RtspSetupMethod:
+        {
+            nRet = handleRtspSetupReq(rtspPacket);
+            break;
+        }        
+        case RtspTeardownMethod:
+        {
+            nRet = handleRtspTeardownReq(rtspPacket);
+            break;
+        }
+        case RtspPlayMethod:
+        {
+            nRet = handleRtspPlayReq(rtspPacket);
+            break;
+        }
+        case RtspPauseMethod:
+        {
+            nRet = handleRtspPauseReq(rtspPacket);
+            break;
+        }
+        case RtspOptionsMethod:
+        {
+            nRet = handleRtspOptionsReq(rtspPacket);
+            break;
+        }
+        case RtspAnnounceMethod:
+        {
+            nRet = handleRtspOptionsReq(rtspPacket);
+            break;
+        }
+        case RtspGetParameterMethod:
+        {
+            nRet = handleRtspGetParameterReq(rtspPacket);
+            break;
+        }
+        case RtspSetParameterMethod:
+        {
+            nRet = handleRtspSetParameterReq(rtspPacket);
+            break;
+        }
+        case RtspRedirectMethod:
+        {
+            nRet = handleRtspSetParameterReq(rtspPacket);
+            break;
+        }
+        case RtspRecordMethod:
+        {
+            nRet = handleRtspSetParameterReq(rtspPacket);
+            break;
+        }
+        case RtspResponseMethod:
+        {
+            break;
+        }
+        
+        default:
         {
             break;
         }
     }
-
-    if (nMethodsIndex >= RTSP_REQ_METHOD_NUM)
-    {
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    string strRtspMsg;
-    strRtspMsg.append(pData, unDataSize);
-    string::size_type endPos = strRtspMsg.find(RTSP_END_MSG);
-    if (string::npos == endPos)
-    {
-        if (MAX_RTSP_MSG_LEN <= unRtspSize)
-        {
-            AS_LOG(AS_LOG_WARNING,"msg len [%d] is too int32_t.", unRtspSize);
-            return AS_ERROR_CODE_FAIL;
-        }
-        else
-        {
-            /* need more data */
-            return nRtspPacketLens;
-        }
-    }
-
-    nRtspPacketLens = (uint32_t) endPos;
-    nRtspPacketLens += 4; /* \r\n\r\n */
-
-    pContentData    = &pData[nRtspPacketLens];
-
-    string strContentLen = "0\r\n";
-    endPos = strRtspMsg.find("Content-Length:");
-    if (string::npos == endPos)
-    {
-        endPos = strRtspMsg.find("Content-length:");
-        if (string::npos != endPos)
-        {
-            strContentLen = strRtspMsg.substr(endPos + strlen("Content-length:"));
-        }
-    }
-    else {
-        strContentLen = strRtspMsg.substr(endPos + strlen("Content-Length:"));
-    }
-
-
-    string::size_type endLine = strContentLen.find(RTSP_END_LINE);
-    if (string::npos == endLine)
-    {
-        AS_LOG(AS_LOG_WARNING,"parse Content-Length fail.");
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    std::string strLength = strContentLen.substr(0, endLine);
-    trimString(strLength);
-    nContentLens = (uint32_t)atoi(strLength.c_str());
-
-    AS_LOG(AS_LOG_INFO,"need to read extra content: %d.", nContentLens);
-    nRtspPacketLens += nContentLens;
-
-    if(nRtspPacketLens > unDataSize) {
-        nRtspPacketLens = 0;
-        return nRtspPacketLens;/* need more data for content data */
-    }
-
-    /* deal the resp packet */
-    if (AS_ERROR_CODE_OK != handleRtspMessage(*pMessage))
-    {
-        delete pMessage;
-        AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtsp message fail.");
-        return nMessageLen;
-    }
-
-    delete pMessage;
     AS_LOG(AS_LOG_INFO,"rtsp connection success to process rtsp message.");
-    return nMessageLen;
+    return ulMsgLen;
 }
 
 int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unDataSize) const
@@ -996,6 +1000,17 @@ int32_t mk_rtsp_connection::handleRtspGetParameterReq(mk_rtsp_message &rtspMessa
 
     return AS_ERROR_CODE_OK;
 }
+int32_t mk_rtsp_connection::handleRtspSetParameterReq(mk_rtsp_message &rtspMessage)
+{
+    sendRtspResp(RTSP_SUCCESS_OK, rtspMessage.getCSeq());
+
+    AS_LOG(AS_LOG_INFO,"rtsp connection send get parameter response success.");
+
+    simulateSendRtcpMsg();
+
+    return AS_ERROR_CODE_OK;
+}
+
 
 
 int32_t mk_rtsp_connection::handleRtspPlayReq(mk_rtsp_message &rtspMessage)
@@ -1211,7 +1226,7 @@ int32_t mk_rtsp_connection::handleRtspPauseReq(mk_rtsp_message &rtspMessage)
     std::string strRtsp;
     (void)pReq->encodeMessage(strRtsp);
 
-    CRtspPacket rtspPack;
+    mk_rtsp_packet rtspPack;
     if (0 != rtspPack.parse(strRtsp.c_str(), strRtsp.length()))
     {
         AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtsp pause request fail, "

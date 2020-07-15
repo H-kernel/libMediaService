@@ -76,15 +76,16 @@ private:
     int32_t sendRtspCmdWithContent(RtspMethodType type,char* headstr,char* content,uint32_t lens);
     int32_t handleRtspResp();
 private:
-    int32_t handleRtspOptionsReq(mk_rtsp_message &rtspMessage);
-    int32_t handleRtspDescribeReq(const mk_rtsp_message &rtspMessage);
-    int32_t handleRtspSetupReq(mk_rtsp_message &rtspMessage);
-    int32_t handleRtspPlayReq(mk_rtsp_message &rtspMessage);
-    int32_t handleRtspRecordReq(mk_rtsp_message &rtspMessage);
-    int32_t handleRtspGetParameterReq(mk_rtsp_message &rtspMessage);
-    int32_t handleRtspAnnounceReq(const mk_rtsp_message &rtspMessage);
-    int32_t handleRtspPauseReq(mk_rtsp_message &rtspMessage);
-    int32_t handleRtspTeardownReq(mk_rtsp_message &rtspMessage);
+    int32_t handleRtspOptionsReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspDescribeReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspSetupReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspPlayReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspRecordReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspGetParameterReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspSetParameterReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspAnnounceReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspPauseReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspTeardownReq(mk_rtsp_packet &rtspMessage);
     void    sendRtspResp(uint32_t unStatusCode, uint32_t unCseq);
 private:
     void    trimString(std::string& srcString) const;

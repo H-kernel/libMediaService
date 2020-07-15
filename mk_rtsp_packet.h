@@ -128,12 +128,12 @@ typedef struct _stRtspNatInfo
 }RTSP_NAT_INFO;
 
 
-class CRtspPacket
+class mk_rtsp_packet
 {
 public:
-    CRtspPacket();
+    mk_rtsp_packet();
 
-    virtual ~CRtspPacket();
+    virtual ~mk_rtsp_packet();
 
     static int32_t checkRtsp(const char* pszRtsp, uint32_t unRtspSize, uint32_t &unMsgLen);
 

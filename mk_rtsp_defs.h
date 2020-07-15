@@ -109,12 +109,6 @@
 
 #define URL_SPLITER                  SIGN_SLASH
 
-#define RTSP_VERSION                "RTSP/1.0"
-#define RTSP_END_LINE               "\r\n"
-#define RTSP_END_MSG                "\r\n\r\n"
-#define RTSP_URL_PROTOCOL           "rtsp://"
-#define RTSP_DEFAULT_PORT            554
-
 #define RTSP_TOKEN_STR_CSEQ          "CSeq: "
 #define RTSP_TOKEN_STR_ACCEPT        "Accept: "
 #define RTSP_TOKEN_STR_USERAGENT     "User-Agent: "

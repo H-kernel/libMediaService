@@ -308,7 +308,7 @@ uint32_t mk_rtsp_rtp_udp_handle::getMediaTransType()const
     return MEDIA_TRANS_TYPE_RTP;
 }
 
-int32_t mk_rtsp_rtp_udp_handle::sendVcrMessage(CRtspPacket &rtspPack)
+int32_t mk_rtsp_rtp_udp_handle::sendVcrMessage(mk_rtsp_packet &rtspPack)
 {
     rtspPack.setSessionID((uint64_t)atoll(m_strRtspSessionId.c_str()));
 
