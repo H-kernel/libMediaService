@@ -33,7 +33,7 @@ enum _enRTSP_LENGTH_DEFINE
     RTSP_STATUS_CODE_LENGTH    = 3                     // ��Ӧ�볤�ȹ̶�Ϊ3λ������200
 };
 
-enum _enRtspMethods
+typedef enum _enRtspMethods
 {
     RtspDescribeMethod      = 0,
     RtspSetupMethod         = 1,
@@ -50,7 +50,7 @@ enum _enRtspMethods
     RtspResponseMethod      = 11,
 
     RtspIllegalMethod
-};
+}enRtspMethods;
 
 enum _enRtspHeaders
 {

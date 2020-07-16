@@ -17,14 +17,14 @@
 #include "svs_media_hot_link.h"
 
 
-enum RTSP_SESSION_STATUS
+typedef enum RTSP_SESSION_STATUS
 {
     RTSP_SESSION_STATUS_INIT     = 0,
     RTSP_SESSION_STATUS_SETUP    = 1,
     RTSP_SESSION_STATUS_PLAY     = 2,
     RTSP_SESSION_STATUS_PAUSE    = 3,
     RTSP_SESSION_STATUS_TEARDOWN = 4
-};
+}RTSP_STATUS;
 
 
 #define RTSP_RETRY_INTERVAL     (200 * 1000)
@@ -73,8 +73,8 @@ private:
     int32_t sendRtspAnnounceReq();
     int32_t sendRtspPauseReq();
     int32_t sendRtspTeardownReq();
-    int32_t sendRtspCmdWithContent(RtspMethodType type,char* headstr,char* content,uint32_t lens);
-    int32_t handleRtspResp();
+    int32_t sendRtspCmdWithContent(enRtspMethods type,char* headstr,char* content,uint32_t lens);
+    int32_t handleRtspResp(mk_rtsp_packet &rtspMessage);
 private:
     int32_t handleRtspOptionsReq(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspDescribeReq(mk_rtsp_packet &rtspMessage);
@@ -82,17 +82,17 @@ private:
     int32_t handleRtspPlayReq(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspRecordReq(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspGetParameterReq(mk_rtsp_packet &rtspMessage);
-    int32_t handleRtspSetParameterReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspSetParameterReq(mk_rtsp_packet &rtspMessage);    
     int32_t handleRtspAnnounceReq(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspPauseReq(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspTeardownReq(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspRedirect(mk_rtsp_packet &rtspMessage);
     void    sendRtspResp(uint32_t unStatusCode, uint32_t unCseq);
 private:
     void    trimString(std::string& srcString) const;
 private:
     ACE_Recursive_Thread_Mutex   m_RtspMutex;
-    static std::string           m_RtspCode[];
-    static std::string           m_strRtspMethod[];
+    RTSP_STATUS                  m_Status;
 
     as_url_t                     m_url;
     char*                        m_RecvBuf[MAX_BYTES_PER_RECEIVE];

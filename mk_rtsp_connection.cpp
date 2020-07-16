@@ -5,8 +5,6 @@
 #include "mk_rtsp_service.h"
 #include "mk_rtsp_message_options.h"
 
-std::string mk_rtsp_connection::m_RtspCode[] = RTSP_CODE_STRING;
-std::string mk_rtsp_connection::m_strRtspMethod[] = RTSP_METHOD_STRING;
 
 mk_rtsp_connection::mk_rtsp_connection()
 {
@@ -15,38 +13,11 @@ mk_rtsp_connection::mk_rtsp_connection()
     m_RecvBuf         = NULL;
     m_ulRecvSize      = 0;
     m_ulSeq           = 0;
-    
-    m_unSessionIndex  = 0;
-    m_enPlayType      = PLAY_TYPE_LIVE;
-    m_bSetUp          = false;
-    m_sockHandle      = ACE_INVALID_HANDLE;
-    m_pRtpSession     = NULL;
-    m_pPeerSession    = NULL;
-    m_pLastRtspMsg    = NULL;
-
-    m_unSessionStatus  = RTSP_SESSION_STATUS_INIT;
-    m_ulStatusTime     = SVS_GetSecondTime();
-
-    m_strContentID     = "";
-    m_bFirstSetupFlag  = true;
-    m_strPlayRange     = "";
-    m_lRedoTimerId     = -1;
-
-    m_unTransType      = TRANS_PROTOCAL_UDP;
-    m_cVideoInterleaveNum = 0;
-    m_cAudioInterleaveNum = 0;
+    m_Status          = RTSP_SESSION_STATUS_INIT;
 }
 
 mk_rtsp_connection::~mk_rtsp_connection()
 {
-    m_unSessionIndex  = 0;
-    m_sockHandle      = ACE_INVALID_HANDLE;
-    m_pRtpSession     = NULL;
-    m_pPeerSession    = NULL;
-    m_pLastRtspMsg    = NULL;
-
-    m_bFirstSetupFlag  = true;
-    m_lRedoTimerId     = -1;
 }
 
 
@@ -59,25 +30,13 @@ int32_t mk_rtsp_connection::open(const char* pszUrl)
 }
 int32_t mk_rtsp_connection::send_rtsp_request()
 {
-    CRtspOptionsMessage options;
-    options.setCSeq(m_RtspProtocol.getCseq());
-    options.setMsgType(RTSP_MSG_REQ);
-    options.setRtspUrl((char*)&m_url.uri[0]);
-    //options.setSession(m_strVideoSession);
-
-    std::string strReq;
-    if (RET_OK == options.encodeMessage(strReq)){
-        AS_LOG(AS_LOG_WARNING,"options:rtsp client encode message fail.");
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    (void)m_RtspProtocol.saveSendReq(options.getCSeq(), options.getMethodType());
-
-    if(AS_ERROR_CODE_OK != this->send(strReq.c_str(),strReq.length(),enSyncOp)) {
+    AS_LOG(AS_LOG_INFO,"rtsp client open send request message begin.");
+    if(AS_ERROR_CODE_OK != this->sendRtspOptionsReq()) {
         AS_LOG(AS_LOG_WARNING,"options:rtsp client send message fail.");
         return AS_ERROR_CODE_FAIL;
     }
     setHandleRecv(AS_TRUE);
+    AS_LOG(AS_LOG_INFO,"rtsp client open send request message end.");
     return AS_ERROR_CODE_OK;
 }
 
@@ -263,23 +222,29 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
         }
         case RtspRedirectMethod:
         {
-            nRet = handleRtspSetParameterReq(rtspPacket);
+            nRet = handleRtspRedirect(rtspPacket);
             break;
         }
         case RtspRecordMethod:
         {
-            nRet = handleRtspSetParameterReq(rtspPacket);
+            nRet = handleRtspRecordReq(rtspPacket);
             break;
         }
         case RtspResponseMethod:
         {
+            nRet = handleRtspResp(rtspPacket);
             break;
         }
         
         default:
         {
+            nRet = AS_ERROR_CODE_FAIL;
             break;
         }
+    }
+    if(AS_ERROR_CODE_OK != nRet) {
+        AS_LOG(AS_LOG_WARNING,"rtsp connection process rtsp message fail.");
+        return AS_ERROR_CODE_FAIL;
     }
     AS_LOG(AS_LOG_INFO,"rtsp connection success to process rtsp message.");
     return ulMsgLen;
@@ -390,31 +355,31 @@ int32_t mk_rtsp_connection::handleRtspMessage(mk_rtsp_message &rtspMessage)
 
     switch(rtspMessage.getMethodType())
     {
-    case RTSP_METHOD_OPTIONS:
+    case RtspOptionsMethod:
         nRet = handleRtspOptionsReq(rtspMessage);
         break;
-    case RTSP_METHOD_DESCRIBE:
+    case RtspDescribeMethod:
         nRet = handleRtspDescribeReq(rtspMessage);
         break;
-    case RTSP_METHOD_SETUP:
+    case RtspSetupMethod:
         nRet = handleRtspSetupReq(rtspMessage);
         break;
-    case RTSP_METHOD_PLAY:
+    case RtspPlayMethod:
         nRet = handleRtspPlayReq(rtspMessage);
         break;
-    case RTSP_METHOD_PAUSE:
+    case RtspPauseMethod:
         nRet = handleRtspPauseReq(rtspMessage);
         break;
-    case RTSP_METHOD_TEARDOWN:
+    case RtspTeardownMethod:
         nRet = handleRtspTeardownReq(rtspMessage);
         break;
-    case RTSP_METHOD_ANNOUNCE:
+    case RtspAnnounceMethod:
         nRet = handleRtspAnnounceReq(rtspMessage);
         break;
-    case RTSP_METHOD_RECORD:
+    case RtspRecordMethod:
         nRet = handleRtspRecordReq(rtspMessage);
         break;
-    case RTSP_METHOD_GETPARAMETER:
+    case RtspGetParameterMethod:
         nRet = handleRtspGetParameterReq(rtspMessage);
         break;
     default:
@@ -460,7 +425,7 @@ int32_t mk_rtsp_connection::sendRtspTeardownReq()
 {
     return sendRtspCmdWithContent(RTSP_METHOD_TEARDOWN,NULL,NULL,0);
 }
-int32_t mk_rtsp_connection::sendRtspCmdWithContent(RtspMethodType type,char* headstr,char* content,uint32_t lens)
+int32_t mk_rtsp_connection::sendRtspCmdWithContent(enRtspMethods type,char* headstr,char* content,uint32_t lens)
 {
     char message[MAX_RTSP_MSG_LEN] = {0};
     
@@ -472,7 +437,7 @@ int32_t mk_rtsp_connection::sendRtspCmdWithContent(RtspMethodType type,char* hea
     snprintf(start, ulBufLen, "%s %s RTSP/1.0\r\n"
                               "CSeq: %d\r\n"
                               "User-Agent: h.kernel\r\n", 
-                              m_strRtspMethod[type].c_str(), &m_url.uri[0],m_ulSeq);
+                              mk_rtsp_packet::m_strRtspMethods[type].c_str(), &m_url.uri[0],m_ulSeq);
     ulHeadLen = strlen(message);
     start     = &message[ulHeadLen];
     ulBufLen  = MAX_RTSP_MSG_LEN - ulHeadLen;
@@ -521,8 +486,94 @@ int32_t mk_rtsp_connection::sendRtspCmdWithContent(RtspMethodType type,char* hea
 
     return AS_ERROR_CODE_OK;
 }
-int32_t mk_rtsp_connection::handleRtspResp()
+int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
 {
+    uint32_t nCseq     = rtspMessage.getCseq();
+    uint32_t nRespCode = rtspMessage.getRtspStatusCode();
+    enRtspMethods enMethod   = RTSP_REQ_METHOD_NUM;
+
+    REQ_TYPE_MAP_ITER iter = m_CseqReqMap.find(nCseq);
+
+    if(iter == m_CseqReqMap.end()) {
+        AS_LOG(AS_LOG_WARNING,"rtsp client there server reponse seq:[%d] unkown.",nCseq);
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    enMethod = iter->second;
+
+    if(RtspStatus_200 != nRespCode) {
+        /*close socket */
+        AS_LOG(AS_LOG_WARNING,"rtsp client there server reponse code:[%d].",nRespCode);
+        return AS_ERROR_CODE_FAIL;
+    }
+    int nRet = AS_ERROR_CODE_OK;
+    switch (enMethod)
+    {
+        case RtspDescribeMethod:
+        {
+            break;
+        }
+        case RtspSetupMethod:
+        {
+            break;
+        }        
+        case RtspTeardownMethod:
+        {
+            //nothing to do close the socket
+            break;
+        }
+        case RtspPlayMethod:
+        {
+            //start rtcp and media check timer
+            break;
+        }
+        case RtspPauseMethod:
+        {
+            //nothing to do
+            break;
+        }
+        case RtspOptionsMethod:
+        {
+            if()
+            break;
+        }
+        case RtspAnnounceMethod:
+        {
+            nRet = handleRtspOptionsReq(rtspPacket);
+            break;
+        }
+        case RtspGetParameterMethod:
+        {
+            nRet = handleRtspGetParameterReq(rtspPacket);
+            break;
+        }
+        case RtspSetParameterMethod:
+        {
+            nRet = handleRtspSetParameterReq(rtspPacket);
+            break;
+        }
+        case RtspRedirectMethod:
+        {
+            nRet = handleRtspRedirect(rtspPacket);
+            break;
+        }
+        case RtspRecordMethod:
+        {
+            nRet = handleRtspRecordReq(rtspPacket);
+            break;
+        }
+        case RtspResponseMethod:
+        {
+            nRet = handleRtspResp(rtspPacket);
+            break;
+        }
+        
+        default:
+        {
+            nRet = AS_ERROR_CODE_FAIL;
+            break;
+        }
+    }
     return AS_ERROR_CODE_OK;
 }
 
@@ -1273,6 +1324,10 @@ int32_t mk_rtsp_connection::handleRtspTeardownReq(mk_rtsp_message &rtspMessage)
 
     AS_LOG(AS_LOG_INFO,"rtsp connection handle rtsp teardown request success.",
                      m_unSessionIndex);
+    return AS_ERROR_CODE_OK;
+}
+int32_t mk_rtsp_connection::handleRtspRedirect(mk_rtsp_packet &rtspMessage)
+{
     return AS_ERROR_CODE_OK;
 }
 
