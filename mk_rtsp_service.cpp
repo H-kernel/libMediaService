@@ -180,6 +180,14 @@ void    mk_rtsp_service::get_media_frame_buffer(uint32_t& maxSize,uint32_t& maxC
     maxSize               = m_ulFrameBufSize;
     maxCount              = m_ulFramebufCount;
 }
+int32_t mk_rtsp_service::get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle,mk_rtsp_rtcp_udp_handle*&  pRtcpHandle)
+{
+    return AS_ERROR_CODE_OK;
+}
+void    mk_rtsp_service::free_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle* pRtpHandle,mk_rtsp_rtcp_udp_handle* pRtcpHandle)
+{
+    return;
+}
 char*   mk_rtsp_service::get_rtp_recv_buf()
 {
     if(m_RtpRecvBufList.empty()) {

@@ -9,12 +9,7 @@
 #define STREAMRTSPPUSHSESSION_H_
 
 #include "as.h"
-#include "ms_engine_session.h"
-#include "svs_static_preassign_buffer.h"
-#include "svs_rtsp_protocol.h"
-#include "ms_engine_std_rtp_session.h"
-#include "svs_media_sdp.h"
-#include "svs_media_hot_link.h"
+#include "mk_media_sdp.h"
 
 
 typedef enum RTSP_SESSION_STATUS
@@ -66,7 +61,7 @@ private:
 private:
     int32_t sendRtspOptionsReq();
     int32_t sendRtspDescribeReq();
-    int32_t sendRtspSetupReq();
+    int32_t sendRtspSetupReq(SDP_MEDIA_INFO& info);
     int32_t sendRtspPlayReq();
     int32_t sendRtspRecordReq();
     int32_t sendRtspGetParameterReq();
@@ -75,6 +70,7 @@ private:
     int32_t sendRtspTeardownReq();
     int32_t sendRtspCmdWithContent(enRtspMethods type,char* headstr,char* content,uint32_t lens);
     int32_t handleRtspResp(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspDescribeResp(mk_rtsp_packet &rtspMessage);
 private:
     int32_t handleRtspOptionsReq(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspDescribeReq(mk_rtsp_packet &rtspMessage);
@@ -93,8 +89,12 @@ private:
 private:
     ACE_Recursive_Thread_Mutex   m_RtspMutex;
     RTSP_STATUS                  m_Status;
+    bool                         m_bSetupTcp;
+    typedef std::list<>
 
     as_url_t                     m_url;
+    mk_media_sdp                 m_sdpInfo;
+    MEDIA_INFO_LIST              m_mediaInfoList;
     char*                        m_RecvBuf[MAX_BYTES_PER_RECEIVE];
     uint32_t                     m_ulRecvSize;
     uint32_t                     m_ulSeq;

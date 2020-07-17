@@ -381,7 +381,7 @@ int32_t mk_rtsp_rtp_udp_handle::sendSessionStopMessage(uint32_t unStopType)
     return sendMessage(strMsg.c_str(), strMsg.length(),true);
 }
 
-void mk_rtsp_rtp_udp_handle::setSdpInfo(CMediaSdp& rtspSdp)
+void mk_rtsp_rtp_udp_handle::setSdpInfo(mk_media_sdp& rtspSdp)
 {
     m_rtspSdp.copy(rtspSdp);
 }

@@ -66,6 +66,8 @@ public:
     void    set_media_frame_buffer(uint32_t maxSize,uint32_t maxCount);
     void    get_media_frame_buffer(uint32_t& maxSize,uint32_t& maxCount);
 public:
+    int32_t get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle,mk_rtsp_rtcp_udp_handle*&  pRtcpHandle);
+    void    free_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle* pRtpHandle,mk_rtsp_rtcp_udp_handle* pRtcpHandle);
     char*   get_rtp_recv_buf();
     void    free_rtp_recv_buf(char* buf);
     char*   get_frame_buf();
