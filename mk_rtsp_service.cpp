@@ -182,10 +182,21 @@ void    mk_rtsp_service::get_media_frame_buffer(uint32_t& maxSize,uint32_t& maxC
 }
 int32_t mk_rtsp_service::get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle,mk_rtsp_rtcp_udp_handle*&  pRtcpHandle)
 {
+    if(0 == m_RtpRtcpfreeList.size()) {
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    uint32_t index = m_RtpRtcpfreeList.front();
+    m_RtpRtcpfreeList.pop_front();
+    pRtpHandle  = m_pUdpRtpArray[index];
+    pRtcpHandle = m_pUdpRtcpArray[index];
+
     return AS_ERROR_CODE_OK;
 }
-void    mk_rtsp_service::free_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle* pRtpHandle,mk_rtsp_rtcp_udp_handle* pRtcpHandle)
+void    mk_rtsp_service::free_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle* pRtpHandle)
 {
+    uint32_t index = pRtpHandle->get_index();
+    m_RtpRtcpfreeList.push_back(index);
     return;
 }
 char*   mk_rtsp_service::get_rtp_recv_buf()

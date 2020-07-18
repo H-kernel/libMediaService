@@ -17,7 +17,7 @@
 #include "svs_rtsp_announce_message.h"
 #include <string>
 
-mk_rtsp_rtp_udp_handle::mk_rtsp_rtp_udp_handle()
+mk_rtsp_rtp_udp_handle::mk_rtsp_rtp_udp_handle(uint32_t idx)
 {
     m_rtspHandle      = ACE_INVALID_HANDLE;
     m_strRtspUrl      = "";
