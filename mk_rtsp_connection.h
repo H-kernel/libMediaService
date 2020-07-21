@@ -9,7 +9,9 @@
 #define STREAMRTSPPUSHSESSION_H_
 
 #include "as.h"
+#include "mk_rtsp_defs.h"
 #include "mk_media_sdp.h"
+#include "mk_rtsp_udp_handle.h"
 
 
 typedef enum RTSP_SESSION_STATUS
@@ -21,12 +23,26 @@ typedef enum RTSP_SESSION_STATUS
     RTSP_SESSION_STATUS_TEARDOWN = 4
 }RTSP_STATUS;
 
+enum _enRTP_HANDLE_TYPE
+{
+    VIDEO_RTP_HANDLE,
+    AUDIO_RTP_HANDLE,
+    RTP_TYPE_MAX
+};
+
+enum _enRTCP_HANDLE_TYPE
+{
+    VIDEO_RTCP_HANDLE,
+    AUDIO_RTCP_HANDLE,
+    RTCP_TYPE_MAX
+};
+
 
 #define RTSP_RETRY_INTERVAL     (200 * 1000)
 
 #define RTP_INTERLEAVE_LENGTH   4
 
-class mk_rtsp_connection: public as_tcp_conn_handle
+class mk_rtsp_connection: public as_tcp_conn_handle,mk_rtsp_rtp_udp_observer
 {
 public:
     mk_rtsp_connection();
@@ -45,6 +61,9 @@ public:
     virtual void handle_recv(void);
     virtual void handle_send(void);
 
+    virtual int32_t handle_rtp_packet(char* pData,uint32_t len);
+    virtual int32_t handle_rtcp_packet(char* pData,uint32_t len);
+public:
     void  set_rtp_over_tcp();
 
     void  set_status_callback(rtsp_client_status cb,void* ctx);
@@ -71,6 +90,7 @@ private:
     int32_t sendRtspCmdWithContent(enRtspMethods type,char* headstr,char* content,uint32_t lens);
     int32_t handleRtspResp(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspDescribeResp(mk_rtsp_packet &rtspMessage);
+    int32_t handleRtspSetUpResp(mk_rtsp_packet &rtspMessage);
 private:
     int32_t handleRtspOptionsReq(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspDescribeReq(mk_rtsp_packet &rtspMessage);
@@ -85,12 +105,13 @@ private:
     int32_t handleRtspRedirect(mk_rtsp_packet &rtspMessage);
     void    sendRtspResp(uint32_t unStatusCode, uint32_t unCseq);
 private:
+    void    resetRtspConnect();
     void    trimString(std::string& srcString) const;
 private:
-    ACE_Recursive_Thread_Mutex   m_RtspMutex;
     RTSP_STATUS                  m_Status;
     bool                         m_bSetupTcp;
-    typedef std::list<>
+    mk_rtsp_rtp_udp_handle*      m_rtpHandles[RTP_TYPE_MAX];
+    mk_rtsp_rtcp_udp_handle*     m_rtcpHandles[RTCP_TYPE_MAX];
 
     as_url_t                     m_url;
     mk_media_sdp                 m_sdpInfo;

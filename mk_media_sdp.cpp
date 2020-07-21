@@ -806,6 +806,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     uint32_t unPt = (uint32_t)atoi(pszBuff);
     if ('v' == cType)
     {
+        stMediaInfo.ucMediaType   = MEDIA_TYPE_VALUE_VIDEO;
         stMediaInfo.ucPayloadType = (uint8_t)unPt;
         m_enParseStatus = SDP_VIDEO_INFO;
 
@@ -814,6 +815,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     }
     else
     {
+        stMediaInfo.ucMediaType   = MEDIA_TYPE_VALUE_AUDIO;
         stMediaInfo.ucPayloadType = (uint8_t)unPt;
         m_enParseStatus = SDP_AUDIO_INFO;
 

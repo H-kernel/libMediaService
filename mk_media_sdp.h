@@ -51,7 +51,13 @@ enum TRANS_DIRECTION
 };
 
 
-
+enum MEDIA_TYPE_VALUE
+{
+    MEDIA_TYPE_VALUE_VIDEO  = 0,
+    MEDIA_TYPE_VALUE_AUDIO  = 1,
+    MEDIA_TYPE_VALUE_DATA   = 2,
+    MEDIA_TYPE_VALUE_MAX
+};
 enum PT_TYPE_VALUE
 {
     PT_TYPE_PCMU  = 0,
@@ -87,6 +93,7 @@ enum PT_TYPE_VALUE
 
 typedef struct _stSDP_MEDIA_INFO
 {
+    uint8_t         ucMediaType;
     uint8_t         ucPayloadType;
     uint16_t        usPort;
     std::string     strRtpmap;

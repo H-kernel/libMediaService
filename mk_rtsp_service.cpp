@@ -129,12 +129,14 @@ mk_rtsp_connection* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_st
     peer.m_lIpAddr = pClient->get_connect_addr();
     peer.m_usPort  = pClient->get_connect_port();
     if(AS_ERROR_CODE_OK != m_ConnMgr.regTcpClient( &local,&peer,pClient,enSyncOp,2)) {
+        pClient->close();
         m_RtspConnect.push_back(pClient);
         return NULL;
     }
 
     /* send rtsp option */
     if(AS_ERROR_CODE_OK != pClient->send_rtsp_request()) {
+        pClient->close();
         m_ConnMgr.removeTcpClient(pClient);
         m_RtspConnect.push_back(pClient);
         return NULL;
@@ -146,6 +148,7 @@ void mk_rtsp_service::destory_rtsp_client(mk_rtsp_connection* pClient)
     if(NULL == pClient) {
         return;
     }
+    pClient->close();
     m_ConnMgr.removeTcpClient(pClient);
     m_RtspConnect.push_back(pClient);
     return;
