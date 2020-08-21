@@ -43,8 +43,6 @@
 
 #define RTSP_END_TAG                 "\r\n"
 
-#define RTSP_SERVER_AGENT            "AllCam adapter v1.0.0.0"
-
 #define MAX_DIGIT_LEN                128
 
 #define MAX_RTSP_TRANSPORT_LEN       1024
