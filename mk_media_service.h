@@ -5,8 +5,8 @@
  *      Author:
  */
 
-#ifndef _MK_RTSP_SERVICE_INCLUDE_H__
-#define _MK_RTSP_SERVICE_INCLUDE_H__
+#ifndef _mk_media_service_INCLUDE_H__
+#define _mk_media_service_INCLUDE_H__
 
 #include <map>
 #include <list>
@@ -14,6 +14,7 @@
 #include "mk_rtsp_connection.h"
 #include "mk_rtsp_server.h"
 #include "mk_rtsp_udp_handle.h"
+#include "mk_rtmp_connection.h"
 
 
 
@@ -43,21 +44,21 @@ public:
     }
 };
 
-class mk_rtsp_service
+class mk_media_service
 {
 public:
-    static mk_rtsp_service& instance()
+    static mk_media_service& instance()
     {
-        static mk_rtsp_service obj_mk_rtsp_service;
-        return obj_mk_rtsp_service;
+        static mk_media_service obj_mk_media_service;
+        return obj_mk_media_service;
     }
-    virtual ~mk_rtsp_service();  
-    int32_t init(uint32_t maxConnection);
+    virtual ~mk_media_service();  
+    int32_t init(uint32_t EvnCount);
     void    release();
     mk_rtsp_server* create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx);
     void destory_rtsp_server(mk_rtsp_server* pServer);
-    mk_rtsp_connection* create_rtsp_client(char* url,rtsp_client_status cb,void* ctx);
-    void destory_rtsp_client(mk_rtsp_connection* pClient);
+    mk_client_connection* create_client(char* url,handle_client_status cb,void* ctx);
+    void destory_client(mk_client_connection* pClient);
 public:
     void    set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count);
     void    get_rtp_rtcp_udp_port(uint16_t& udpPort,uint32_t& count);
@@ -73,7 +74,7 @@ public:
     char*   get_frame_buf();
     void    free_frame_buf(char* buf);
 private:
-    mk_rtsp_service();
+    mk_media_service();
     int32_t create_rtp_rtcp_udp_pairs();
     void    destory_rtp_rtcp_udp_pairs();
     int32_t create_rtp_recv_bufs();
@@ -83,7 +84,8 @@ private:
     int32_t create_rtsp_connections(uint32_t count);
     void    destory_rtsp_connections();
 private:
-    as_conn_mgr               m_ConnMgr;
+    as_network_svr**          m_NetWorkArray;
+    uint32_t                  m_ulEvnCount;
     mk_conn_log               m_connLog;
 
     uint16_t                  m_usUdpStartPort;
@@ -108,4 +110,4 @@ private:
     RTSP_CONN_LIST            m_RtspConnect;
 };
 
-#endif /* _MK_RTSP_SERVICE_INCLUDE_H__ */
+#endif /* _mk_media_service_INCLUDE_H__ */

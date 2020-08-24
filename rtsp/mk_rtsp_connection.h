@@ -66,7 +66,7 @@ public:
 public:
     void  set_rtp_over_tcp();
 
-    void  set_status_callback(rtsp_client_status cb,void* ctx);
+    void  set_status_callback(handle_client_status cb,void* ctx);
 private:
     int32_t sendMessage(const char* pData, uint32_t unDataSize);
 private:

@@ -2,7 +2,7 @@
 #include <sstream>
 #include "mk_rtsp_connection.h"
 #include "mk_rtsp_packet.h"
-#include "mk_rtsp_service.h"
+#include "mk_media_service.h"
 #include "mk_rtsp_message_options.h"
 
 
@@ -440,7 +440,7 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
         mk_rtsp_rtp_udp_handle*  pRtpHandle  = NULL;
         mk_rtsp_rtcp_udp_handle* pRtcpHandle = NULL;
 
-        if(AS_ERROR_CODE_OK != mk_rtsp_service::instance().get_rtp_rtcp_pair(pRtpHandle,pRtcpHandle)) {
+        if(AS_ERROR_CODE_OK != mk_media_service::instance().get_rtp_rtcp_pair(pRtpHandle,pRtcpHandle)) {
             AS_LOG(AS_LOG_ERROR,"rtsp connection client get rtp and rtcp handle for udp fail.");
             return AS_ERROR_CODE_FAIL;
         }

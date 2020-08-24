@@ -1,11 +1,13 @@
 #include <string.h>
-#include "svs_rtsp_service.h"
+#include "mk_media_service.h"
 
 
 
 
-mk_rtsp_service::mk_rtsp_service()
+mk_media_service::mk_media_service()
 {
+    m_NetWorkArray        = NULL;
+    m_ulEvnCount          = 0;
     m_usUdpStartPort      = RTP_RTCP_START_PORT;
     m_ulUdpPairCount      = RTP_RTCP_PORT_COUNT;
     m_ulRtpBufSize        = RTP_RECV_BUF_SIZE;
@@ -16,27 +18,45 @@ mk_rtsp_service::mk_rtsp_service()
     m_pUdpRtcpArray       = NULL;
 }
 
-mk_rtsp_service::~mk_rtsp_service()
+mk_media_service::~mk_media_service()
 {
 }
 
-int32_t mk_rtsp_service::init(uint32_t maxConnection)
+int32_t mk_media_service::init(uint32_t EvnCount)
 {
     int32_t nRet = AS_ERROR_CODE_OK;
-    m_ConnMgr.setLogWriter(&m_connLog);
-    nRet = m_ConnMgr.init(DEFAULT_SELECT_PERIOD,AS_TRUE,AS_TRUE,AS_TRUE);
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        AS_LOG(AS_LOG_WARNING,"init the network module fail.");
-        return AS_ERROR_CODE_FAIL;
-    }
+    uint32_t i = 0;
 
-    nRet = m_ConnMgr.run();
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        AS_LOG(AS_LOG_WARNING,"run the network module fail.");
+    m_ulEvnCount = EvnCount;
+    as_network_svr* pNetWork = NULL;
+
+    /* create the network service array */
+    m_NetWorkArray = AS_NEW(m_NetWorkArray,m_ulEvnCount);
+    if(NULL == m_NetWorkArray){
         return AS_ERROR_CODE_FAIL;
     }
+    for(i = 0;i < m_ulEvnCount;i++) {
+        pNetWork = AS_NEW(pNetWork);
+        if(NULL == pNetWork) {
+            return AS_ERROR_CODE_FAIL;
+        }
+        pNetWork->setLogWriter(&m_connLog);
+
+        nRet = pNetWork->init(DEFAULT_SELECT_PERIOD,AS_TRUE,AS_TRUE,AS_TRUE);
+        if (AS_ERROR_CODE_OK != nRet)
+        {
+            AS_LOG(AS_LOG_WARNING,"init the network module fail.");
+            return AS_ERROR_CODE_FAIL;
+        }
+
+        nRet = pNetWork->run();
+        if (AS_ERROR_CODE_OK != nRet)
+        {
+            AS_LOG(AS_LOG_WARNING,"run the network module fail.");
+            return AS_ERROR_CODE_FAIL;
+        }
+        m_NetWorkArray[i] = pNetWork;        
+    } 
 
     AS_LOG(AS_LOG_INFO,"init the network module success.")
 
@@ -58,10 +78,6 @@ int32_t mk_rtsp_service::init(uint32_t maxConnection)
 
     AS_LOG(AS_LOG_INFO,"create frame recv bufs success.")
     
-    if(0 <>) {
-        AS_LOG(AS_LOG_INFO,"the udp port is zore,no need create udp ports.")
-        return AS_ERROR_CODE_OK;
-    }
     nRet = create_rtp_rtcp_udp_pairs();
     if (AS_ERROR_CODE_OK != nRet)
     {
@@ -72,16 +88,16 @@ int32_t mk_rtsp_service::init(uint32_t maxConnection)
     return create_rtsp_connections(maxConnection)
 }
 
-void mk_rtsp_service::release()
+void mk_media_service::release()
 {
     destory_rtsp_connections();
     destory_frame_recv_bufs();
     destory_rtp_recv_bufs();
     destory_rtp_rtcp_udp_pairs();
-    m_ConnMgr.exit();
+    m_NetWorkArray.exit();
     return;
 }
-mk_rtsp_server* mk_rtsp_service::create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx)
+mk_rtsp_server* mk_media_service::create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx)
 {
     mk_rtsp_server* pRtspServer = NULL;
     pRtspServer = AS_NEW(pRtspServer);
@@ -92,23 +108,23 @@ mk_rtsp_server* mk_rtsp_service::create_rtsp_server(uint16_t port,rtsp_server_re
     as_network_addr local;
     local.m_lIpAddr = 0;
     local.m_usPort  = port;
-    int32_t nRet = m_ConnMgr.regTcpServer(&local,pRtspServer);
+    int32_t nRet = m_NetWorkArray.regTcpServer(&local,pRtspServer);
     if(AS_ERROR_CODE_OK != nRet) {
         AS_DELETE(pRtspServer);
         pRtspServer = NULL;
     }
     return pRtspServer;
 }
-void mk_rtsp_service::destory_rtsp_server(mk_rtsp_server* pServer)
+void mk_media_service::destory_rtsp_server(mk_rtsp_server* pServer)
 {
     if(NULL == pServer) {
         return;
     }
-    m_ConnMgr.removeTcpServer(pServer);
+    m_NetWorkArray.removeTcpServer(pServer);
     AS_DELETE(pServer);
     return;
 }
-mk_rtsp_connection* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_status cb,void* ctx)
+mk_rtsp_connection* mk_media_service::create_client(char* url,handle_client_status cb,void* ctx)
 {
     mk_rtsp_connection* pClient = NULL;
     as_network_addr  local;
@@ -128,7 +144,7 @@ mk_rtsp_connection* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_st
     /* connect to rtsp server */
     peer.m_lIpAddr = pClient->get_connect_addr();
     peer.m_usPort  = pClient->get_connect_port();
-    if(AS_ERROR_CODE_OK != m_ConnMgr.regTcpClient( &local,&peer,pClient,enSyncOp,2)) {
+    if(AS_ERROR_CODE_OK != m_NetWorkArray.regTcpClient( &local,&peer,pClient,enSyncOp,2)) {
         pClient->close();
         m_RtspConnect.push_back(pClient);
         return NULL;
@@ -137,53 +153,53 @@ mk_rtsp_connection* mk_rtsp_service::create_rtsp_client(char* url,rtsp_client_st
     /* send rtsp option */
     if(AS_ERROR_CODE_OK != pClient->send_rtsp_request()) {
         pClient->close();
-        m_ConnMgr.removeTcpClient(pClient);
+        m_NetWorkArray.removeTcpClient(pClient);
         m_RtspConnect.push_back(pClient);
         return NULL;
     }
     return pClient;
 }
-void mk_rtsp_service::destory_rtsp_client(mk_rtsp_connection* pClient)
+void mk_media_service::destory_client(mk_client_connection* pClient)
 {
     if(NULL == pClient) {
         return;
     }
     pClient->close();
-    m_ConnMgr.removeTcpClient(pClient);
+    m_NetWorkArray.removeTcpClient(pClient);
     m_RtspConnect.push_back(pClient);
     return;
 }
-void    mk_rtsp_service::set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count)
+void    mk_media_service::set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count)
 {
     m_usUdpStartPort      = udpPort;
     m_ulUdpPairCount      = count;
 }
-void    mk_rtsp_service::get_rtp_rtcp_udp_port(uint16_t& udpPort,uint32_t& count)
+void    mk_media_service::get_rtp_rtcp_udp_port(uint16_t& udpPort,uint32_t& count)
 {
     udpPort = m_usUdpStartPort;
     count   = m_ulUdpPairCount;
 }
-void    mk_rtsp_service::set_rtp_recv_buf_info(uint32_t maxSize,uint32_t maxCount)
+void    mk_media_service::set_rtp_recv_buf_info(uint32_t maxSize,uint32_t maxCount)
 {
     m_ulRtpBufSize        = maxSize;
     m_ulRtpBufCount       = maxCount;
 }
-void    mk_rtsp_service::get_rtp_recv_buf_info(uint32_t& maxSize,uint32_t& maxCount)
+void    mk_media_service::get_rtp_recv_buf_info(uint32_t& maxSize,uint32_t& maxCount)
 {
     maxSize  = m_ulRtpBufSize;
     maxCount = m_ulRtpBufCount;
 }
-void    mk_rtsp_service::set_media_frame_buffer(uint32_t maxSize,uint32_t maxCount)
+void    mk_media_service::set_media_frame_buffer(uint32_t maxSize,uint32_t maxCount)
 {
     m_ulFrameBufSize      = maxSize;
     m_ulFramebufCount     = maxCount;
 }
-void    mk_rtsp_service::get_media_frame_buffer(uint32_t& maxSize,uint32_t& maxCount)
+void    mk_media_service::get_media_frame_buffer(uint32_t& maxSize,uint32_t& maxCount)
 {
     maxSize               = m_ulFrameBufSize;
     maxCount              = m_ulFramebufCount;
 }
-int32_t mk_rtsp_service::get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle,mk_rtsp_rtcp_udp_handle*&  pRtcpHandle)
+int32_t mk_media_service::get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle,mk_rtsp_rtcp_udp_handle*&  pRtcpHandle)
 {
     if(0 == m_RtpRtcpfreeList.size()) {
         return AS_ERROR_CODE_FAIL;
@@ -196,13 +212,13 @@ int32_t mk_rtsp_service::get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle,
 
     return AS_ERROR_CODE_OK;
 }
-void    mk_rtsp_service::free_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle* pRtpHandle)
+void    mk_media_service::free_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle* pRtpHandle)
 {
     uint32_t index = pRtpHandle->get_index();
     m_RtpRtcpfreeList.push_back(index);
     return;
 }
-char*   mk_rtsp_service::get_rtp_recv_buf()
+char*   mk_media_service::get_rtp_recv_buf()
 {
     if(m_RtpRecvBufList.empty()) {
         return NULL;
@@ -212,7 +228,7 @@ char*   mk_rtsp_service::get_rtp_recv_buf()
     m_RtpRecvBufList.pop_front();
     return buf;
 }
-void    mk_rtsp_service::free_rtp_recv_buf(char* buf)
+void    mk_media_service::free_rtp_recv_buf(char* buf)
 {
     if(NULL == buf) {
         return;
@@ -220,7 +236,7 @@ void    mk_rtsp_service::free_rtp_recv_buf(char* buf)
     m_RtpRecvBufList.push_back(buf);
     return;
 }
-char*   mk_rtsp_service::get_frame_buf()
+char*   mk_media_service::get_frame_buf()
 {
     if(m_FrameBufList.empty()) {
         return NULL;
@@ -230,7 +246,7 @@ char*   mk_rtsp_service::get_frame_buf()
     m_FrameBufList.pop_front();
     return buf;
 }
-void    mk_rtsp_service::free_frame_buf(char* buf)
+void    mk_media_service::free_frame_buf(char* buf)
 {
     if(NULL == buf) {
         return;
@@ -238,7 +254,7 @@ void    mk_rtsp_service::free_frame_buf(char* buf)
     m_FrameBufList.push_back(buf);
     return;
 }
-int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
+int32_t mk_media_service::create_rtp_rtcp_udp_pairs()
 {
     AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs,start port:[%d],count:[%d].",m_usUdpStartPort,m_ulUdpPairCount);
     
@@ -270,7 +286,7 @@ int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
         }
         addr.m_usPort = port;
         port++;
-        nRet = m_ConnMgr.regUdpSocket(&addr,pRtpHandle);
+        nRet = m_NetWorkArray.regUdpSocket(&addr,pRtpHandle);
         if(AS_ERROR_CODE_OK != nRet) {
             AS_LOG(AS_LOG_ERROR,"register the rtp udp handle fail,port:[%d].",addr.m_usPort);
             return AS_ERROR_CODE_FAIL;
@@ -282,7 +298,7 @@ int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
         }
         addr.m_usPort = port;
         port++;
-        nRet = m_ConnMgr.regUdpSocket(&addr,pRtcpHandle);
+        nRet = m_NetWorkArray.regUdpSocket(&addr,pRtcpHandle);
         if(AS_ERROR_CODE_OK != nRet) {
             AS_LOG(AS_LOG_ERROR,"register the rtcp udp handle fail,port:[%d].",addr.m_usPort);
             return AS_ERROR_CODE_FAIL;
@@ -294,7 +310,7 @@ int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
     AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs success.");
     return AS_ERROR_CODE_OK;
 }
-void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
+void    mk_media_service::destory_rtp_rtcp_udp_pairs()
 {
     AS_LOG(AS_LOG_INFO,"m_pUdpRtcpArray udp rtp and rtcp pair.");
 
@@ -307,13 +323,13 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
 
         pRtpHandle = AS_NEW(pRtpHandle);
         if(NULL != pRtpHandle) {
-            m_ConnMgr.removeUdpSocket(pRtpHandle);
+            m_NetWorkArray.removeUdpSocket(pRtpHandle);
             AS_DELETE(pRtpHandle);
             m_pUdpRtpArray[i] = NULL;
         }
         pRtcpHandle = AS_NEW(pRtcpHandle);
         if(NULL != pRtpHandle) {
-            m_ConnMgr.removeUdpSocket(pRtcpHandle);
+            m_NetWorkArray.removeUdpSocket(pRtcpHandle);
             AS_DELETE(pRtcpHandle);
              m_pUdpRtcpArray[i] = NULL;
         }
@@ -322,7 +338,7 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
     return;
 }
 
-int32_t mk_rtsp_service::create_rtp_recv_bufs()
+int32_t mk_media_service::create_rtp_recv_bufs()
 {
     AS_LOG(AS_LOG_INFO,"create rtp recv buf begin.");
     if((0 == m_ulRtpBufSize)||(0 == m_ulRtpBufCount)) {
@@ -341,7 +357,7 @@ int32_t mk_rtsp_service::create_rtp_recv_bufs()
     AS_LOG(AS_LOG_INFO,"create rtp recv buf end.");
     return AS_ERROR_CODE_OK;
 }
-void    mk_rtsp_service::destory_rtp_recv_bufs()
+void    mk_media_service::destory_rtp_recv_bufs()
 {
     AS_LOG(AS_LOG_INFO,"destory rtp recv buf begin.");
     char* pBuf = NULL;
@@ -356,7 +372,7 @@ void    mk_rtsp_service::destory_rtp_recv_bufs()
     AS_LOG(AS_LOG_INFO,"destory rtp recv buf end.");
     return;
 }
-int32_t mk_rtsp_service::create_frame_recv_bufs()
+int32_t mk_media_service::create_frame_recv_bufs()
 {
     AS_LOG(AS_LOG_INFO,"create frame recv buf begin.");
     if((0 == m_ulFrameBufSize)||(0 == m_ulFramebufCount)) {
@@ -375,7 +391,7 @@ int32_t mk_rtsp_service::create_frame_recv_bufs()
     AS_LOG(AS_LOG_INFO,"create frame recv buf end.");
     return AS_ERROR_CODE_OK;
 }
-void    mk_rtsp_service::destory_frame_recv_bufs()
+void    mk_media_service::destory_frame_recv_bufs()
 {
     AS_LOG(AS_LOG_INFO,"destory frame recv buf begin.");
     char* pBuf = NULL;
@@ -390,7 +406,7 @@ void    mk_rtsp_service::destory_frame_recv_bufs()
     AS_LOG(AS_LOG_INFO,"destory frame recv buf end.");
     return;
 }
-int32_t mk_rtsp_service::create_rtsp_connections(uint32_t count)
+int32_t mk_media_service::create_rtsp_connections(uint32_t count)
 {
     mk_rtsp_connection* pConnection = NULL;
     AS_LOG(AS_LOG_INFO,"create rtsp connections begin.");
@@ -405,7 +421,7 @@ int32_t mk_rtsp_service::create_rtsp_connections(uint32_t count)
     AS_LOG(AS_LOG_INFO,"create rtsp connections end.");
     return AS_ERROR_CODE_OK;
 }
-void    mk_rtsp_service::destory_rtsp_connections()
+void    mk_media_service::destory_rtsp_connections()
 {
     AS_LOG(AS_LOG_INFO,"destory rtsp connections begin.");
     mk_rtsp_connection* pConnection = NULL;
