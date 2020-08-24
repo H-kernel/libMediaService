@@ -21,8 +21,8 @@ public:
     void     set_status_callback(handle_client_status cb,void* ctx);
     int32_t  do_next_recv(char* buf,uint32_t len,handle_client_media cb,void* data);
 public:
-    virtual int32_t open(const char* pszUrl) = 0;
-    virtual void    close() = 0;
+    virtual int32_t start(const char* pszUrl) = 0;
+    virtual void    stop() = 0;
     virtual int32_t recv_next() = 0;
 protected:
     void    handle_connection_status();

@@ -17,7 +17,7 @@ mk_rtsp_connection::~mk_rtsp_connection()
 }
 
 
-int32_t mk_rtsp_connection::open(const char* pszUrl)
+int32_t mk_rtsp_connection::start(const char* pszUrl)
 {
     if(AS_ERROR_CODE_OK != as_parse_url(pszUrl,&m_url)) {
         return AS_ERROR_CODE_FAIL;
@@ -36,7 +36,7 @@ int32_t mk_rtsp_connection::send_rtsp_request()
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_connection::close()
+void mk_rtsp_connection::stop()
 {
     resetRtspConnect();
     setHandleRecv(AS_FALSE);

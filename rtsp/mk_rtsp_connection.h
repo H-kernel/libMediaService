@@ -1,10 +1,3 @@
-/*
- * StreamRtspPushSession.h
- *
- *  Created on: 2016-5-16
- *      Author:
- */
-
 #ifndef STREAMRTSPPUSHSESSION_H_
 #define STREAMRTSPPUSHSESSION_H_
 
@@ -49,9 +42,9 @@ public:
     virtual ~mk_rtsp_connection();
 
 public:
-    int32_t open(const char* pszUrl);
+    int32_t start(const char* pszUrl);
     int32_t send_rtsp_request(); 
-    void    close();
+    void    stop();
 
     const char* get_connect_addr();
     uint16_t    get_connect_port();

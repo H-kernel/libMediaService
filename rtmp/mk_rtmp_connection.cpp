@@ -14,7 +14,11 @@ int32_t mk_rtmp_connection::open(const char* pszUrl)
 {
     return AS_ERROR_CODE_OK;
 }
-void    mk_rtmp_connection::close()
+void    mk_rtmp_connection::stop()
 {
     return;
+}
+int32_t mk_rtmp_connection::recv_next()
+{
+
 }

@@ -1,8 +1,7 @@
 #include <string.h>
 #include "mk_media_service.h"
-
-
-
+#include "mk_rtsp_connection.h"
+#include "mk_rtmp_connection.h"
 
 mk_media_service::mk_media_service()
 {
@@ -58,7 +57,7 @@ int32_t mk_media_service::init(uint32_t EvnCount)
         m_NetWorkArray[i] = pNetWork;        
     } 
 
-    AS_LOG(AS_LOG_INFO,"init the network module success.")
+    AS_LOG(AS_LOG_INFO,"init the network module success.");
 
     nRet = create_rtp_recv_bufs();
     if (AS_ERROR_CODE_OK != nRet)
@@ -76,7 +75,7 @@ int32_t mk_media_service::init(uint32_t EvnCount)
         return AS_ERROR_CODE_FAIL;
     }
 
-    AS_LOG(AS_LOG_INFO,"create frame recv bufs success.")
+    AS_LOG(AS_LOG_INFO,"create frame recv bufs success.");
     
     nRet = create_rtp_rtcp_udp_pairs();
     if (AS_ERROR_CODE_OK != nRet)
@@ -85,12 +84,11 @@ int32_t mk_media_service::init(uint32_t EvnCount)
         return AS_ERROR_CODE_FAIL;
     }
 
-    return create_rtsp_connections(maxConnection)
+    return AS_ERROR_CODE_OK;
 }
 
 void mk_media_service::release()
 {
-    destory_rtsp_connections();
     destory_frame_recv_bufs();
     destory_rtp_recv_bufs();
     destory_rtp_rtcp_udp_pairs();
@@ -124,37 +122,28 @@ void mk_media_service::destory_rtsp_server(mk_rtsp_server* pServer)
     AS_DELETE(pServer);
     return;
 }
-mk_rtsp_connection* mk_media_service::create_client(char* url,handle_client_status cb,void* ctx)
+mk_client_connection* mk_media_service::create_client(char* url,handle_client_status cb,void* ctx)
 {
-    mk_rtsp_connection* pClient = NULL;
+    mk_client_connection* pClient   = NULL;
+    mk_rtsp_connection* pRtspClient = NULL;
+    mk_rtmp_connection* pRtmpClient = NULL;
     as_network_addr  local;
     as_network_addr  peer;
-    if(m_RtspConnect.empty()) {
-        return NULL;
+
+    if(0 == strncmp(url,RTSP_URL_PREFIX,strlen(RTSP_URL_PREFIX))) {
+        pClient = AS_NEW(pRtspClient);
     }
-    pClient = m_RtspConnect.front();
-    m_RtspConnect.pop_front();
+    else if(0 == strncmp(url,RTMP_URL_PREFIX,strlen(RTMP_URL_PREFIX))) {
+        pClient = AS_NEW(pRtmpClient);
+    }
+
+    if(NULL == pClient) {
+        return AS_ERROR_CODE_FAIL;
+    }
+
 
     pClient->set_status_callback(cb,ctx);
-    if(AS_ERROR_CODE_OK != pClient->open(url)) {
-        m_RtspConnect.push_back(pClient);
-        return NULL;
-    }
-    
-    /* connect to rtsp server */
-    peer.m_lIpAddr = pClient->get_connect_addr();
-    peer.m_usPort  = pClient->get_connect_port();
-    if(AS_ERROR_CODE_OK != m_NetWorkArray.regTcpClient( &local,&peer,pClient,enSyncOp,2)) {
-        pClient->close();
-        m_RtspConnect.push_back(pClient);
-        return NULL;
-    }
-
-    /* send rtsp option */
-    if(AS_ERROR_CODE_OK != pClient->send_rtsp_request()) {
-        pClient->close();
-        m_NetWorkArray.removeTcpClient(pClient);
-        m_RtspConnect.push_back(pClient);
+    if(AS_ERROR_CODE_OK != pClient->start(url)) {
         return NULL;
     }
     return pClient;
@@ -164,9 +153,7 @@ void mk_media_service::destory_client(mk_client_connection* pClient)
     if(NULL == pClient) {
         return;
     }
-    pClient->close();
-    m_NetWorkArray.removeTcpClient(pClient);
-    m_RtspConnect.push_back(pClient);
+    pClient->stop();
     return;
 }
 void    mk_media_service::set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count)
@@ -405,33 +392,4 @@ void    mk_media_service::destory_frame_recv_bufs()
     }
     AS_LOG(AS_LOG_INFO,"destory frame recv buf end.");
     return;
-}
-int32_t mk_media_service::create_rtsp_connections(uint32_t count)
-{
-    mk_rtsp_connection* pConnection = NULL;
-    AS_LOG(AS_LOG_INFO,"create rtsp connections begin.");
-    for(uint32_t i = 0;i < m_ulFramebufCount;i++) {
-        pConnection = AS_NEW(pConnection);
-        if(NULL == pBuf) {
-            AS_LOG(AS_LOG_ERROR,"create the rtsp connection fail,index:[%d].",i);
-            return AS_ERROR_CODE_FAIL;
-        }
-        m_RtspConnect.push_back(pConnection);
-    }
-    AS_LOG(AS_LOG_INFO,"create rtsp connections end.");
-    return AS_ERROR_CODE_OK;
-}
-void    mk_media_service::destory_rtsp_connections()
-{
-    AS_LOG(AS_LOG_INFO,"destory rtsp connections begin.");
-    mk_rtsp_connection* pConnection = NULL;
-    while(0 <m_RtspConnect.size()) {
-        pConnection = m_RtspConnect.front();
-        m_RtspConnect.pop_front();
-        if(NULL == pConnection) {
-            continue;
-        }
-        AS_DELETE(pConnection);
-    }
-    AS_LOG(AS_LOG_INFO,"destory rtsp connections end.");
 }

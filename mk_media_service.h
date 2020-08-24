@@ -5,17 +5,27 @@
  *      Author:
  */
 
-#ifndef _mk_media_service_INCLUDE_H__
-#define _mk_media_service_INCLUDE_H__
+#ifndef _MK_MEDIA_SERVICE_INCLUDE_H__
+#define _MK_MEDIA_SERVICE_INCLUDE_H__
 
 #include <map>
 #include <list>
 #include "as.h"
 #include "mk_rtsp_connection.h"
-#include "mk_rtsp_server.h"
 #include "mk_rtsp_udp_handle.h"
 #include "mk_rtmp_connection.h"
 
+#define RTP_RECV_BUF_SIZE       1500
+#define RTP_RECV_BUF_COUNT      (100*RTSP_CONNECTION_DEFAULT)
+
+#define FRAME_RECV_BUF_SIZE     (1024*1024)
+#define FRAME_RECV_BUF_COUNT    (2*RTSP_CONNECTION_DEFAULT)
+
+#define RTP_RTCP_START_PORT     10000
+#define RTP_RTCP_PORT_COUNT     (4*RTSP_CONNECTION_DEFAULT)
+
+#define RTSP_URL_PREFIX         "rtsp://"
+#define RTMP_URL_PREFIX         "rtmp://"
 
 
 class mk_conn_log:public as_conn_mgr_log
@@ -23,7 +33,7 @@ class mk_conn_log:public as_conn_mgr_log
 public:
     mk_conn_log(){};
     virtual ~mk_conn_log(){};
-    virtual void writeLog(long lType, long llevel,const char *szLogDetail, const long lLogLen)
+    virtual void writeLog(int32_t lType, int32_t llevel,const char *szLogDetail, const int32_t lLogLen)
     {
         uint32_t nLevel = AS_LOG_INFO;
 
@@ -81,8 +91,6 @@ private:
     void    destory_rtp_recv_bufs();
     int32_t create_frame_recv_bufs();
     void    destory_frame_recv_bufs();
-    int32_t create_rtsp_connections(uint32_t count);
-    void    destory_rtsp_connections();
 private:
     as_network_svr**          m_NetWorkArray;
     uint32_t                  m_ulEvnCount;
@@ -105,9 +113,6 @@ private:
     typedef std::list<char*>  RECV_BUF_LIST;
     RECV_BUF_LIST             m_RtpRecvBufList;
     RECV_BUF_LIST             m_FrameBufList;
-
-    typedef std::list<mk_rtsp_connection*>  RTSP_CONN_LIST;
-    RTSP_CONN_LIST            m_RtspConnect;
 };
 
-#endif /* _mk_media_service_INCLUDE_H__ */
+#endif /* _MK_MEDIA_SERVICE_INCLUDE_H__ */
