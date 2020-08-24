@@ -12140,9 +12140,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#include <srs_librtmp.hpp>
 
 // for srs-librtmp, @see https://github.com/ossrs/srs/issues/213
-#ifndef _WIN32
-    #define SOCKET int
-#endif
+//#ifndef _WIN32
+//    #define SOCKET int
+//#endif
 
 /**
 * simple socket stream,
@@ -12159,6 +12159,7 @@ public:
     virtual srs_hijack_io_t hijack_io();
     virtual int create_socket();
     virtual int connect(const char* server, int port);
+    virtual SOCKET get_socket();
 // ISrsBufferReader
 public:
     virtual int read(void* buf, size_t size, ssize_t* nread);
@@ -33914,7 +33915,14 @@ int srs_rtmp_set_timeout(srs_rtmp_t rtmp, int recv_timeout_ms, int send_timeout_
 
     return ret;
 }
-
+SOCKET srs_rtmp_get_socket(srs_rtmp_t rtmp)
+{
+    if (!rtmp) {
+        return SRS_INVALID_FD;
+    }
+    Context* context = (Context*)rtmp;
+    return context->skt->get_socket();
+}
 void srs_rtmp_destroy(srs_rtmp_t rtmp)
 {
     if (!rtmp) {
@@ -35978,6 +35986,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     
         return ERROR_SUCCESS;
     }
+    SOCKET srs_hijack_io_get_socket(srs_hijack_io_t ctx)
+    {
+        SrsBlockSyncSocket* skt = (SrsBlockSyncSocket*)ctx;    
+        return skt->fd;
+    }
     int srs_hijack_io_connect(srs_hijack_io_t ctx, const char* server_ip, int port)
     {
         SrsBlockSyncSocket* skt = (SrsBlockSyncSocket*)ctx;
@@ -36223,6 +36236,14 @@ int SimpleSocketStream::connect(const char* server_ip, int port)
     srs_assert(io);
     return srs_hijack_io_connect(io, server_ip, port);
 }
+
+SOCKET SimpleSocketStream::get_socket()
+{
+    srs_assert(io);
+    return srs_hijack_io_get_socket(io);
+}
+
+
 
 // ISrsBufferReader
 int SimpleSocketStream::read(void* buf, size_t size, ssize_t* nread)

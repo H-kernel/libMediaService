@@ -67,7 +67,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         size_t iov_len;     /* Number of bytes to transfer */
     };
 #endif
-
+#ifndef _WIN32
+    #define SOCKET int
+#endif
+#define SRS_INVALID_FD -1
 #include <sys/types.h>
 
 #ifdef __cplusplus
@@ -126,6 +129,11 @@ extern srs_rtmp_t srs_rtmp_create2(const char* url);
  * @return 0, success; otherswise, failed.
  */
 extern int srs_rtmp_set_timeout(srs_rtmp_t rtmp, int recv_timeout_ms, int send_timeout_ms);
+
+/**
+ * get socket fd
+ */
+extern SOCKET srs_rtmp_get_socket(srs_rtmp_t rtmp);
 /**
 * close and destroy the rtmp stack.
 * @remark, user should never use the rtmp again.
@@ -987,6 +995,11 @@ typedef void* srs_hijack_io_t;
     * @return 0, success; otherswise, failed.
     */
     extern int srs_hijack_io_create_socket(srs_hijack_io_t ctx);
+    /**
+    * get socket.
+    * @return -1;invalid,other socket handle.
+    */
+    extern SOCKET srs_hijack_io_get_socket(srs_hijack_io_t ctx)
     /**
     * connect socket at server_ip:port.
     * @return 0, success; otherswise, failed.
