@@ -10,7 +10,7 @@ mk_rtmp_connection::~mk_rtmp_connection()
 {
 
 }
-int32_t mk_rtmp_connection::open(const char* pszUrl)
+int32_t mk_rtmp_connection::start(const char* pszUrl)
 {
     return AS_ERROR_CODE_OK;
 }
