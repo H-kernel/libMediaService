@@ -1,6 +1,0 @@
-#ifndef __MK_RTMP_CONNECTION_INCLUDE_H__
-#define __MK_RTMP_CONNECTION_INCLUDE_H__
-
-
-
-#endif /* __MK_RTMP_CONNECTION_INCLUDE_H__ */
