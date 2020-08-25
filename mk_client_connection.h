@@ -20,18 +20,21 @@ public:
     MR_CLIENT_STATUS get_status();
     void     set_status_callback(handle_client_status cb,void* ctx);
     int32_t  do_next_recv(char* buf,uint32_t len,handle_client_media cb,void* data);
+    void     set_index(uint32_t ulIdx);
+    uint32_t get_index();
 public:
     virtual int32_t start(const char* pszUrl) = 0;
     virtual void    stop() = 0;
     virtual int32_t recv_next() = 0;
 protected:
-    void    handle_connection_status();
-    void    handle_connection_media(MR_CLIENT_STATUS enStatus);
+    void    handle_connection_media(MR_MEDIA_TYPE enType,uint32_t pts);
+    void    handle_connection_status(MR_CLIENT_STATUS enStatus);
 protected:
     char*                m_recvBuf;
     uint32_t             m_ulRecvBufLen;
     uint32_t             m_ulRecvLen;
 private:
+    uint32_t             m_ulIndex;
     MK_CLIENT_TYPE       m_enType;
     MR_CLIENT_STATUS     m_enStatus;
     handle_client_media  m_MediaCallBack;

@@ -21,7 +21,7 @@ mk_media_service::~mk_media_service()
 {
 }
 
-int32_t mk_media_service::init(uint32_t EvnCount)
+int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
 {
     int32_t nRet = AS_ERROR_CODE_OK;
     uint32_t i = 0;
@@ -55,6 +55,10 @@ int32_t mk_media_service::init(uint32_t EvnCount)
             return AS_ERROR_CODE_FAIL;
         }
         m_NetWorkArray[i] = pNetWork;        
+    }
+
+    for(i = 0;i < MaxClient;i++) {
+        m_ClientFreeList.push_back(i);    
     } 
 
     AS_LOG(AS_LOG_INFO,"init the network module success.");
@@ -66,7 +70,7 @@ int32_t mk_media_service::init(uint32_t EvnCount)
         return AS_ERROR_CODE_FAIL;
     }
 
-    AS_LOG(AS_LOG_INFO,"create rtp recv bufs success.")
+    AS_LOG(AS_LOG_INFO,"create rtp recv bufs success.");
 
     nRet = create_frame_recv_bufs();
     if (AS_ERROR_CODE_OK != nRet)
@@ -154,7 +158,14 @@ void mk_media_service::destory_client(mk_client_connection* pClient)
         return;
     }
     pClient->stop();
+    AS_DELETE(pClient);
     return;
+}
+as_network_svr* mk_media_service::get_client_network_svr(mk_client_connection* pClient)
+{
+    uint32_t ulIdx = pClient->get_index();
+    ulIdx = ulIdx%m_ulEvnCount;
+    return m_NetWorkArray[ulIdx];
 }
 void    mk_media_service::set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count)
 {

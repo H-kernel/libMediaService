@@ -63,13 +63,14 @@ public:
         return obj_mk_media_service;
     }
     virtual ~mk_media_service();  
-    int32_t init(uint32_t EvnCount);
+    int32_t init(uint32_t EvnCount,uint32_t MaxClient);
     void    release();
     mk_rtsp_server* create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx);
     void destory_rtsp_server(mk_rtsp_server* pServer);
     mk_client_connection* create_client(char* url,handle_client_status cb,void* ctx);
     void destory_client(mk_client_connection* pClient);
 public:
+    as_network_svr* get_client_network_svr(mk_client_connection* pClient);
     void    set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count);
     void    get_rtp_rtcp_udp_port(uint16_t& udpPort,uint32_t& count);
     void    set_rtp_recv_buf_info(uint32_t maxSize,uint32_t maxCount);
@@ -113,6 +114,9 @@ private:
     typedef std::list<char*>  RECV_BUF_LIST;
     RECV_BUF_LIST             m_RtpRecvBufList;
     RECV_BUF_LIST             m_FrameBufList;
+
+    typedef std::list<uint32_t> CLIENT_INDEX_LIST;
+    CLIENT_INDEX_LIST         m_ClientFreeList;
 };
 
 #endif /* _MK_MEDIA_SERVICE_INCLUDE_H__ */

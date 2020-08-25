@@ -16,19 +16,19 @@ typedef enum RTSP_SESSION_STATUS
     RTSP_SESSION_STATUS_TEARDOWN = 4
 }RTSP_STATUS;
 
-enum _enRTP_HANDLE_TYPE
+typedef enum _enRTP_HANDLE_TYPE
 {
     VIDEO_RTP_HANDLE,
     AUDIO_RTP_HANDLE,
     RTP_TYPE_MAX
-};
+}RTP_HANDLE_TYPE;
 
-enum _enRTCP_HANDLE_TYPE
+typedef enum _enRTCP_HANDLE_TYPE
 {
     VIDEO_RTCP_HANDLE,
     AUDIO_RTCP_HANDLE,
     RTCP_TYPE_MAX
-};
+}RTCP_HANDLE_TYPE;
 
 
 #define RTSP_RETRY_INTERVAL     (200 * 1000)
@@ -54,8 +54,8 @@ public:
     virtual void handle_recv(void);
     virtual void handle_send(void);
 
-    virtual int32_t handle_rtp_packet(char* pData,uint32_t len);
-    virtual int32_t handle_rtcp_packet(char* pData,uint32_t len);
+    virtual int32_t handle_rtp_packet(RTP_HANDLE_TYPE type,char* pData,uint32_t len);
+    virtual int32_t handle_rtcp_packet(RTCP_HANDLE_TYPE type,char* pData,uint32_t len);
 public:
     void  set_rtp_over_tcp();
 
@@ -66,8 +66,6 @@ private:
     int32_t processRecvedMessage(const char* pData, uint32_t unDataSize);
 
     int32_t handleRTPRTCPData(const char* pData, uint32_t unDataSize) const;
-
-    void    handleMediaData(const char* pData, uint32_t unDataSize) const;
 
     int32_t handleRtspMessage(mk_rtsp_message &rtspMessage);
 private:
@@ -105,6 +103,9 @@ private:
     bool                         m_bSetupTcp;
     mk_rtsp_rtp_udp_handle*      m_rtpHandles[RTP_TYPE_MAX];
     mk_rtsp_rtcp_udp_handle*     m_rtcpHandles[RTCP_TYPE_MAX];
+
+    char                         m_cVideoInterleaveNum;
+    char                         m_cAudioInterleaveNum;
 
     as_url_t                     m_url;
     mk_media_sdp                 m_sdpInfo;

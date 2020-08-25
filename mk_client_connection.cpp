@@ -1,6 +1,7 @@
 #include "mk_client_connection.h"
 mk_client_connection::mk_client_connection()
 {
+    m_ulIndex        = 0;
     m_enType         = MK_CLIENT_TYPE_MAX;
     m_enStatus       = MR_CLIENT_STATUS_MAX;
     m_recvBuf        = NULL;
@@ -37,8 +38,15 @@ int32_t  mk_client_connection::do_next_recv(char* buf,uint32_t len,handle_client
     m_pMediaCbData   = data;
     return recv_next();
 }
-
-void    mk_client_connection::handle_connection_status()
+void     mk_client_connection::set_index(uint32_t ulIdx)
+{
+    m_ulIndex = ulIdx;
+}
+uint32_t mk_client_connection::get_index()
+{
+    return m_ulIndex;
+}
+void    mk_client_connection::handle_connection_media(MR_MEDIA_TYPE enType,uint32_t pts)
 {
     if(NULL == m_MediaCallBack) {
         return;
@@ -46,9 +54,9 @@ void    mk_client_connection::handle_connection_status()
     if(0 == m_ulRecvLen) {
         return;
     }
-    m_MediaCallBack(this,MR_MEDIA_TYPE_H265,0,m_recvBuf,m_ulRecvLen,m_pMediaCbData);
+    m_MediaCallBack(this,enType,pts,m_recvBuf,m_ulRecvLen,m_pMediaCbData);
 }
-void    mk_client_connection::handle_connection_media(MR_CLIENT_STATUS  enStatus)
+void    mk_client_connection::handle_connection_status(MR_CLIENT_STATUS  enStatus)
 {
     m_enStatus = enStatus;
     if(NULL == m_StatusCallBack) {

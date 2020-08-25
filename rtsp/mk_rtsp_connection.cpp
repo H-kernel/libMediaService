@@ -114,11 +114,11 @@ void mk_rtsp_connection::handle_send(void)
 {
     setHandleSend(AS_FALSE);
 }
-int32_t mk_rtsp_connection::handle_rtp_packet(char* pData,uint32_t len) 
+int32_t mk_rtsp_connection::handle_rtp_packet(RTP_HANDLE_TYPE type,char* pData,uint32_t len) 
 {
     return AS_ERROR_CODE_OK;
 }
-int32_t mk_rtsp_connection::handle_rtcp_packet(char* pData,uint32_t len)
+int32_t mk_rtsp_connection::handle_rtcp_packet(RTCP_HANDLE_TYPE type,char* pData,uint32_t len)
 {
     return AS_ERROR_CODE_OK;
 }
@@ -266,81 +266,22 @@ int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unData
         return 0;
     }
 
-    if (m_pRtpSession)
-    {
-        if (!m_pPeerSession)
-        {
-            AS_LOG(AS_LOG_WARNING,"rtsp connection handle rtcp message fail, "
-                    "can't find peer session.",m_unSessionIndex);
-
-            return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
-        }
-        if(m_bSetupTcp)
-        {
-            if ((m_cVideoInterleaveNum == pData[1])
-            || (m_cAudioInterleaveNum == pData[1]))
-            {
-                handleMediaData((const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
-            }
-        }
-
-        STREAM_INNER_MSG innerMsg;
-        fillStreamInnerMsg((char*)&innerMsg,
-                        m_pRtpSession->getStreamId(),
-                        NULL,
-                        m_PeerAddr.get_ip_address(),
-                        m_PeerAddr.get_port_number(),
-                        INNER_MSG_RTCP,
-                        0);
-        (void)m_pRtpSession->handleInnerMessage(innerMsg, sizeof(innerMsg), *m_pPeerSession);
+    if (m_cVideoInterleaveNum == pData[1]) {
+        handle_rtp_packet(VIDEO_RTP_HANDLE,(const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
+    }
+    else if(m_cAudioInterleaveNum == pData[1]) {
+        handle_rtp_packet(AUDIO_RTP_HANDLE,(const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
+    }
+    else if ((m_cVideoInterleaveNum + 1) == pData[1]) {
+        handle_rtcp_packet(VIDEO_RTCP_HANDLE,(const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
+    }
+    else if((m_cAudioInterleaveNum + 1 ) == pData[1]) {
+        handle_rtcp_packet(AUDIO_RTCP_HANDLE,(const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
     }
 
     return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
 }
 
-void mk_rtsp_connection::handleMediaData(const char* pData, uint32_t unDataSize) const
-{
-    uint64_t ullRtpSessionId = 0;
-
-    if(NULL == m_pRtpSession)
-    {
-        AS_LOG(AS_LOG_WARNING,"RtspPushSession,the rtp session is null.");
-        return;
-    }
-    ullRtpSessionId = m_pRtpSession->getStreamId();
-
-    ACE_Message_Block *pMsg = CMediaBlockBuffer::instance().allocMediaBlock();
-    if (NULL == pMsg)
-    {
-        AS_LOG(AS_LOG_WARNING,"RtspPushSession alloc media block fail.");
-        return ;
-    }
-
-
-
-    STREAM_TRANSMIT_PACKET *pPacket = (STREAM_TRANSMIT_PACKET *) (void*) pMsg->base();
-    pMsg->wr_ptr(sizeof(STREAM_TRANSMIT_PACKET) - 1); //
-
-    CRtpPacket rtpPacket;
-    (void)rtpPacket.ParsePacket(pData ,unDataSize);
-
-    pMsg->copy(pData, unDataSize);
-
-    pPacket->PuStreamId = ullRtpSessionId;
-    pPacket->enPacketType = STREAM_PACKET_TYPE_MEDIA_DATA;
-
-    int32_t nRet = AS_ERROR_CODE_OK;
-    nRet = CStreamMediaExchange::instance()->addData(pMsg);
-
-
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        CMediaBlockBuffer::instance().freeMediaBlock(pMsg);
-
-        return;
-    }
-    return;
-}
 
 int32_t mk_rtsp_connection::handleRtspMessage(mk_rtsp_message &rtspMessage)
 {

@@ -13,6 +13,9 @@ public:
     virtual int32_t start(const char* pszUrl);
     virtual void    stop();
     virtual int32_t recv_next();
+public:
+    virtual void handle_recv(void);
+    virtual void handle_send(void);
 private:
     srs_rtmp_t    m_rtmpHandle;
 };
