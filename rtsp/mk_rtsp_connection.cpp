@@ -19,20 +19,30 @@ mk_rtsp_connection::~mk_rtsp_connection()
 
 int32_t mk_rtsp_connection::start(const char* pszUrl)
 {
+    as_network_addr local;
+    as_network_addr remote;
     if(AS_ERROR_CODE_OK != as_parse_url(pszUrl,&m_url)) {
         return AS_ERROR_CODE_FAIL;
     }
-    return AS_ERROR_CODE_OK;
-}
-int32_t mk_rtsp_connection::send_rtsp_request()
-{
-    AS_LOG(AS_LOG_INFO,"rtsp client open send request message begin.");
+    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this);
+
+    remote.m_ulIpAddr = inet_aton((char*)&m_url.host[0]);
+    if(0 == m_url.port) {
+        remote.m_usPort   = RTSP_DEFAULT_PORT;
+    }
+    else {
+        remote.m_usPort   = m_url.port;
+    }
+    
+    if(AS_ERROR_CODE_OK != pNetWork->regTcpClient(&remote,&remote,this,enSyncOp,5)) {
+        return AS_ERROR_CODE_FAIL;
+    }
+
     if(AS_ERROR_CODE_OK != this->sendRtspOptionsReq()) {
         AS_LOG(AS_LOG_WARNING,"options:rtsp client send message fail.");
         return AS_ERROR_CODE_FAIL;
     }
     setHandleRecv(AS_TRUE);
-    AS_LOG(AS_LOG_INFO,"rtsp client open send request message end.");
     return AS_ERROR_CODE_OK;
 }
 
@@ -507,10 +517,6 @@ int32_t mk_rtsp_connection::sendRtspCmdWithContent(enRtspMethods type,char* head
         return AS_ERROR_CODE_FAIL;
     }
 
-
-    m_CseqReqMap.insert(REQ_TYPE_MAP::value_type(m_ulSeq,type));
-    m_ulSeq++；
-
     setHandleRecv(AS_TRUE);
 
     return AS_ERROR_CODE_OK;
@@ -520,15 +526,6 @@ int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
     uint32_t nCseq     = rtspMessage.getCseq();
     uint32_t nRespCode = rtspMessage.getRtspStatusCode();
     enRtspMethods enMethod   = RTSP_REQ_METHOD_NUM;
-
-    REQ_TYPE_MAP_ITER iter = m_CseqReqMap.find(nCseq);
-
-    
-
-    if(iter == m_CseqReqMap.end()) {
-        AS_LOG(AS_LOG_WARNING,"rtsp client there server reponse seq:[%d] unkown.",nCseq);
-        return AS_ERROR_CODE_FAIL;
-    }
 
     enMethod = iter->second;
     AS_LOG(AS_LOG_INFO,"rtsp client handle server reponse seq:[%d] ,mothod:[%d].",nCseq,enMethod);

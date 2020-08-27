@@ -43,7 +43,6 @@ public:
 
 public:
     int32_t start(const char* pszUrl);
-    int32_t send_rtsp_request(); 
     void    stop();
 
     const char* get_connect_addr();
@@ -61,6 +60,7 @@ public:
 
     void  set_status_callback(handle_client_status cb,void* ctx);
 private:
+    
     int32_t sendMessage(const char* pData, uint32_t unDataSize);
 private:
     int32_t processRecvedMessage(const char* pData, uint32_t unDataSize);
@@ -99,6 +99,7 @@ private:
     void    resetRtspConnect();
     void    trimString(std::string& srcString) const;
 private:
+    as_network_svr*              m_pNetWorker;
     RTSP_STATUS                  m_Status;
     bool                         m_bSetupTcp;
     mk_rtsp_rtp_udp_handle*      m_rtpHandles[RTP_TYPE_MAX];
@@ -113,10 +114,6 @@ private:
     char*                        m_RecvBuf[MAX_BYTES_PER_RECEIVE];
     uint32_t                     m_ulRecvSize;
     uint32_t                     m_ulSeq;
-
-    typedef std::map<uint32_t, uint32_t>    REQ_TYPE_MAP;
-    typedef REQ_TYPE_MAP::iterator          REQ_TYPE_MAP_ITER;
-    REQ_TYPE_MAP                 m_CseqReqMap;  
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

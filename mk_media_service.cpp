@@ -96,7 +96,18 @@ void mk_media_service::release()
     destory_frame_recv_bufs();
     destory_rtp_recv_bufs();
     destory_rtp_rtcp_udp_pairs();
-    m_NetWorkArray.exit();
+
+    as_network_svr* pNetWork = NULL;
+    for(uint32_t i = 0;i < m_ulEvnCount;i++) {
+        pNetWork = m_NetWorkArray[i];
+        if(NULL == pNetWork) {
+            continue;
+        }
+        pNetWork->exit();
+
+        AS_DELETE(pNetWork);
+        m_NetWorkArray[i] = NULL;
+    }
     return;
 }
 mk_rtsp_server* mk_media_service::create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx)
@@ -134,6 +145,11 @@ mk_client_connection* mk_media_service::create_client(char* url,handle_client_st
     as_network_addr  local;
     as_network_addr  peer;
 
+    if(m_ClientFreeList.empty()) {
+        return NULL;
+    }
+    
+
     if(0 == strncmp(url,RTSP_URL_PREFIX,strlen(RTSP_URL_PREFIX))) {
         pClient = AS_NEW(pRtspClient);
     }
@@ -145,9 +161,14 @@ mk_client_connection* mk_media_service::create_client(char* url,handle_client_st
         return AS_ERROR_CODE_FAIL;
     }
 
+    uint32_t ulIdx = m_ClientFreeList.front();
+    m_ClientFreeList.pop_front();
 
+    pClient->set_index(ulIdx);
     pClient->set_status_callback(cb,ctx);
     if(AS_ERROR_CODE_OK != pClient->start(url)) {
+        AS_DELETE(pClient);
+        m_ClientFreeList.push_back(ulIdx);
         return NULL;
     }
     return pClient;
@@ -157,8 +178,10 @@ void mk_media_service::destory_client(mk_client_connection* pClient)
     if(NULL == pClient) {
         return;
     }
+    uint32_t ulIdx = pClient->get_index();    
     pClient->stop();
     AS_DELETE(pClient);
+    m_ClientFreeList.push_back(ulIdx);
     return;
 }
 as_network_svr* mk_media_service::get_client_network_svr(mk_client_connection* pClient)
