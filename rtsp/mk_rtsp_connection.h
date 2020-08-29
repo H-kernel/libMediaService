@@ -1,5 +1,5 @@
-#ifndef STREAMRTSPPUSHSESSION_H_
-#define STREAMRTSPPUSHSESSION_H_
+#ifndef __MK_RTSP_CONNECTION_INCLUDE_H__
+#define __MK_RTSP_CONNECTION_INCLUDE_H__
 
 #include "as.h"
 #include "mk_rtsp_defs.h"
@@ -49,7 +49,7 @@ public:
     virtual int32_t handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len); 
 private:
     int32_t processRecvedMessage(const char* pData, uint32_t unDataSize);
-    int32_t handleRTPRTCPData(const char* pData, uint32_t unDataSize) const;
+    int32_t handleRTPRTCPData(const char* pData, uint32_t unDataSize);
 private:
     int32_t sendRtspOptionsReq();
     int32_t sendRtspDescribeReq();
@@ -93,4 +93,4 @@ private:
     rtsp_server_request m_cb;
     void*               m_ctx;
 };
-#endif /* STREAMRTSPPUSHSESSION_H_ */
+#endif /* __MK_RTSP_CONNECTION_INCLUDE_H__ */

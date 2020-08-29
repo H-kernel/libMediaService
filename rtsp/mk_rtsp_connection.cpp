@@ -3,10 +3,16 @@
 #include "mk_rtsp_connection.h"
 #include "mk_rtsp_packet.h"
 #include "mk_media_service.h"
+#include "mk_rtsp_service.h"
+#include <arpa/inet.h>
 
 
 mk_rtsp_connection::mk_rtsp_connection()
 {
+    m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]    = NULL;
+    m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]   = NULL;
+    m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]    = NULL;
+    m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]   = NULL;
     resetRtspConnect();
 }
 
@@ -66,11 +72,11 @@ void mk_rtsp_connection::handle_recv(void)
     {
         AS_LOG(AS_LOG_INFO,"rtsp connection,recv buffer is full, size[%u] length[%u].",
                 MAX_BYTES_PER_RECEIVE,
-                m_ulBufSize);
+                m_ulRecvSize);
         return;
     }
 
-    iRecvLen = this->recv(&m_RecvBuf[iRecvLen],&peer,iRecvLen,enAsyncOp);
+    iRecvLen = this->recv((char*)&m_RecvBuf[iRecvLen],&peer,iRecvLen,enAsyncOp);
     if (iRecvLen <= 0)
     {
         AS_LOG(AS_LOG_INFO,"rtsp connection recv data fail.");
@@ -84,7 +90,7 @@ void mk_rtsp_connection::handle_recv(void)
     int32_t nSize = 0;
     do
     {
-        nSize = processRecvedMessage(&m_RecvBuf[processedSize],
+        nSize = processRecvedMessage((const char*)&m_RecvBuf[processedSize],
                                      m_ulRecvSize - processedSize);
         if (nSize < 0) {
             AS_LOG(AS_LOG_WARNING,"tsp connection process recv data fail, close handle. ");
@@ -176,7 +182,7 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
     return ulMsgLen;
 }
 
-int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unDataSize) const
+int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unDataSize)
 {
     if (unDataSize < RTSP_INTERLEAVE_HEADER_LEN)
     {
@@ -188,17 +194,38 @@ int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unData
         return 0;
     }
 
+    if(unDataSize > RTP_RECV_BUF_SIZE ) {
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    char* buf = mk_rtsp_service::instance().get_rtp_recv_buf();
+    if(NULL == buf) {
+        /* drop it */
+        return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
+    }
+
+    memcpy(buf,&pData[RTSP_INTERLEAVE_HEADER_LEN],unMediaSize);
+
+    int32_t nRet = AS_ERROR_CODE_OK;
+
     if (RTSP_INTERLEAVE_NUM_VIDEO_RTP == pData[1]) {
-        handle_rtp_packet(MK_RTSP_UDP_VIDEO_RTP_HANDLE,(const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
+        nRet = this->handle_rtp_packet(MK_RTSP_UDP_VIDEO_RTP_HANDLE,buf,unMediaSize);
     }
     else if(RTSP_INTERLEAVE_NUM_AUDIO_RTP == pData[1]) {
-        handle_rtp_packet(MK_RTSP_UDP_AUDIO_RTP_HANDLE,(const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
+        nRet = this->handle_rtp_packet(MK_RTSP_UDP_AUDIO_RTP_HANDLE,buf,unMediaSize);
     }
     else if (RTSP_INTERLEAVE_NUM_VIDEO_RTCP == pData[1]) {
-        handle_rtcp_packet(MK_RTSP_UDP_VIDEO_RTCP_HANDLE,(const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
+        nRet = this->handle_rtcp_packet(MK_RTSP_UDP_VIDEO_RTCP_HANDLE,buf,unMediaSize);
     }
     else if(RTSP_INTERLEAVE_NUM_AUDIO_RTCP == pData[1]) {
-        handle_rtcp_packet(MK_RTSP_UDP_AUDIO_RTCP_HANDLE,(const char*)(pData+RTSP_INTERLEAVE_HEADER_LEN),unMediaSize);
+        nRet = this->handle_rtcp_packet(MK_RTSP_UDP_AUDIO_RTCP_HANDLE,buf,unMediaSize);
+    }
+    else {
+        mk_rtsp_service::instance().free_rtp_recv_buf(buf);
+    }
+
+    if(AS_ERROR_CODE_OK != nRet) {
+        mk_rtsp_service::instance().free_rtp_recv_buf(buf);
     }
 
     return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
@@ -282,7 +309,7 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
         mk_rtsp_udp_handle*  pRtpHandle  = NULL;
         mk_rtsp_udp_handle* pRtcpHandle = NULL;
 
-        if(AS_ERROR_CODE_OK != mk_media_service::instance().get_rtp_rtcp_pair(pRtpHandle,pRtcpHandle)) {
+        if(AS_ERROR_CODE_OK != mk_rtsp_service::instance().get_rtp_rtcp_pair(pRtpHandle,pRtcpHandle)) {
             AS_LOG(AS_LOG_ERROR,"rtsp connection client get rtp and rtcp handle for udp fail.");
             return AS_ERROR_CODE_FAIL;
         }
@@ -554,11 +581,17 @@ void mk_rtsp_connection::resetRtspConnect()
     m_ulSeq           = 0;
     m_Status          = RTSP_SESSION_STATUS_INIT;
     m_bSetupTcp       = false;
-    m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]    = NULL;
-    m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]   = NULL;
-    m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]    = NULL;
-    m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]   = NULL;
+    if(NULL != m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]) {
+        mk_rtsp_service::instance().free_rtp_rtcp_pair(m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]);
+        m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]    = NULL;
+        m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]   = NULL;
+    }
 
+    if(NULL != m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]) {
+        mk_rtsp_service::instance().free_rtp_rtcp_pair(m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]);
+        m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]    = NULL;
+        m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]   = NULL;
+    }
 }
 void mk_rtsp_connection::trimString(std::string& srcString) const
 {

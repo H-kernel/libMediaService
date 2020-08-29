@@ -13,7 +13,6 @@ typedef enum _enMK_RTSP_UDP_HANDLE_TYPE
     MK_RTSP_UDP_TYPE_MAX
 }MK_RTSP_HANDLE_TYPE;
 
-
 class mk_rtsp_rtp_udp_observer
 {
 public:
@@ -28,7 +27,7 @@ public:
 class mk_rtsp_udp_handle: public as_udp_sock_handle
 {
 public:
-    mk_rtsp_udp_handle(MK_RTSP_UDP_HANDLE type,uint32_t idx,uint16_t port);
+    mk_rtsp_udp_handle(MK_RTSP_HANDLE_TYPE type,uint32_t idx,uint16_t port);
     virtual ~mk_rtsp_udp_handle();
 public:
     uint32_t get_index();

@@ -1,5 +1,6 @@
 #include <string.h>
 #include "mk_media_service.h"
+#include "mk_rtsp_service.h"
 #include "mk_rtsp_connection.h"
 #include "mk_rtmp_connection.h"
 
@@ -7,14 +8,8 @@ mk_media_service::mk_media_service()
 {
     m_NetWorkArray        = NULL;
     m_ulEvnCount          = 0;
-    m_usUdpStartPort      = RTP_RTCP_START_PORT;
-    m_ulUdpPairCount      = RTP_RTCP_PORT_COUNT;
-    m_ulRtpBufSize        = RTP_RECV_BUF_SIZE;
-    m_ulRtpBufCount       = RTP_RECV_BUF_COUNT;
     m_ulFrameBufSize      = FRAME_RECV_BUF_SIZE;
     m_ulFramebufCount     = FRAME_RECV_BUF_COUNT;
-    m_pUdpRtpArray        = NULL;
-    m_pUdpRtcpArray       = NULL;
 }
 
 mk_media_service::~mk_media_service()
@@ -63,15 +58,6 @@ int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
 
     AS_LOG(AS_LOG_INFO,"init the network module success.");
 
-    nRet = create_rtp_recv_bufs();
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        AS_LOG(AS_LOG_WARNING,"create rtp recv bufs fail.");
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    AS_LOG(AS_LOG_INFO,"create rtp recv bufs success.");
-
     nRet = create_frame_recv_bufs();
     if (AS_ERROR_CODE_OK != nRet)
     {
@@ -81,22 +67,12 @@ int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
 
     AS_LOG(AS_LOG_INFO,"create frame recv bufs success.");
     
-    nRet = create_rtp_rtcp_udp_pairs();
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        AS_LOG(AS_LOG_WARNING,"create rtp and rtcp pairs fail.");
-        return AS_ERROR_CODE_FAIL;
-    }
-
-    return AS_ERROR_CODE_OK;
+    return mk_rtsp_service::instance().init();
 }
 
 void mk_media_service::release()
 {
     destory_frame_recv_bufs();
-    destory_rtp_recv_bufs();
-    destory_rtp_rtcp_udp_pairs();
-
     as_network_svr* pNetWork = NULL;
     for(uint32_t i = 0;i < m_ulEvnCount;i++) {
         pNetWork = m_NetWorkArray[i];
@@ -108,6 +84,7 @@ void mk_media_service::release()
         AS_DELETE(pNetWork);
         m_NetWorkArray[i] = NULL;
     }
+    mk_rtsp_service::instance().release();
     return;
 }
 mk_rtsp_server* mk_media_service::create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx)
@@ -192,23 +169,19 @@ as_network_svr* mk_media_service::get_client_network_svr(mk_client_connection* p
 }
 void    mk_media_service::set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count)
 {
-    m_usUdpStartPort      = udpPort;
-    m_ulUdpPairCount      = count;
+    mk_rtsp_service::instance().set_rtp_rtcp_udp_port(udpPort,count);
 }
 void    mk_media_service::get_rtp_rtcp_udp_port(uint16_t& udpPort,uint32_t& count)
 {
-    udpPort = m_usUdpStartPort;
-    count   = m_ulUdpPairCount;
+    mk_rtsp_service::instance().get_rtp_rtcp_udp_port(udpPort,count);
 }
-void    mk_media_service::set_rtp_recv_buf_info(uint32_t maxSize,uint32_t maxCount)
+void    mk_media_service::set_rtp_recv_buf_info(uint32_t maxCount)
 {
-    m_ulRtpBufSize        = maxSize;
-    m_ulRtpBufCount       = maxCount;
+    mk_rtsp_service::instance().set_rtp_recv_buf_info(maxCount);
 }
-void    mk_media_service::get_rtp_recv_buf_info(uint32_t& maxSize,uint32_t& maxCount)
+void    mk_media_service::get_rtp_recv_buf_info(uint32_t& maxCount)
 {
-    maxSize  = m_ulRtpBufSize;
-    maxCount = m_ulRtpBufCount;
+    mk_rtsp_service::instance().get_rtp_recv_buf_info(maxCount);
 }
 void    mk_media_service::set_media_frame_buffer(uint32_t maxSize,uint32_t maxCount)
 {
@@ -220,43 +193,7 @@ void    mk_media_service::get_media_frame_buffer(uint32_t& maxSize,uint32_t& max
     maxSize               = m_ulFrameBufSize;
     maxCount              = m_ulFramebufCount;
 }
-int32_t mk_media_service::get_rtp_rtcp_pair(mk_rtsp_udp_handle*&  pRtpHandle,mk_rtsp_udp_handle*&  pRtcpHandle)
-{
-    if(0 == m_RtpRtcpfreeList.size()) {
-        return AS_ERROR_CODE_FAIL;
-    }
 
-    uint32_t index = m_RtpRtcpfreeList.front();
-    m_RtpRtcpfreeList.pop_front();
-    pRtpHandle  = m_pUdpRtpArray[index];
-    pRtcpHandle = m_pUdpRtcpArray[index];
-
-    return AS_ERROR_CODE_OK;
-}
-void    mk_media_service::free_rtp_rtcp_pair(mk_rtsp_udp_handle* pRtpHandle)
-{
-    uint32_t index = pRtpHandle->get_index();
-    m_RtpRtcpfreeList.push_back(index);
-    return;
-}
-char*   mk_media_service::get_rtp_recv_buf()
-{
-    if(m_RtpRecvBufList.empty()) {
-        return NULL;
-    }
-
-    char* buf = m_RtpRecvBufList.front();
-    m_RtpRecvBufList.pop_front();
-    return buf;
-}
-void    mk_media_service::free_rtp_recv_buf(char* buf)
-{
-    if(NULL == buf) {
-        return;
-    }
-    m_RtpRecvBufList.push_back(buf);
-    return;
-}
 char*   mk_media_service::get_frame_buf()
 {
     if(m_FrameBufList.empty()) {
@@ -359,52 +296,18 @@ void    mk_media_service::destory_rtp_rtcp_udp_pairs()
     return;
 }
 
-int32_t mk_media_service::create_rtp_recv_bufs()
-{
-    AS_LOG(AS_LOG_INFO,"create rtp recv buf begin.");
-    if((0 == m_ulRtpBufSize)||(0 == m_ulRtpBufCount)) {
-        AS_LOG(AS_LOG_ERROR,"there is no init rtp recv buf arguments,size:[%d] count:[%d].",m_ulRtpBufSize,m_ulRtpBufCount);
-        return AS_ERROR_CODE_FAIL;
-    }
-    char* pBuf = NULL;
-    for(uint32_t i = 0;i < m_ulRtpBufCount;i++) {
-        pBuf = AS_NEW(pBuf,m_ulRtpBufSize);
-        if(NULL == pBuf) {
-            AS_LOG(AS_LOG_ERROR,"create the rtp recv buf fail,size:[%d] index:[%d].",m_ulRtpBufSize,i);
-            return AS_ERROR_CODE_FAIL;
-        }
-        m_RtpRecvBufList.push_back(pBuf);
-    }
-    AS_LOG(AS_LOG_INFO,"create rtp recv buf end.");
-    return AS_ERROR_CODE_OK;
-}
-void    mk_media_service::destory_rtp_recv_bufs()
-{
-    AS_LOG(AS_LOG_INFO,"destory rtp recv buf begin.");
-    char* pBuf = NULL;
-    while(0 <m_RtpRecvBufList.size()) {
-        pBuf = m_RtpRecvBufList.front();
-        m_RtpRecvBufList.pop_front();
-        if(NULL == pBuf) {
-            continue;
-        }
-        AS_DELETE(pBuf,MULTI);
-    }
-    AS_LOG(AS_LOG_INFO,"destory rtp recv buf end.");
-    return;
-}
 int32_t mk_media_service::create_frame_recv_bufs()
 {
     AS_LOG(AS_LOG_INFO,"create frame recv buf begin.");
     if((0 == m_ulFrameBufSize)||(0 == m_ulFramebufCount)) {
-        AS_LOG(AS_LOG_ERROR,"there is no init frame recv buf arguments,size:[%d] count:[%d].",m_ulRtpBufSize,m_ulRtpBufCount);
+        AS_LOG(AS_LOG_ERROR,"there is no init frame recv buf arguments,size:[%d] count:[%d].",m_ulFrameBufSize,m_ulFramebufCount);
         return AS_ERROR_CODE_FAIL;
     }
     char* pBuf = NULL;
     for(uint32_t i = 0;i < m_ulFramebufCount;i++) {
         pBuf = AS_NEW(pBuf,m_ulFrameBufSize);
         if(NULL == pBuf) {
-            AS_LOG(AS_LOG_ERROR,"create the frame recv buf fail,size:[%d] index:[%d].",m_ulRtpBufSize,i);
+            AS_LOG(AS_LOG_ERROR,"create the frame recv buf fail,size:[%d] index:[%d].",m_ulFrameBufSize,i);
             return AS_ERROR_CODE_FAIL;
         }
         m_FrameBufList.push_back(pBuf);

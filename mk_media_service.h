@@ -73,40 +73,21 @@ public:
     as_network_svr* get_client_network_svr(mk_client_connection* pClient);
     void    set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count);
     void    get_rtp_rtcp_udp_port(uint16_t& udpPort,uint32_t& count);
-    void    set_rtp_recv_buf_info(uint32_t maxSize,uint32_t maxCount);
-    void    get_rtp_recv_buf_info(uint32_t& maxSize,uint32_t& maxCount);
+    void    set_rtp_recv_buf_info(uint32_t maxCount);
+    void    get_rtp_recv_buf_info(uint32_t& maxCount);
     void    set_media_frame_buffer(uint32_t maxSize,uint32_t maxCount);
     void    get_media_frame_buffer(uint32_t& maxSize,uint32_t& maxCount);
 public:
-    int32_t get_rtp_rtcp_pair(mk_rtsp_udp_handle*&  pRtpHandle,mk_rtsp_udp_handle*&  pRtcpHandle);
-    void    free_rtp_rtcp_pair(mk_rtsp_udp_handle* pRtpHandle);
-    char*   get_rtp_recv_buf();
-    void    free_rtp_recv_buf(char* buf);
     char*   get_frame_buf();
     void    free_frame_buf(char* buf);
 private:
     mk_media_service();
-    int32_t create_rtp_rtcp_udp_pairs();
-    void    destory_rtp_rtcp_udp_pairs();
-    int32_t create_rtp_recv_bufs();
-    void    destory_rtp_recv_bufs();
     int32_t create_frame_recv_bufs();
     void    destory_frame_recv_bufs();
 private:
     as_network_svr**          m_NetWorkArray;
     uint32_t                  m_ulEvnCount;
     mk_conn_log               m_connLog;
-
-    uint16_t                  m_usUdpStartPort;
-    uint32_t                  m_ulUdpPairCount;
-    mk_rtsp_udp_handle**      m_pUdpRtpArray;
-    mk_rtsp_udp_handle**      m_pUdpRtcpArray;
-
-    typedef std::list<uint32_t> RTP_RTCP_UDP_PAIR_LIST;
-    RTP_RTCP_UDP_PAIR_LIST    m_RtpRtcpfreeList;
-
-    uint32_t                  m_ulRtpBufSize;
-    uint32_t                  m_ulRtpBufCount;
 
     uint32_t                  m_ulFrameBufSize;
     uint32_t                  m_ulFramebufCount;
