@@ -50,21 +50,3 @@ void mk_rtsp_udp_handle::recv_dummy_data()
     (void)recv(&buf[0],&peer,MK_RTSP_UDP_DUMMY_SIZE,enAsyncOp);
 
 }
-
-mk_rtsp_rtp_udp_handle::mk_rtsp_rtp_udp_handle(uint32_t idx,uint16_t port)
-    :mk_rtsp_udp_handle(MK_RTSP_UDP_HANDLE_RTP,idx,port)
-{
-}
-
-mk_rtsp_rtp_udp_handle::~mk_rtsp_rtp_udp_handle()
-{
-}
-
-mk_rtsp_rtcp_udp_handle::mk_rtsp_rtcp_udp_handle(uint32_t idx,uint16_t port)
-    :mk_rtsp_udp_handle(MK_RTSP_UDP_HANDLE_RTCP,idx,port)
-{
-}
-
-mk_rtsp_rtcp_udp_handle::~mk_rtsp_rtcp_udp_handle()
-{
-}

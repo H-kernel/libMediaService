@@ -220,7 +220,7 @@ void    mk_media_service::get_media_frame_buffer(uint32_t& maxSize,uint32_t& max
     maxSize               = m_ulFrameBufSize;
     maxCount              = m_ulFramebufCount;
 }
-int32_t mk_media_service::get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle,mk_rtsp_rtcp_udp_handle*&  pRtcpHandle)
+int32_t mk_media_service::get_rtp_rtcp_pair(mk_rtsp_udp_handle*&  pRtpHandle,mk_rtsp_udp_handle*&  pRtcpHandle)
 {
     if(0 == m_RtpRtcpfreeList.size()) {
         return AS_ERROR_CODE_FAIL;
@@ -233,7 +233,7 @@ int32_t mk_media_service::get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle
 
     return AS_ERROR_CODE_OK;
 }
-void    mk_media_service::free_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle* pRtpHandle)
+void    mk_media_service::free_rtp_rtcp_pair(mk_rtsp_udp_handle* pRtpHandle)
 {
     uint32_t index = pRtpHandle->get_index();
     m_RtpRtcpfreeList.push_back(index);
@@ -281,8 +281,8 @@ int32_t mk_media_service::create_rtp_rtcp_udp_pairs()
     
     uint32_t port = m_usUdpStartPort;
     uint32_t pairs = m_ulUdpPairCount/2;
-    mk_rtsp_rtp_udp_handle*  pRtpHandle  = NULL;
-    mk_rtsp_rtcp_udp_handle* pRtcpHandle = NULL;
+    mk_rtsp_udp_handle*  pRtpHandle  = NULL;
+    mk_rtsp_udp_handle* pRtcpHandle = NULL;
     as_network_addr addr;
     addr.m_lIpAddr = 0;
     addr.m_usPort = 0;
@@ -335,8 +335,8 @@ void    mk_media_service::destory_rtp_rtcp_udp_pairs()
 {
     AS_LOG(AS_LOG_INFO,"m_pUdpRtcpArray udp rtp and rtcp pair.");
 
-    mk_rtsp_rtp_udp_handle*  pRtpHandle  = NULL;
-    mk_rtsp_rtcp_udp_handle* pRtcpHandle = NULL;
+    mk_rtsp_udp_handle*  pRtpHandle  = NULL;
+    mk_rtsp_udp_handle* pRtcpHandle = NULL;
 
     for(uint32_t i = 0;i < m_ulUdpPairCount;i++) {
         pRtpHandle  = m_pUdpRtpArray[i];

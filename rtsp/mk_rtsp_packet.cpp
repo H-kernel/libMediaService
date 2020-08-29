@@ -46,9 +46,6 @@ string mk_rtsp_packet::m_strRtspHeaders[] =
     string("Content-Type"),
 
     string("RTP-Info"),
-    string("x-NAT-Info"),
-    string("X-PLAYINFO"),
-    string("X-PLAYCTRL")
 };
 
 string mk_rtsp_packet::m_strRtspStatusCode[] =
@@ -70,14 +67,10 @@ mk_rtsp_packet::mk_rtsp_packet()
     m_RtspCommonInfo.MethodIndex     = RtspIllegalMethod;
     m_RtspCommonInfo.StatusCodeIndex = RtspNotAcceptedStatus;
 
-    memset(&m_RtspNatInfo, 0x0, sizeof(m_RtspNatInfo));
-    m_RtspNatInfo.NatType  = RTSP_INVALID_NAT_TYPE;
 
     m_dSpeed        = 0;
     m_dScale        = 0;
 
-    m_strXPlayCtrl  = "";
-    m_strXPlayInfo  = "";
 
     m_strRtpInfo    = "";
     m_ulContenLength= 0;
@@ -387,17 +380,7 @@ int32_t mk_rtsp_packet::parseRtspHeaderValue(int32_t nHeaderIndex, const std::st
         AS_LOG(AS_LOG_DEBUG,"parsed SessionID: [%lld]", m_RtspCommonInfo.SessionID);
         break;
     }
-    case RtspXNatInfoHeader:
-    {
-        if (0 == strValue.size())
-        {
-            nRet = -1;
-            break;
-        }
 
-        nRet = parseNatInfo(strValue);
-        break;
-    }
     case RtspRangeHeader:
     {
         m_strRange = strValue;
@@ -451,12 +434,6 @@ int32_t mk_rtsp_packet::parseRtspHeaderValue(int32_t nHeaderIndex, const std::st
         }
 
         m_strRtpInfo = strValue;
-        break;
-    }
-    case RtspXPlayInfoHeader:
-    {
-        m_strXPlayInfo = strValue;
-        AS_LOG(AS_LOG_DEBUG,"parsed XPlayInfo: [%s]", m_strXPlayInfo.c_str());
         break;
     }
     default:
@@ -785,34 +762,6 @@ uint64_t mk_rtsp_packet::getSessionID() const
     return m_RtspCommonInfo.SessionID;
 }
 
-RTSP_XPLAYINFO_TYPE mk_rtsp_packet::getXPlayInfoType() const
-{
-    if ("" == m_strXPlayInfo)
-    {
-        return RTSP_XPLAYINFO_INVALID_TYPE;
-    }
-
-    string::size_type nPos = m_strXPlayInfo.find("CLOSE");
-    if (string::npos != nPos)
-    {
-        return RTSP_XPLAYINFO_TYPE_CLOSE;
-    }
-
-    nPos = m_strXPlayInfo.find("EOS");
-    if (string::npos != nPos)
-    {
-        return RTSP_XPLAYINFO_TYPE_EOS;
-    }
-
-    nPos = m_strXPlayInfo.find("BOS");
-    if (string::npos != nPos)
-    {
-        return RTSP_XPLAYINFO_TYPE_BOS;
-    }
-
-    return RTSP_XPLAYINFO_INVALID_TYPE;
-}
-
 void mk_rtsp_packet::setSessionID(uint64_t ullSessionID)
 {
     m_RtspCommonInfo.SessionID = ullSessionID;
@@ -832,46 +781,10 @@ void mk_rtsp_packet::setMethodIndex(uint32_t unMethodIndex)
     return;
 }
 
-void mk_rtsp_packet::setXPlayCtrl(const std::string &strXPlayCtrl)
-{
-    m_strXPlayCtrl = strXPlayCtrl;
-}
-
-void mk_rtsp_packet::setXPlayInfo(const std::string &strXPlayInfo)
-{
-    m_strXPlayInfo = strXPlayInfo;
-}
-
 
 bool mk_rtsp_packet::isResponse() const
 {
     return (m_RtspCommonInfo.MethodIndex == (uint32_t)RtspResponseMethod);
-}
-
-
-bool mk_rtsp_packet::hasNetInfo() const
-{
-    return (m_RtspNatInfo.NatType != RTSP_INVALID_NAT_TYPE);
-}
-
-
-void mk_rtsp_packet::getNatInfo(RTSP_NAT_INFO &info) const
-{
-    memcpy((char*)&info, &m_RtspNatInfo, sizeof(info));
-    return;
-}
-
-void mk_rtsp_packet::setNatInfo(const RTSP_NAT_INFO &info)
-{
-    memcpy((char*)&m_RtspNatInfo, &info, sizeof(info));
-    return;
-}
-
-
-void mk_rtsp_packet::clearNatInfo()
-{
-    m_RtspNatInfo.NatType  = RTSP_INVALID_NAT_TYPE;
-    return;
 }
 
 
@@ -931,25 +844,6 @@ int32_t mk_rtsp_packet::generateRtspReq(std::string& strReq)
 
     generateNatInfo(strReq);
 
-    // X-PLAYCTRL
-    if ((RtspSetParameterMethod == m_RtspCommonInfo.MethodIndex)
-            && ("" != m_strXPlayCtrl))
-    {
-        strReq += m_strRtspHeaders[RtspXPlayCtrl];
-        strReq += ":";
-        strReq += m_strXPlayCtrl;
-        strReq += RTSP_END_LINE;
-    }
-
-    // X-PLAYINFO
-    if ((RtspSetParameterMethod == m_RtspCommonInfo.MethodIndex) && ("" != m_strXPlayInfo))
-    {
-        strReq += m_strRtspHeaders[RtspXPlayInfoHeader];
-        strReq += ":";
-        strReq += m_strXPlayInfo;
-        strReq += RTSP_END_LINE;
-    }
-
     strReq += RTSP_END_LINE;
 
     return AS_ERROR_CODE_OK;
@@ -1004,50 +898,17 @@ void mk_rtsp_packet::generateAcceptedHeader(std::string& strRtsp)
         strRtsp += RTSP_END_LINE;
     }
 
-    return;
-}
-
-void mk_rtsp_packet::generateNatInfo(std::string& strRtsp)
-{
-    if ( RTSP_INVALID_NAT_TYPE != m_RtspNatInfo.NatType)
-    {
-        char szData[RTSP_MSG_LENGTH] = {0};
-        size_t nOffset      = 0;
-        if (RTSP_NAT_TYPE_RTP == m_RtspNatInfo.NatType)
-        {
-            nOffset += snprintf(szData + nOffset,
-                                RTSP_MSG_LENGTH - nOffset,
-                                "x-NAT-Info:type=RTP;");        //lint !e737
-        }
-        else
-        {
-            nOffset += snprintf(szData + nOffset,
-                                RTSP_MSG_LENGTH - nOffset,
-                                "x-NAT-Info:type=RTCP;");       //lint !e737
-        }
-
-        struct in_addr localIp, srcIp;
-        localIp.s_addr = htonl(m_RtspNatInfo.LocalIp);
-        nOffset += snprintf(szData + nOffset, RTSP_MSG_LENGTH - nOffset,
-                "local_addr=%s;local_port=%d;",
-                inet_ntoa(localIp),
-                m_RtspNatInfo.LocalPort); //lint !e737
-
-        if ((0 != m_RtspNatInfo.SrcIp) &&(0 != m_RtspNatInfo.SrcPort))
-        {
-            srcIp.s_addr = htonl(m_RtspNatInfo.SrcIp);
-            nOffset += snprintf(szData + nOffset,
-                    RTSP_MSG_LENGTH - nOffset,
-                    "src_addr=%s;src_port=%d",
-                    inet_ntoa(srcIp), m_RtspNatInfo.SrcPort); //lint !e737
-        }
-
-        strRtsp += szData;
+    // Transport
+    if("" != m_strTransPort) {
+        strRtsp += m_strRtspHeaders[RtspTransPortHeader];
+        strRtsp += ":";
+        strRtsp += m_strTransPort;
         strRtsp += RTSP_END_LINE;
     }
 
     return;
 }
+
 
 int32_t mk_rtsp_packet::getRangeTime(uint32_t &unTimeType,
                               uint32_t &unStartTime,

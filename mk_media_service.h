@@ -78,8 +78,8 @@ public:
     void    set_media_frame_buffer(uint32_t maxSize,uint32_t maxCount);
     void    get_media_frame_buffer(uint32_t& maxSize,uint32_t& maxCount);
 public:
-    int32_t get_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle*&  pRtpHandle,mk_rtsp_rtcp_udp_handle*&  pRtcpHandle);
-    void    free_rtp_rtcp_pair(mk_rtsp_rtp_udp_handle* pRtpHandle);
+    int32_t get_rtp_rtcp_pair(mk_rtsp_udp_handle*&  pRtpHandle,mk_rtsp_udp_handle*&  pRtcpHandle);
+    void    free_rtp_rtcp_pair(mk_rtsp_udp_handle* pRtpHandle);
     char*   get_rtp_recv_buf();
     void    free_rtp_recv_buf(char* buf);
     char*   get_frame_buf();
@@ -99,8 +99,8 @@ private:
 
     uint16_t                  m_usUdpStartPort;
     uint32_t                  m_ulUdpPairCount;
-    mk_rtsp_rtp_udp_handle**  m_pUdpRtpArray;
-    mk_rtsp_rtcp_udp_handle** m_pUdpRtcpArray;
+    mk_rtsp_udp_handle**      m_pUdpRtpArray;
+    mk_rtsp_udp_handle**      m_pUdpRtcpArray;
 
     typedef std::list<uint32_t> RTP_RTCP_UDP_PAIR_LIST;
     RTP_RTCP_UDP_PAIR_LIST    m_RtpRtcpfreeList;
