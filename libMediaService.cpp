@@ -2,9 +2,11 @@
 #include "mk_media_service.h"
 #include "mk_client_connection.h"
 
+static mk_log g_log = NULL;
 /* init the media rtsp libary */
-MR_API int32_t   mk_lib_rtsp_init(uint32_t EvnCount)
+MR_API int32_t   mk_lib_rtsp_init(uint32_t EvnCount,mk_log log)
 {
+    g_log =  log;
     return mk_media_service::instance().init(udpstart,count);
 }
 /* release the media rtsp bibary */

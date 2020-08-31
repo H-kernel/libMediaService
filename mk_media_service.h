@@ -50,7 +50,7 @@ public:
             nLevel = AS_LOG_DEBUG;
         }
 
-        AS_LOG(nLevel,"[connect]:%s",szLogDetail);
+        MK_LOG(nLevel,"[connect]:%s",szLogDetail);
     }
 };
 

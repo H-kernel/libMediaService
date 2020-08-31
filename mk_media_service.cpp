@@ -3,6 +3,7 @@
 #include "mk_rtsp_service.h"
 #include "mk_rtsp_connection.h"
 #include "mk_rtmp_connection.h"
+#include "mk_media_common.h"
 
 mk_media_service::mk_media_service()
 {
@@ -39,14 +40,14 @@ int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
         nRet = pNetWork->init(DEFAULT_SELECT_PERIOD,AS_TRUE,AS_TRUE,AS_TRUE);
         if (AS_ERROR_CODE_OK != nRet)
         {
-            AS_LOG(AS_LOG_WARNING,"init the network module fail.");
+            MK_LOG(AS_LOG_WARNING,"init the network module fail.");
             return AS_ERROR_CODE_FAIL;
         }
 
         nRet = pNetWork->run();
         if (AS_ERROR_CODE_OK != nRet)
         {
-            AS_LOG(AS_LOG_WARNING,"run the network module fail.");
+            MK_LOG(AS_LOG_WARNING,"run the network module fail.");
             return AS_ERROR_CODE_FAIL;
         }
         m_NetWorkArray[i] = pNetWork;        
@@ -56,16 +57,16 @@ int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
         m_ClientFreeList.push_back(i);    
     } 
 
-    AS_LOG(AS_LOG_INFO,"init the network module success.");
+    MK_LOG(AS_LOG_INFO,"init the network module success.");
 
     nRet = create_frame_recv_bufs();
     if (AS_ERROR_CODE_OK != nRet)
     {
-        AS_LOG(AS_LOG_WARNING,"create frame recv bufs fail.");
+        MK_LOG(AS_LOG_WARNING,"create frame recv bufs fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
-    AS_LOG(AS_LOG_INFO,"create frame recv bufs success.");
+    MK_LOG(AS_LOG_INFO,"create frame recv bufs success.");
     
     return mk_rtsp_service::instance().init();
 }
@@ -214,7 +215,7 @@ void    mk_media_service::free_frame_buf(char* buf)
 }
 int32_t mk_media_service::create_rtp_rtcp_udp_pairs()
 {
-    AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs,start port:[%d],count:[%d].",m_usUdpStartPort,m_ulUdpPairCount);
+    MK_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs,start port:[%d],count:[%d].",m_usUdpStartPort,m_ulUdpPairCount);
     
     uint32_t port = m_usUdpStartPort;
     uint32_t pairs = m_ulUdpPairCount/2;
@@ -227,50 +228,50 @@ int32_t mk_media_service::create_rtp_rtcp_udp_pairs()
 
     m_pUdpRtpArray  = AS_NEW(m_pUdpRtpArray,pairs);
     if(NULL == m_pUdpRtpArray) {
-        AS_LOG(AS_LOG_CRITICAL,"create rtp handle array fail.");
+        MK_LOG(AS_LOG_CRITICAL,"create rtp handle array fail.");
         return AS_ERROR_CODE_FAIL;
     }
     m_pUdpRtcpArray = AS_NEW(m_pUdpRtcpArray,pairs);
     if(NULL == m_pUdpRtcpArray) {
-        AS_LOG(AS_LOG_CRITICAL,"create rtcp handle array fail.");
+        MK_LOG(AS_LOG_CRITICAL,"create rtcp handle array fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
     for(uint32_t i = 0;i < pairs;i++) {
         pRtpHandle = AS_NEW(pRtpHandle);
         if(NULL == pRtpHandle) {
-            AS_LOG(AS_LOG_CRITICAL,"create rtp handle object fail.");
+            MK_LOG(AS_LOG_CRITICAL,"create rtp handle object fail.");
             return AS_ERROR_CODE_FAIL;
         }
         addr.m_usPort = port;
         port++;
         nRet = m_NetWorkArray.regUdpSocket(&addr,pRtpHandle);
         if(AS_ERROR_CODE_OK != nRet) {
-            AS_LOG(AS_LOG_ERROR,"register the rtp udp handle fail,port:[%d].",addr.m_usPort);
+            MK_LOG(AS_LOG_ERROR,"register the rtp udp handle fail,port:[%d].",addr.m_usPort);
             return AS_ERROR_CODE_FAIL;
         }
         pRtcpHandle = AS_NEW(pRtcpHandle);
         if(NULL == pRtcpHandle) {
-            AS_LOG(AS_LOG_CRITICAL,"create rtcp handle object fail.");
+            MK_LOG(AS_LOG_CRITICAL,"create rtcp handle object fail.");
             return AS_ERROR_CODE_FAIL;
         }
         addr.m_usPort = port;
         port++;
         nRet = m_NetWorkArray.regUdpSocket(&addr,pRtcpHandle);
         if(AS_ERROR_CODE_OK != nRet) {
-            AS_LOG(AS_LOG_ERROR,"register the rtcp udp handle fail,port:[%d].",addr.m_usPort);
+            MK_LOG(AS_LOG_ERROR,"register the rtcp udp handle fail,port:[%d].",addr.m_usPort);
             return AS_ERROR_CODE_FAIL;
         }
         m_pUdpRtpArray[i]  = pRtpHandle;
         m_pUdpRtcpArray[i] = pRtcpHandle;
         m_RtpRtcpfreeList.push_back(i);
     }
-    AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs success.");
+    MK_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs success.");
     return AS_ERROR_CODE_OK;
 }
 void    mk_media_service::destory_rtp_rtcp_udp_pairs()
 {
-    AS_LOG(AS_LOG_INFO,"m_pUdpRtcpArray udp rtp and rtcp pair.");
+    MK_LOG(AS_LOG_INFO,"m_pUdpRtcpArray udp rtp and rtcp pair.");
 
     mk_rtsp_udp_handle*  pRtpHandle  = NULL;
     mk_rtsp_udp_handle* pRtcpHandle = NULL;
@@ -292,32 +293,32 @@ void    mk_media_service::destory_rtp_rtcp_udp_pairs()
              m_pUdpRtcpArray[i] = NULL;
         }
     }
-    AS_LOG(AS_LOG_INFO,"destory udp rtp and rtcp pairs success.");
+    MK_LOG(AS_LOG_INFO,"destory udp rtp and rtcp pairs success.");
     return;
 }
 
 int32_t mk_media_service::create_frame_recv_bufs()
 {
-    AS_LOG(AS_LOG_INFO,"create frame recv buf begin.");
+    MK_LOG(AS_LOG_INFO,"create frame recv buf begin.");
     if((0 == m_ulFrameBufSize)||(0 == m_ulFramebufCount)) {
-        AS_LOG(AS_LOG_ERROR,"there is no init frame recv buf arguments,size:[%d] count:[%d].",m_ulFrameBufSize,m_ulFramebufCount);
+        MK_LOG(AS_LOG_ERROR,"there is no init frame recv buf arguments,size:[%d] count:[%d].",m_ulFrameBufSize,m_ulFramebufCount);
         return AS_ERROR_CODE_FAIL;
     }
     char* pBuf = NULL;
     for(uint32_t i = 0;i < m_ulFramebufCount;i++) {
         pBuf = AS_NEW(pBuf,m_ulFrameBufSize);
         if(NULL == pBuf) {
-            AS_LOG(AS_LOG_ERROR,"create the frame recv buf fail,size:[%d] index:[%d].",m_ulFrameBufSize,i);
+            MK_LOG(AS_LOG_ERROR,"create the frame recv buf fail,size:[%d] index:[%d].",m_ulFrameBufSize,i);
             return AS_ERROR_CODE_FAIL;
         }
         m_FrameBufList.push_back(pBuf);
     }
-    AS_LOG(AS_LOG_INFO,"create frame recv buf end.");
+    MK_LOG(AS_LOG_INFO,"create frame recv buf end.");
     return AS_ERROR_CODE_OK;
 }
 void    mk_media_service::destory_frame_recv_bufs()
 {
-    AS_LOG(AS_LOG_INFO,"destory frame recv buf begin.");
+    MK_LOG(AS_LOG_INFO,"destory frame recv buf begin.");
     char* pBuf = NULL;
     while(0 <m_FrameBufList.size()) {
         pBuf = m_FrameBufList.front();
@@ -327,6 +328,6 @@ void    mk_media_service::destory_frame_recv_bufs()
         }
         AS_DELETE(pBuf,MULTI);
     }
-    AS_LOG(AS_LOG_INFO,"destory frame recv buf end.");
+    MK_LOG(AS_LOG_INFO,"destory frame recv buf end.");
     return;
 }

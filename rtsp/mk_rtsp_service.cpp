@@ -2,6 +2,7 @@
 #include "mk_rtsp_service.h"
 #include "mk_rtsp_connection.h"
 #include "mk_rtmp_connection.h"
+#include "mk_media_common.h"
 
 mk_rtsp_service::mk_rtsp_service()
 {
@@ -24,16 +25,16 @@ int32_t mk_rtsp_service::init()
     nRet = create_rtp_recv_bufs();
     if (AS_ERROR_CODE_OK != nRet)
     {
-        AS_LOG(AS_LOG_WARNING,"create rtp recv bufs fail.");
+        MK_LOG(AS_LOG_WARNING,"create rtp recv bufs fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
-    AS_LOG(AS_LOG_INFO,"create rtp recv bufs success.");
+    MK_LOG(AS_LOG_INFO,"create rtp recv bufs success.");
     
     nRet = create_rtp_rtcp_udp_pairs();
     if (AS_ERROR_CODE_OK != nRet)
     {
-        AS_LOG(AS_LOG_WARNING,"create rtp and rtcp pairs fail.");
+        MK_LOG(AS_LOG_WARNING,"create rtp and rtcp pairs fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -104,7 +105,7 @@ void    mk_rtsp_service::free_rtp_recv_buf(char* buf)
 }
 int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
 {
-    AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs,start port:[%d],count:[%d].",m_usUdpStartPort,m_ulUdpPairCount);
+    MK_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs,start port:[%d],count:[%d].",m_usUdpStartPort,m_ulUdpPairCount);
     
     uint32_t port = m_usUdpStartPort;
     uint32_t pairs = m_ulUdpPairCount/2;
@@ -117,50 +118,50 @@ int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
 
     m_pUdpRtpArray  = AS_NEW(m_pUdpRtpArray,pairs);
     if(NULL == m_pUdpRtpArray) {
-        AS_LOG(AS_LOG_CRITICAL,"create rtp handle array fail.");
+        MK_LOG(AS_LOG_CRITICAL,"create rtp handle array fail.");
         return AS_ERROR_CODE_FAIL;
     }
     m_pUdpRtcpArray = AS_NEW(m_pUdpRtcpArray,pairs);
     if(NULL == m_pUdpRtcpArray) {
-        AS_LOG(AS_LOG_CRITICAL,"create rtcp handle array fail.");
+        MK_LOG(AS_LOG_CRITICAL,"create rtcp handle array fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
     for(uint32_t i = 0;i < pairs;i++) {
         pRtpHandle = AS_NEW(pRtpHandle);
         if(NULL == pRtpHandle) {
-            AS_LOG(AS_LOG_CRITICAL,"create rtp handle object fail.");
+            MK_LOG(AS_LOG_CRITICAL,"create rtp handle object fail.");
             return AS_ERROR_CODE_FAIL;
         }
         addr.m_usPort = port;
         port++;
         nRet = m_NetWorkArray.regUdpSocket(&addr,pRtpHandle);
         if(AS_ERROR_CODE_OK != nRet) {
-            AS_LOG(AS_LOG_ERROR,"register the rtp udp handle fail,port:[%d].",addr.m_usPort);
+            MK_LOG(AS_LOG_ERROR,"register the rtp udp handle fail,port:[%d].",addr.m_usPort);
             return AS_ERROR_CODE_FAIL;
         }
         pRtcpHandle = AS_NEW(pRtcpHandle);
         if(NULL == pRtcpHandle) {
-            AS_LOG(AS_LOG_CRITICAL,"create rtcp handle object fail.");
+            MK_LOG(AS_LOG_CRITICAL,"create rtcp handle object fail.");
             return AS_ERROR_CODE_FAIL;
         }
         addr.m_usPort = port;
         port++;
         nRet = m_NetWorkArray.regUdpSocket(&addr,pRtcpHandle);
         if(AS_ERROR_CODE_OK != nRet) {
-            AS_LOG(AS_LOG_ERROR,"register the rtcp udp handle fail,port:[%d].",addr.m_usPort);
+            MK_LOG(AS_LOG_ERROR,"register the rtcp udp handle fail,port:[%d].",addr.m_usPort);
             return AS_ERROR_CODE_FAIL;
         }
         m_pUdpRtpArray[i]  = pRtpHandle;
         m_pUdpRtcpArray[i] = pRtcpHandle;
         m_RtpRtcpfreeList.push_back(i);
     }
-    AS_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs success.");
+    MK_LOG(AS_LOG_INFO,"create udp rtp and rtcp pairs success.");
     return AS_ERROR_CODE_OK;
 }
 void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
 {
-    AS_LOG(AS_LOG_INFO,"m_pUdpRtcpArray udp rtp and rtcp pair.");
+    MK_LOG(AS_LOG_INFO,"m_pUdpRtcpArray udp rtp and rtcp pair.");
 
     mk_rtsp_udp_handle*  pRtpHandle  = NULL;
     mk_rtsp_udp_handle* pRtcpHandle = NULL;
@@ -182,32 +183,32 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
              m_pUdpRtcpArray[i] = NULL;
         }
     }
-    AS_LOG(AS_LOG_INFO,"destory udp rtp and rtcp pairs success.");
+    MK_LOG(AS_LOG_INFO,"destory udp rtp and rtcp pairs success.");
     return;
 }
 
 int32_t mk_rtsp_service::create_rtp_recv_bufs()
 {
-    AS_LOG(AS_LOG_INFO,"create rtp recv buf begin.");
+    MK_LOG(AS_LOG_INFO,"create rtp recv buf begin.");
     if(0 == m_ulRtpBufCount) {
-        AS_LOG(AS_LOG_ERROR,"there is no init rtp recv buf arguments,size:[%d] count:[%d].",RTP_RECV_BUF_SIZE,m_ulRtpBufCount);
+        MK_LOG(AS_LOG_ERROR,"there is no init rtp recv buf arguments,size:[%d] count:[%d].",RTP_RECV_BUF_SIZE,m_ulRtpBufCount);
         return AS_ERROR_CODE_FAIL;
     }
     char* pBuf = NULL;
     for(uint32_t i = 0;i < m_ulRtpBufCount;i++) {
         pBuf = AS_NEW(pBuf,RTP_RECV_BUF_SIZE);
         if(NULL == pBuf) {
-            AS_LOG(AS_LOG_ERROR,"create the rtp recv buf fail,size:[%d] index:[%d].",RTP_RECV_BUF_SIZE,i);
+            MK_LOG(AS_LOG_ERROR,"create the rtp recv buf fail,size:[%d] index:[%d].",RTP_RECV_BUF_SIZE,i);
             return AS_ERROR_CODE_FAIL;
         }
         m_RtpRecvBufList.push_back(pBuf);
     }
-    AS_LOG(AS_LOG_INFO,"create rtp recv buf end.");
+    MK_LOG(AS_LOG_INFO,"create rtp recv buf end.");
     return AS_ERROR_CODE_OK;
 }
 void    mk_rtsp_service::destory_rtp_recv_bufs()
 {
-    AS_LOG(AS_LOG_INFO,"destory rtp recv buf begin.");
+    MK_LOG(AS_LOG_INFO,"destory rtp recv buf begin.");
     char* pBuf = NULL;
     while(0 <m_RtpRecvBufList.size()) {
         pBuf = m_RtpRecvBufList.front();
@@ -217,6 +218,6 @@ void    mk_rtsp_service::destory_rtp_recv_bufs()
         }
         AS_DELETE(pBuf,MULTI);
     }
-    AS_LOG(AS_LOG_INFO,"destory rtp recv buf end.");
+    MK_LOG(AS_LOG_INFO,"destory rtp recv buf end.");
     return;
 }

@@ -5,7 +5,7 @@
 #include "mk_media_service.h"
 #include "mk_rtsp_service.h"
 #include <arpa/inet.h>
-
+#include "mk_media_common.h"
 
 mk_rtsp_connection::mk_rtsp_connection()
 {
@@ -43,7 +43,7 @@ int32_t mk_rtsp_connection::start(const char* pszUrl)
     }
 
     if(AS_ERROR_CODE_OK != this->sendRtspOptionsReq()) {
-        AS_LOG(AS_LOG_WARNING,"options:rtsp client send message fail.");
+        MK_LOG(AS_LOG_WARNING,"options:rtsp client send message fail.");
         return AS_ERROR_CODE_FAIL;
     }
     setHandleRecv(AS_TRUE);
@@ -54,7 +54,7 @@ void mk_rtsp_connection::stop()
 {
     resetRtspConnect();
     setHandleRecv(AS_FALSE);
-    AS_LOG(AS_LOG_INFO,"close rtsp client.");
+    MK_LOG(AS_LOG_INFO,"close rtsp client.");
     return;
 }
 
@@ -70,7 +70,7 @@ void mk_rtsp_connection::handle_recv(void)
     int32_t iRecvLen = (int32_t) (MAX_BYTES_PER_RECEIVE -  m_ulRecvSize);
     if (iRecvLen <= 0)
     {
-        AS_LOG(AS_LOG_INFO,"rtsp connection,recv buffer is full, size[%u] length[%u].",
+        MK_LOG(AS_LOG_INFO,"rtsp connection,recv buffer is full, size[%u] length[%u].",
                 MAX_BYTES_PER_RECEIVE,
                 m_ulRecvSize);
         return;
@@ -79,7 +79,7 @@ void mk_rtsp_connection::handle_recv(void)
     iRecvLen = this->recv((char*)&m_RecvBuf[iRecvLen],&peer,iRecvLen,enAsyncOp);
     if (iRecvLen <= 0)
     {
-        AS_LOG(AS_LOG_INFO,"rtsp connection recv data fail.");
+        MK_LOG(AS_LOG_INFO,"rtsp connection recv data fail.");
         return;
     }
 
@@ -93,7 +93,7 @@ void mk_rtsp_connection::handle_recv(void)
         nSize = processRecvedMessage((const char*)&m_RecvBuf[processedSize],
                                      m_ulRecvSize - processedSize);
         if (nSize < 0) {
-            AS_LOG(AS_LOG_WARNING,"tsp connection process recv data fail, close handle. ");
+            MK_LOG(AS_LOG_WARNING,"tsp connection process recv data fail, close handle. ");
             return;
         }
 
@@ -146,7 +146,7 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
 
     if (AS_ERROR_CODE_OK != nRet)
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp connection check rtsp message fail.");
+        MK_LOG(AS_LOG_WARNING,"rtsp connection check rtsp message fail.");
         return AS_ERROR_CODE_FAIL;
     }
     if(0 == ulMsgLen) {
@@ -156,7 +156,7 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
     nRet = rtspPacket.parse(pData,unDataSize);
     if (AS_ERROR_CODE_OK != nRet)
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp connection parser rtsp message fail.");
+        MK_LOG(AS_LOG_WARNING,"rtsp connection parser rtsp message fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -175,10 +175,10 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
         }
     }
     if(AS_ERROR_CODE_OK != nRet) {
-        AS_LOG(AS_LOG_WARNING,"rtsp connection process rtsp message fail.");
+        MK_LOG(AS_LOG_WARNING,"rtsp connection process rtsp message fail.");
         return AS_ERROR_CODE_FAIL;
     }
-    AS_LOG(AS_LOG_INFO,"rtsp connection success to process rtsp message.");
+    MK_LOG(AS_LOG_INFO,"rtsp connection success to process rtsp message.");
     return ulMsgLen;
 }
 
@@ -310,7 +310,7 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
         mk_rtsp_udp_handle* pRtcpHandle = NULL;
 
         if(AS_ERROR_CODE_OK != mk_rtsp_service::instance().get_rtp_rtcp_pair(pRtpHandle,pRtcpHandle)) {
-            AS_LOG(AS_LOG_ERROR,"rtsp connection client get rtp and rtcp handle for udp fail.");
+            MK_LOG(AS_LOG_ERROR,"rtsp connection client get rtp and rtcp handle for udp fail.");
             return AS_ERROR_CODE_FAIL;
         }
 
@@ -323,7 +323,7 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
             m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]  = pRtcpHandle;
         }
         else {
-            AS_LOG(AS_LOG_ERROR,"rtsp connection client ,the media type is not rtp and rtcp.");
+            MK_LOG(AS_LOG_ERROR,"rtsp connection client ,the media type is not rtp and rtcp.");
             return AS_ERROR_CODE_FAIL;
         }
 
@@ -425,11 +425,11 @@ int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
     enRtspMethods enMethod   = RtspNotAcceptedHeader;
 
     enMethod = iter->second;
-    AS_LOG(AS_LOG_INFO,"rtsp client handle server reponse seq:[%d] ,mothod:[%d].",nCseq,enMethod);
+    MK_LOG(AS_LOG_INFO,"rtsp client handle server reponse seq:[%d] ,mothod:[%d].",nCseq,enMethod);
 
     if(RtspStatus_200 != nRespCode) {
         /*close socket */
-        AS_LOG(AS_LOG_WARNING,"rtsp client there server reponse code:[%d].",nRespCode);
+        MK_LOG(AS_LOG_WARNING,"rtsp client there server reponse code:[%d].",nRespCode);
         return AS_ERROR_CODE_FAIL;
     }
     int nRet = AS_ERROR_CODE_OK;
@@ -508,7 +508,7 @@ int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
             break;
         }
     }
-    AS_LOG(AS_LOG_INFO,"rtsp client handle server reponse end.");
+    MK_LOG(AS_LOG_INFO,"rtsp client handle server reponse end.");
     return nRet;
 }
 
@@ -517,11 +517,11 @@ int32_t mk_rtsp_connection::handleRtspDescribeResp(mk_rtsp_packet &rtspMessage)
     std::string strSdp = "";
     rtspMessage.getContent(strSdp);
 
-    AS_LOG(AS_LOG_INFO,"rtsp client connection handle describe response sdp:[%s].",strSdp.c_str());
+    MK_LOG(AS_LOG_INFO,"rtsp client connection handle describe response sdp:[%s].",strSdp.c_str());
 
     int32_t nRet = m_sdpInfo.decodeSdp(strSdp);
     if(AS_ERROR_CODE_OK != nRet) {
-        AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe sdp:[%s] fail.",strSdp.c_str());
+        MK_LOG(AS_LOG_WARNING,"rtsp connection handle describe sdp:[%s] fail.",strSdp.c_str());
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -530,31 +530,31 @@ int32_t mk_rtsp_connection::handleRtspDescribeResp(mk_rtsp_packet &rtspMessage)
     m_sdpInfo.getAudioInfo(m_mediaInfoList);
 
     if(0 == m_mediaInfoList.size()) {
-        AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe response fail,there is no media info.");
+        MK_LOG(AS_LOG_WARNING,"rtsp connection handle describe response fail,there is no media info.");
         return AS_ERROR_CODE_FAIL;
     }
 
     SDP_MEDIA_INFO& info = m_mediaInfoList.front();
     nRet = sendRtspSetupReq(info);
     if(AS_ERROR_CODE_OK != nRet) {
-        AS_LOG(AS_LOG_WARNING,"rtsp connection handle describe response,send setup fail.");
+        MK_LOG(AS_LOG_WARNING,"rtsp connection handle describe response,send setup fail.");
         return AS_ERROR_CODE_FAIL;
     }
     m_mediaInfoList.pop_front();
     
-    AS_LOG(AS_LOG_INFO,"rtsp client connection handle describe response end.");
+    MK_LOG(AS_LOG_INFO,"rtsp client connection handle describe response end.");
     return AS_ERROR_CODE_OK;
 }
 int32_t mk_rtsp_connection::handleRtspSetUpResp(mk_rtsp_packet &rtspMessage)
 {
-    AS_LOG(AS_LOG_INFO,"rtsp client connection handle setup response begin.");
+    MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response begin.");
     int32_t nRet = AS_ERROR_CODE_OK;
     if(0 < m_mediaInfoList.size()) {
-        AS_LOG(AS_LOG_INFO,"rtsp client connection handle setup response,send next setup messgae.");
+        MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response,send next setup messgae.");
         SDP_MEDIA_INFO& info = m_mediaInfoList.front();
         nRet = sendRtspSetupReq(info);
         if(AS_ERROR_CODE_OK != nRet) {
-            AS_LOG(AS_LOG_WARNING,"rtsp connection handle setup response,send next setup fail.");
+            MK_LOG(AS_LOG_WARNING,"rtsp connection handle setup response,send next setup fail.");
             return AS_ERROR_CODE_FAIL;
         }
         m_mediaInfoList.pop_front();
@@ -562,10 +562,10 @@ int32_t mk_rtsp_connection::handleRtspSetUpResp(mk_rtsp_packet &rtspMessage)
     else {
         m_Status = RTSP_SESSION_STATUS_SETUP;
         /* send play */
-        AS_LOG(AS_LOG_INFO,"rtsp client connection handle setup response,send play messgae.");
+        MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response,send play messgae.");
         nRet = sendRtspPlayReq();
     }
-    AS_LOG(AS_LOG_INFO,"rtsp client connection handle setup response end.");
+    MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response end.");
     return nRet;
 }
 int32_t mk_rtsp_connection::sendMsg(const char* pszData,uint32_t len)

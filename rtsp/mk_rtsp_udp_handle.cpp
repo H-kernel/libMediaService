@@ -1,6 +1,7 @@
 #include "mk_rtsp_udp_handle.h"
 #include <string>
 #include "mk_rtsp_service.h"
+#include "mk_media_common.h"
 
 mk_rtsp_udp_handle::mk_rtsp_udp_handle(MK_RTSP_HANDLE_TYPE type,uint32_t idx,uint16_t port)
 {

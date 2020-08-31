@@ -32,11 +32,14 @@ enum MR_CLIENT_STATUS
     MR_CLIENT_STATUS_MAX
 };
 
+typedef void (*mk_log)(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,...);
+
 typedef int32_t (*rtsp_server_request)(MR_SERVER server,MR_CLIENT client);
 
 typedef int32_t (*handle_client_status)(MR_CLIENT client,MR_CLIENT_STATUS method,void* ctx);
 
 typedef int32_t (*handle_client_media)(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len,void* ctx);
+
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -45,7 +48,7 @@ extern "C"
 #endif
 #endif
     /* init the media rtsp libary */
-    MR_API int32_t   mk_lib_rtsp_init(uint32_t EvnCount);
+    MR_API int32_t   mk_lib_rtsp_init(uint32_t EvnCount,mk_log log);
     /* release the media rtsp bibary */
     MR_API void      mk_lib_rtsp_release();
     /* create a media rtsp server handle */

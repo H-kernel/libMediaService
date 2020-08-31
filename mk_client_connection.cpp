@@ -1,4 +1,6 @@
 #include "mk_client_connection.h"
+#include "mk_media_common.h"
+
 mk_client_connection::mk_client_connection()
 {
     m_ulIndex        = 0;

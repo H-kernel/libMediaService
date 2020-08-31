@@ -13,6 +13,7 @@
 #include "ms_engine_common.h"
 #include "ms_engine_def.h"
 #include "ms_engine_vms_media.h"
+#include "mk_media_common.h"
 using namespace std;
 uint32_t mk_rtsp_packet::m_unRtspCseq = 1;
 
@@ -107,7 +108,7 @@ int32_t mk_rtsp_packet::checkRtsp(const char* pszRtsp, uint32_t unRtspSize, uint
     {
         if (RTSP_MSG_LENGTH <= unRtspSize)
         {
-            AS_LOG(AS_LOG_WARNING,"msg len [%d] is too int32_t.", unRtspSize);
+            MK_LOG(AS_LOG_WARNING,"msg len [%d] is too int32_t.", unRtspSize);
             return AS_ERROR_CODE_FAIL;
         }
         else
@@ -141,7 +142,7 @@ int32_t mk_rtsp_packet::checkRtsp(const char* pszRtsp, uint32_t unRtspSize, uint
     string::size_type endLine = strRtspMsg.find(RTSP_END_LINE);
     if (string::npos == endLine)
     {
-        AS_LOG(AS_LOG_WARNING,"parse Content-Length fail.");
+        MK_LOG(AS_LOG_WARNING,"parse Content-Length fail.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -149,7 +150,7 @@ int32_t mk_rtsp_packet::checkRtsp(const char* pszRtsp, uint32_t unRtspSize, uint
     M_COMMON::trimString(strLength);
     uint32_t unContentLen = (uint32_t)atoi(strLength.c_str());
 
-    AS_LOG(AS_LOG_INFO,"need to read extra content: %d.", unContentLen);
+    MK_LOG(AS_LOG_INFO,"need to read extra content: %d.", unContentLen);
     unMsgLen += unContentLen;
 
     return AS_ERROR_CODE_OK;
@@ -196,7 +197,7 @@ int32_t mk_rtsp_packet::parse(const char* pszRtsp, uint32_t unRtspSize)
 
     if (0 != parseRtspMethodLine(strRtspLine))
     {
-        AS_LOG(AS_LOG_WARNING,"parse rtsp method line fail.");
+        MK_LOG(AS_LOG_WARNING,"parse rtsp method line fail.");
         return AS_ERROR_CODE_FAIL;
     }
     nOffset += nReadSize;
@@ -240,19 +241,19 @@ int32_t mk_rtsp_packet::parse(const char* pszRtsp, uint32_t unRtspSize)
         string::size_type endPos = strRtspMsg.find(RTSP_END_MSG);
         if (string::npos == endPos)
         {
-            AS_LOG(AS_LOG_WARNING,"rtsp msg is error.");
+            MK_LOG(AS_LOG_WARNING,"rtsp msg is error.");
             return AS_ERROR_CODE_FAIL;
         }
         m_strContent = strRtspMsg.substr(endPos+RTSP_END_MSG.size());
     }
 
-    AS_LOG(AS_LOG_DEBUG,"parse rtsp message success.");
+    MK_LOG(AS_LOG_DEBUG,"parse rtsp message success.");
     return AS_ERROR_CODE_OK;
 }
 
 int32_t mk_rtsp_packet::parseRtspMethodLine(const string& strLine)
 {
-    AS_LOG(AS_LOG_DEBUG,"parse rtsp method: %s", strLine.c_str());
+    MK_LOG(AS_LOG_DEBUG,"parse rtsp method: %s", strLine.c_str());
 
     int32_t nMethodsIndex = 0;
     for (; nMethodsIndex < RtspIllegalMethod; nMethodsIndex++)
@@ -261,7 +262,7 @@ int32_t mk_rtsp_packet::parseRtspMethodLine(const string& strLine)
                          m_strRtspMethods[nMethodsIndex].c_str(),
                          m_strRtspMethods[nMethodsIndex].size()))
         {
-            AS_LOG(AS_LOG_DEBUG,"parse rtsp method: %s success", m_strRtspMethods[nMethodsIndex].c_str());
+            MK_LOG(AS_LOG_DEBUG,"parse rtsp method: %s success", m_strRtspMethods[nMethodsIndex].c_str());
             break;
         }
     }
@@ -269,14 +270,14 @@ int32_t mk_rtsp_packet::parseRtspMethodLine(const string& strLine)
     m_RtspCommonInfo.MethodIndex = (uint32_t)nMethodsIndex;
     if (RtspIllegalMethod == nMethodsIndex)
     {
-        AS_LOG(AS_LOG_WARNING,"parse rtsp method line[%s] fail, invalid methods.",
+        MK_LOG(AS_LOG_WARNING,"parse rtsp method line[%s] fail, invalid methods.",
                 strLine.c_str());
         return AS_ERROR_CODE_FAIL;
     }
 
     if (strLine.length() <= (m_strRtspMethods[nMethodsIndex].size() + 1))
     {
-        AS_LOG(AS_LOG_DEBUG,"parse rtsp method ,no response code.");
+        MK_LOG(AS_LOG_DEBUG,"parse rtsp method ,no response code.");
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -297,18 +298,18 @@ int32_t mk_rtsp_packet::parseRtspMethodLine(const string& strLine)
 
         if (RtspNotAcceptedStatus <= unStatus)
         {
-            AS_LOG(AS_LOG_INFO,"not accepted status code[%s].", strLeast.c_str());
+            MK_LOG(AS_LOG_INFO,"not accepted status code[%s].", strLeast.c_str());
         }
 
         m_RtspCommonInfo.StatusCodeIndex = unStatus;
-        AS_LOG(AS_LOG_DEBUG,"parse status code[%s].", m_strRtspStatusCode[unStatus].c_str());
+        MK_LOG(AS_LOG_DEBUG,"parse status code[%s].", m_strRtspStatusCode[unStatus].c_str());
         return AS_ERROR_CODE_OK;
     }
 
     string::size_type nPos = strLeast.find(RTSP_VERSION);
     if (string::npos == nPos)
     {
-        AS_LOG(AS_LOG_WARNING,"parse request url fail[%s], not rtsp version.", strLeast.c_str());
+        MK_LOG(AS_LOG_WARNING,"parse request url fail[%s], not rtsp version.", strLeast.c_str());
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -316,14 +317,14 @@ int32_t mk_rtsp_packet::parseRtspMethodLine(const string& strLine)
     trimString(strUrl);
     if (strUrl.size() > RTSP_MAX_URL_LENGTH)
     {
-        AS_LOG(AS_LOG_WARNING,"rtsp request url [%s] length[%d] invalid.",
+        MK_LOG(AS_LOG_WARNING,"rtsp request url [%s] length[%d] invalid.",
                 strUrl.c_str(),
                 strUrl.size());
         return AS_ERROR_CODE_FAIL;
     }
 
     memcpy(m_RtspCommonInfo.RtspUrl, strUrl.c_str(), strUrl.size());
-    AS_LOG(AS_LOG_DEBUG,"parse request url [%s].", strUrl.c_str());
+    MK_LOG(AS_LOG_DEBUG,"parse request url [%s].", strUrl.c_str());
 
     return AS_ERROR_CODE_OK;
 }
@@ -338,7 +339,7 @@ int32_t mk_rtsp_packet::parseRtspHeaderIndex(const std::string& strLine) const
                          m_strRtspHeaders[nHeaderIndex].c_str(),
                          m_strRtspHeaders[nHeaderIndex].size()))
         {
-            AS_LOG(AS_LOG_DEBUG,"parse rtsp header: %s.", m_strRtspHeaders[nHeaderIndex].c_str());
+            MK_LOG(AS_LOG_DEBUG,"parse rtsp header: %s.", m_strRtspHeaders[nHeaderIndex].c_str());
             break;
         }
     }
@@ -371,38 +372,38 @@ int32_t mk_rtsp_packet::parseRtspHeaderValue(int32_t nHeaderIndex, const std::st
     case RtspCseqHeader:
     {
         m_RtspCommonInfo.Cseq = strtoul(strValue.c_str(), NULL, 0);
-        AS_LOG(AS_LOG_DEBUG,"parsed Cseq: [%u]", m_RtspCommonInfo.Cseq);
+        MK_LOG(AS_LOG_DEBUG,"parsed Cseq: [%u]", m_RtspCommonInfo.Cseq);
         break;
     }
     case RtspSessionHeader:
     {
         m_RtspCommonInfo.SessionID = strtoull(strValue.c_str(), NULL, 0);
-        AS_LOG(AS_LOG_DEBUG,"parsed SessionID: [%lld]", m_RtspCommonInfo.SessionID);
+        MK_LOG(AS_LOG_DEBUG,"parsed SessionID: [%lld]", m_RtspCommonInfo.SessionID);
         break;
     }
 
     case RtspRangeHeader:
     {
         m_strRange = strValue;
-        AS_LOG(AS_LOG_DEBUG,"parsed Range: [%s]", m_strRange.c_str());
+        MK_LOG(AS_LOG_DEBUG,"parsed Range: [%s]", m_strRange.c_str());
         break;
     }
     case RtspSpeedHeader:
     {
         m_dSpeed    = atof(strValue.c_str());
-        AS_LOG(AS_LOG_DEBUG,"parsed Speed: [%f]", m_dSpeed);
+        MK_LOG(AS_LOG_DEBUG,"parsed Speed: [%f]", m_dSpeed);
         break;
     }
     case RtspScaleHeader:
     {
         m_dScale    = atof(strValue.c_str());
-        AS_LOG(AS_LOG_DEBUG,"parsed Scale: [%f]", m_dScale);
+        MK_LOG(AS_LOG_DEBUG,"parsed Scale: [%f]", m_dScale);
         break;
     }
     case RtspContentLengthHeader:
     {
         m_ulContenLength    = atoi(strValue.c_str());
-        AS_LOG(AS_LOG_DEBUG,"parsed Content length: [%d]", m_ulContenLength);
+        MK_LOG(AS_LOG_DEBUG,"parsed Content length: [%d]", m_ulContenLength);
         break;
     }
     case RtspContentType:
@@ -448,7 +449,7 @@ int32_t mk_rtsp_packet::parseRtspUrl(const std::string &strUrl, RTSP_URL_INFO &u
     string::size_type nPos = strUrl.find(RTSP_URL_PROTOCOL);
     if (string::npos == nPos)
     {
-        AS_LOG(AS_LOG_WARNING,"parse rtsp url[%s] fail, can't find(%s).",
+        MK_LOG(AS_LOG_WARNING,"parse rtsp url[%s] fail, can't find(%s).",
                 strUrl.c_str(),
                 RTSP_URL_PROTOCOL.c_str());
         return AS_ERROR_CODE_FAIL;
@@ -458,7 +459,7 @@ int32_t mk_rtsp_packet::parseRtspUrl(const std::string &strUrl, RTSP_URL_INFO &u
     nPos = strLeastUrl.find_first_of("/");
     if (string::npos == nPos)
     {
-        AS_LOG(AS_LOG_WARNING,"parse rtsp url[%s] fail, can't find (/).",
+        MK_LOG(AS_LOG_WARNING,"parse rtsp url[%s] fail, can't find (/).",
                 strUrl.c_str());
         return AS_ERROR_CODE_FAIL;
     }
@@ -487,7 +488,7 @@ int32_t mk_rtsp_packet::parseRtspUrl(const std::string &strUrl, RTSP_URL_INFO &u
     urlInfo.Ip  = ntohl(urlInfo.Ip);
     if ((0 == urlInfo.Ip) || (0 == urlInfo.Port))
     {
-        AS_LOG(AS_LOG_WARNING,"parse url[%s] fail, ip[%s] or port[%d] invalid.",
+        MK_LOG(AS_LOG_WARNING,"parse url[%s] fail, ip[%s] or port[%d] invalid.",
                 strUrl.c_str(),
                 strIp.c_str(),
                 urlInfo.Port);
@@ -506,7 +507,7 @@ int32_t mk_rtsp_packet::parseRtspUrl(const std::string &strUrl, RTSP_URL_INFO &u
         strLeastUrl = strLeastUrl.substr(0, nPos);
         if (RTSP_MAX_DEVID_LENGTH - 1 < strLeastUrl.size())
         {
-            AS_LOG(AS_LOG_WARNING,"parse url[%s] fail, devid[%s] invalid.",
+            MK_LOG(AS_LOG_WARNING,"parse url[%s] fail, devid[%s] invalid.",
                     strUrl.c_str(),
                     strLeastUrl.c_str());
 
@@ -515,7 +516,7 @@ int32_t mk_rtsp_packet::parseRtspUrl(const std::string &strUrl, RTSP_URL_INFO &u
         urlInfo.ContentId = strLeastUrl;
     }
 
-    AS_LOG(AS_LOG_DEBUG,"parse url[%s] success.", strUrl.c_str());
+    MK_LOG(AS_LOG_DEBUG,"parse url[%s] success.", strUrl.c_str());
     return AS_ERROR_CODE_OK;
 }
 
@@ -539,7 +540,7 @@ int32_t mk_rtsp_packet::readRtspLine(const char* pszMsg, std::string &strLine) c
 
     nLength     += (int32_t)RTSP_END_LINE.size();
 
-    AS_LOG(AS_LOG_DEBUG,"read rtsp line: %s", strLine.c_str());
+    MK_LOG(AS_LOG_DEBUG,"read rtsp line: %s", strLine.c_str());
 
     return nLength;
 }
@@ -593,7 +594,7 @@ int32_t mk_rtsp_packet::parseNatInfo(std::string& strNatInfo)
         strNatInfo += ";";
     }
 
-    AS_LOG(AS_LOG_DEBUG,"parse nat info: %s", strNatInfo.c_str());
+    MK_LOG(AS_LOG_DEBUG,"parse nat info: %s", strNatInfo.c_str());
 
     string::size_type nPos = strNatInfo.find_first_of(";");
     while (string::npos != nPos)
@@ -618,18 +619,18 @@ int32_t mk_rtsp_packet::parseNatInfo(std::string& strNatInfo)
                 if ( 0 == strncasecmp( strValue.c_str(), "RTP", sizeof("RTP") ) )
                 {
                     m_RtspNatInfo.NatType = RTSP_NAT_TYPE_RTP;
-                    AS_LOG(AS_LOG_DEBUG,"nat type: RTP");
+                    MK_LOG(AS_LOG_DEBUG,"nat type: RTP");
                     break;
                 }
 
                 if (0 == strncasecmp(strValue.c_str(), "RTCP", sizeof("RTCP")))
                 {
                     m_RtspNatInfo.NatType = RTSP_NAT_TYPE_RTCP;
-                    AS_LOG(AS_LOG_DEBUG,"nat type: RTCP");
+                    MK_LOG(AS_LOG_DEBUG,"nat type: RTCP");
                     break;
                 }
 
-                AS_LOG(AS_LOG_WARNING,"parse nat info fail, invalid nat type[%s].",
+                MK_LOG(AS_LOG_WARNING,"parse nat info fail, invalid nat type[%s].",
                         strValue.c_str());
                 return AS_ERROR_CODE_FAIL;
             }
@@ -643,7 +644,7 @@ int32_t mk_rtsp_packet::parseNatInfo(std::string& strNatInfo)
                     return AS_ERROR_CODE_FAIL;
                 }
 
-                AS_LOG(AS_LOG_DEBUG,"local_addr: %s", strValue.c_str());
+                MK_LOG(AS_LOG_DEBUG,"local_addr: %s", strValue.c_str());
                 break;
             }
 
@@ -655,7 +656,7 @@ int32_t mk_rtsp_packet::parseNatInfo(std::string& strNatInfo)
                     return AS_ERROR_CODE_FAIL;
                 }
 
-                AS_LOG(AS_LOG_DEBUG,"local_port: %d", m_RtspNatInfo.LocalPort);
+                MK_LOG(AS_LOG_DEBUG,"local_port: %d", m_RtspNatInfo.LocalPort);
                 break;
             }
 
@@ -668,7 +669,7 @@ int32_t mk_rtsp_packet::parseNatInfo(std::string& strNatInfo)
                     return AS_ERROR_CODE_FAIL;
                 }
 
-                AS_LOG(AS_LOG_DEBUG,"src_addr: %s", strValue.c_str());
+                MK_LOG(AS_LOG_DEBUG,"src_addr: %s", strValue.c_str());
                 break;
             }
 
@@ -680,11 +681,11 @@ int32_t mk_rtsp_packet::parseNatInfo(std::string& strNatInfo)
                     return AS_ERROR_CODE_FAIL;
                 }
 
-                AS_LOG(AS_LOG_DEBUG,"src_port: %d", m_RtspNatInfo.SrcPort);
+                MK_LOG(AS_LOG_DEBUG,"src_port: %d", m_RtspNatInfo.SrcPort);
                 break;
             }
 
-            AS_LOG(AS_LOG_WARNING,"parse fail, key[%s] invalid", strKey.c_str());
+            MK_LOG(AS_LOG_WARNING,"parse fail, key[%s] invalid", strKey.c_str());
             return AS_ERROR_CODE_FAIL;
         }while(1);  //lint !e506
 
@@ -745,7 +746,7 @@ void mk_rtsp_packet::setRtspUrl(const std::string &strUrl)
 
     if (RTSP_MAX_URL_LENGTH < strUrl.size())
     {
-        AS_LOG(AS_LOG_WARNING,"set rtsp url fail, rtsp url [%s] length[%d] invalid.",
+        MK_LOG(AS_LOG_WARNING,"set rtsp url fail, rtsp url [%s] length[%d] invalid.",
                 strUrl.c_str(),
                 strUrl.size());
     }
@@ -920,7 +921,7 @@ int32_t mk_rtsp_packet::getRangeTime(uint32_t &unTimeType,
         unStartTime = 0;
         unStopTime  = 0;
 
-        AS_LOG(AS_LOG_INFO,"no range para in rtsp packet.");
+        MK_LOG(AS_LOG_INFO,"no range para in rtsp packet.");
         return 1;
     }
 
@@ -932,7 +933,7 @@ int32_t mk_rtsp_packet::getRangeTime(uint32_t &unTimeType,
         string::size_type nStopPos  = strTimeRange.find_first_of("-");
         if (string::npos == nStopPos)
         {
-            AS_LOG(AS_LOG_WARNING,"get range time fail, no \"-\" field in [%s].",
+            MK_LOG(AS_LOG_WARNING,"get range time fail, no \"-\" field in [%s].",
                     m_strRange.c_str());
             return AS_ERROR_CODE_FAIL;
         }
@@ -947,7 +948,7 @@ int32_t mk_rtsp_packet::getRangeTime(uint32_t &unTimeType,
         char* pRet = strptime(strStartTime.c_str(), "%Y%m%dT%H%M%S", &rangeTm);
         if (NULL == pRet)
         {
-            AS_LOG(AS_LOG_WARNING,"get range time fail, start time format invalid in [%s].",
+            MK_LOG(AS_LOG_WARNING,"get range time fail, start time format invalid in [%s].",
                     m_strRange.c_str());
             return AS_ERROR_CODE_FAIL;
         }
@@ -960,7 +961,7 @@ int32_t mk_rtsp_packet::getRangeTime(uint32_t &unTimeType,
             pRet = strptime(strStopTime.c_str(), "%Y%m%dT%H%M%S", &rangeTm);
             if (NULL == pRet)
             {
-                AS_LOG(AS_LOG_WARNING,"get range time fail, stop time format invalid in [%s].",
+                MK_LOG(AS_LOG_WARNING,"get range time fail, stop time format invalid in [%s].",
                         m_strRange.c_str());
                 return AS_ERROR_CODE_FAIL;
             }
@@ -973,7 +974,7 @@ int32_t mk_rtsp_packet::getRangeTime(uint32_t &unTimeType,
     nStartPos = m_strRange.find("npt=");
     if (string::npos == nStartPos)
     {
-        AS_LOG(AS_LOG_WARNING,"get range fail, time type not accepted[%s].",
+        MK_LOG(AS_LOG_WARNING,"get range fail, time type not accepted[%s].",
                          m_strRange.c_str());
         return AS_ERROR_CODE_FAIL;
     }
@@ -984,7 +985,7 @@ int32_t mk_rtsp_packet::getRangeTime(uint32_t &unTimeType,
     string::size_type nStopPos = strTimeRange.find_first_of("-");
     if (string::npos == nStopPos)
     {
-        AS_LOG(AS_LOG_WARNING,"get range start time fail, no \"-\" field in [%s].",
+        MK_LOG(AS_LOG_WARNING,"get range start time fail, no \"-\" field in [%s].",
                 m_strRange.c_str());
         return AS_ERROR_CODE_FAIL;
     }

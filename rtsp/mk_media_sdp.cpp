@@ -9,6 +9,7 @@
 #include "vms.h"
 #include "svs_log.h"
 #include "svs_media_sdp.h"
+#include "mk_media_common.h"
 
 using namespace std;
 
