@@ -118,6 +118,15 @@ void mk_rtsp_connection::handle_send(void)
 }
 int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len) 
 {
+    if(MK_RTSP_UDP_VIDEO_RTP_HANDLE == type) {
+        return m_rtpFrameOrganizer.insertRtpPacket(pData,len);
+    }
+    else if(MK_RTSP_UDP_VIDEO_RTP_HANDLE == type) {
+        /* send direct */
+    }
+    else {
+        return AS_ERROR_CODE_FAIL;
+    }
     return AS_ERROR_CODE_OK;
 }
 int32_t mk_rtsp_connection::handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len)
@@ -125,7 +134,10 @@ int32_t mk_rtsp_connection::handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pD
     return AS_ERROR_CODE_OK;
 }
 
+void mk_rtsp_connection::handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList)
+{
 
+}
 int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unDataSize)
 {
     if ((NULL == pData) || (0 == unDataSize))
@@ -592,6 +604,9 @@ void mk_rtsp_connection::resetRtspConnect()
         m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]    = NULL;
         m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]   = NULL;
     }
+    m_rtpFrameOrganizer.release();
+    m_rtpFrameOrganizer.init(this);
+    
 }
 void mk_rtsp_connection::trimString(std::string& srcString) const
 {

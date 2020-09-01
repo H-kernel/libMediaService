@@ -5,6 +5,7 @@
 #include "mk_rtsp_defs.h"
 #include "mk_media_sdp.h"
 #include "mk_rtsp_udp_handle.h"
+#include "mk_rtsp_rtp_frame_organizer.h"
 
 
 typedef enum RTSP_SESSION_STATUS
@@ -30,7 +31,7 @@ enum RTSP_INTERLEAVE_NUM
 
 #define RTP_INTERLEAVE_LENGTH   4
 
-class mk_rtsp_connection: public as_tcp_conn_handle,mk_rtsp_rtp_udp_observer
+class mk_rtsp_connection: public as_tcp_conn_handle,mk_rtsp_rtp_udp_observer,mk_rtp_frame_handler
 {
 public:
     mk_rtsp_connection();
@@ -46,7 +47,9 @@ public:
     virtual void handle_send(void);
 
     virtual int32_t handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len);
-    virtual int32_t handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len); 
+    virtual int32_t handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len);
+
+    virtual void handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList); 
 private:
     int32_t processRecvedMessage(const char* pData, uint32_t unDataSize);
     int32_t handleRTPRTCPData(const char* pData, uint32_t unDataSize);
@@ -78,6 +81,7 @@ private:
     char*                        m_RecvBuf[MAX_BYTES_PER_RECEIVE];
     uint32_t                     m_ulRecvSize;
     uint32_t                     m_ulSeq;
+    mk_rtp_frame_organizer       m_rtpFrameOrganizer;
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

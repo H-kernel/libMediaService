@@ -1,33 +1,24 @@
-/*
- * RtpFrameOrganizer
- *
- * ʵ��RTP��������������ֻ����Sequence��Timestamp����������RTP�ĸ���
- *  Created on: 2012-2-23
- *      Author:
- */
-
-#ifndef __RTPFRAMEORGANIZER_H__
-#define __RTPFRAMEORGANIZER_H__
+#ifndef __MK_RTSP_RTP_FRAME_ORGANIZER_INCLUDE_H__
+#define __MK_RTSP_RTP_FRAME_ORGANIZER_INCLUDE_H__
 
 #include <deque>
 #include <list>
 #include <map>
-
-#include "svs_ace_header.h"
+#include "as.h"
 
 typedef enum
 {
-    RTP_H264_NALU_TYPE_UNDEFINED    =0,
-    RTP_H264_NALU_TYPE_IDR          =5,
-    RTP_H264_NALU_TYPE_SEI          =6,
-    RTP_H264_NALU_TYPE_SPS          =7,
-    RTP_H264_NALU_TYPE_PPS          =8,
-    RTP_H264_NALU_TYPE_STAP_A        =24,
-    RTP_H264_NALU_TYPE_STAP_B        =25,
-    RTP_H264_NALU_TYPE_MTAP16        =26,
-    RTP_H264_NALU_TYPE_MTAP24        =27,
-    RTP_H264_NALU_TYPE_FU_A         =28,
-    RTP_H264_NALU_TYPE_FU_B         =29,
+    RTP_H264_NALU_TYPE_UNDEFINED    = 0,
+    RTP_H264_NALU_TYPE_IDR          = 5,
+    RTP_H264_NALU_TYPE_SEI          = 6,
+    RTP_H264_NALU_TYPE_SPS          = 7,
+    RTP_H264_NALU_TYPE_PPS          = 8,
+    RTP_H264_NALU_TYPE_STAP_A       = 24,
+    RTP_H264_NALU_TYPE_STAP_B       = 25,
+    RTP_H264_NALU_TYPE_MTAP16       = 26,
+    RTP_H264_NALU_TYPE_MTAP24       = 27,
+    RTP_H264_NALU_TYPE_FU_A         = 28,
+    RTP_H264_NALU_TYPE_FU_B         = 29,
     RTP_H264_NALU_TYPE_END
 }RTP_H264_NALU_TYPE;
 
@@ -45,9 +36,10 @@ typedef struct
 typedef struct _stRTP_PACK_INFO_S
 {
     uint16_t      usSeq;
-    uint32_t        unTimestamp;
-    bool                bMarker;
-    ACE_Message_Block*  pRtpMsgBlock;
+    uint32_t      unTimestamp;
+    bool          bMarker;
+    char*         pRtpMsgBlock;
+    uint32_t      len;
 }RTP_PACK_INFO_S;
 typedef std::deque<RTP_PACK_INFO_S>       RTP_PACK_QUEUE;
 typedef struct _stRTP_FRAME_INFO_S
@@ -62,28 +54,25 @@ typedef std::list<RTP_FRAME_INFO_S*> RTP_FRAME_LIST_S;
 
 #define INVALID_RTP_SEQ     (0x80000000)
 
-class IRtpFrameHandler
+class mk_rtp_frame_handler
 {
 public:
-    typedef std::list<ACE_Message_Block*>   RTP_FRAME_LIST;
-    typedef RTP_FRAME_LIST::iterator        RTP_FRAME_LIST_ITER;
-public:
-    IRtpFrameHandler(){}
+    mk_rtp_frame_handler(){}
 
-    virtual ~IRtpFrameHandler(){}
+    virtual ~mk_rtp_frame_handler(){}
 
-    virtual void handleRtpFrame(RTP_FRAME_LIST &rtpFrameList) = 0;
+    virtual void handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList) = 0;
 };
 
-class CRtpFrameOrganizer
+class mk_rtp_frame_organizer
 {
 public:
-    CRtpFrameOrganizer();
-    virtual ~CRtpFrameOrganizer();
+    mk_rtp_frame_organizer();
+    virtual ~mk_rtp_frame_organizer();
 
-    int32_t init(IRtpFrameHandler* pHandler, uint32_t unMaxFrameCache = MAX_RTP_FRAME_CACHE_NUM);
+    int32_t init(mk_rtp_frame_handler* pHandler, uint32_t unMaxFrameCache = MAX_RTP_FRAME_CACHE_NUM);
 
-    int32_t insertRtpPacket( ACE_Message_Block* pRtpBlock);
+    int32_t insertRtpPacket(char* pRtpBlock,uint32_t len);
 
     void release();
 private:
@@ -100,10 +89,10 @@ private:
     RTP_FRAME_INFO_S* GetSmallFrame();
 private:
     uint32_t                 m_unMaxCacheFrameNum;
-    IRtpFrameHandler*        m_pRtpFrameHandler;
+    mk_rtp_frame_handler*        m_pRtpFrameHandler;
 
     RTP_FRAME_MAP_S          m_RtpFrameMap;
     RTP_FRAME_LIST_S         m_RtpFrameFreeList;
 };
 
-#endif /* __RTPFRAMEORGANIZER_H__ */
+#endif /* __MK_RTSP_RTP_FRAME_ORGANIZER_INCLUDE_H__ */
