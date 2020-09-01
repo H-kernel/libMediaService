@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string.h>
 #include "vms.h"
-#include "svs_log.h"
+#include "MK_LOG.h"
 #include "svs_media_sdp.h"
 #include "mk_media_common.h"
 
@@ -279,11 +279,11 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
 {
     if ("" == strSdp)
     {
-        SVS_LOG(SVS_LOG_WARNING,"no sdp info, decode fail.");
+        MK_LOG(AS_LOG_WARNING,"no sdp info, decode fail.");
 
         return SVS_ERROR_FAIL;
     }
-    SVS_LOG(SVS_LOG_DEBUG,"start decode sdp:\n%s", strSdp.c_str());
+    MK_LOG(AS_LOG_DEBUG,"start decode sdp:\n%s", strSdp.c_str());
 
     string strBuff;
     uint32_t nNextStart = 0;
@@ -316,7 +316,7 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
 
             if (('v' != tolower(cCode)) && bFirst)
             {
-                SVS_LOG(SVS_LOG_WARNING,"Version is not the first statement.");
+                MK_LOG(AS_LOG_WARNING,"Version is not the first statement.");
                 return SVS_ERROR_FAIL;
             }
 
@@ -349,7 +349,7 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
         }
         else
         {
-            SVS_LOG(SVS_LOG_WARNING,"parse sdp fail, invalid line[%s].", strBuff.c_str());
+            MK_LOG(AS_LOG_WARNING,"parse sdp fail, invalid line[%s].", strBuff.c_str());
             return SVS_ERROR_FAIL;
         }
 
@@ -359,12 +359,12 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
     if ((0 == m_VideoInfoList.size())
         && (0 == m_AudioInfoList.size()))
     {
-        SVS_LOG(SVS_LOG_WARNING,"parse sdp fail, no video/audio info.");
+        MK_LOG(AS_LOG_WARNING,"parse sdp fail, no video/audio info.");
 
         return SVS_ERROR_FAIL;
     }
 
-    SVS_LOG(SVS_LOG_INFO,"decode sdp success.");
+    MK_LOG(AS_LOG_INFO,"decode sdp success.");
     return nRet;
 }
 
@@ -489,7 +489,7 @@ int32_t mk_media_sdp::encodeSdp(std::string   &strSdp,int32_t isplayback,std::st
 
     // SDP END
     //strSdp += SDP_END_TAG;
-    SVS_LOG(SVS_LOG_DEBUG,"success to encode sdp:\n%s.", strSdp.c_str());
+    MK_LOG(AS_LOG_DEBUG,"success to encode sdp:\n%s.", strSdp.c_str());
     return SVS_ERROR_OK;
 }
 
@@ -623,7 +623,7 @@ int32_t mk_media_sdp::encode200Sdp(std::string &strSdp, int32_t isplayback, std:
 
     // SDP END
     //strSdp += SDP_END_TAG;
-    SVS_LOG(SVS_LOG_DEBUG,"success to encode sdp:\n%s.", strSdp.c_str());
+    MK_LOG(AS_LOG_DEBUG,"success to encode sdp:\n%s.", strSdp.c_str());
     return SVS_ERROR_OK;
 }
 void mk_media_sdp::copy(mk_media_sdp& rtspSdp)
@@ -684,7 +684,7 @@ void mk_media_sdp::makeRtpmap(std::string& strRtpmap,uint8_t ucPT,uint32_t ulClo
         }
         default:
         {
-            SVS_LOG(SVS_LOG_WARNING,"the playload:[%d] not support.",ucPT);
+            MK_LOG(AS_LOG_WARNING,"the playload:[%d] not support.",ucPT);
             return;
         }
     }
@@ -726,7 +726,7 @@ int32_t mk_media_sdp::parseConnDesc(char *pszBuff)
     char *pszConnDesc = strsep(&pszBuff, " ");
     if ((NULL == pszConnDesc) || (NULL == pszBuff))
     {
-        SVS_LOG(SVS_LOG_WARNING,"parse sdp media info fail, no Connect type.");
+        MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no Connect type.");
         return SVS_ERROR_FAIL;
     }
 
@@ -734,7 +734,7 @@ int32_t mk_media_sdp::parseConnDesc(char *pszBuff)
     pszConnDesc = strsep(&pszBuff, " ");
     if ((NULL == pszConnDesc) || (NULL == pszBuff))
     {
-        SVS_LOG(SVS_LOG_WARNING,"parse sdp media info fail, no IP Type.");
+        MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no IP Type.");
         return SVS_ERROR_FAIL;
     }
 
@@ -754,23 +754,23 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
 {
     if (NULL == pszBuff)
     {
-        SVS_LOG(SVS_LOG_WARNING,"input param for decoding sdp media is null.");
+        MK_LOG(AS_LOG_WARNING,"input param for decoding sdp media is null.");
         return SVS_ERROR_FAIL;
     }
 
-    SVS_LOG(SVS_LOG_DEBUG,"start to decode media info: %s", pszBuff);
+    MK_LOG(AS_LOG_DEBUG,"start to decode media info: %s", pszBuff);
     char cType = (char)tolower(pszBuff[0]);
     if (('v' != cType) && ('a' != cType))
     {
         m_enParseStatus = SDP_GLOBAL_INFO;
-        SVS_LOG(SVS_LOG_INFO,"ignore not accepted media info: %s", pszBuff);
+        MK_LOG(AS_LOG_INFO,"ignore not accepted media info: %s", pszBuff);
         return SVS_ERROR_OK;
     }
 
     char *pszMediaDesc = strsep(&pszBuff, " ");
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
-        SVS_LOG(SVS_LOG_WARNING,"parse sdp media info fail, no media type.");
+        MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no media type.");
         return SVS_ERROR_FAIL;
     }
 
@@ -778,7 +778,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     pszMediaDesc = strsep(&pszBuff, " ");
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
-        SVS_LOG(SVS_LOG_WARNING,"parse sdp media info fail, no port.");
+        MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no port.");
         return SVS_ERROR_FAIL;
     }
 
@@ -786,14 +786,14 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     pszMediaDesc = strsep(&pszBuff, " ");
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
-        SVS_LOG(SVS_LOG_WARNING,"parse sdp media info fail, no RTP/AVP field.");
+        MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no RTP/AVP field.");
         return SVS_ERROR_FAIL;
     }
 
     JUMP_SPACE(pszBuff);
     if ('\0' == *pszBuff)
     {
-        SVS_LOG(SVS_LOG_WARNING,"parse sdp media info fail, no payload field.");
+        MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no payload field.");
         return SVS_ERROR_FAIL;
     }
 
@@ -939,7 +939,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
             char *pszProfile = strsep(&pszBuff, " ");
             if ((NULL == pszProfile) || (NULL == pszBuff))
             {
-                SVS_LOG(SVS_LOG_WARNING,"parse sdp rtpmap info fail.");
+                MK_LOG(AS_LOG_WARNING,"parse sdp rtpmap info fail.");
                 return SVS_ERROR_FAIL;
             }
 
@@ -957,7 +957,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
             char *pszProfile = strsep(&pszBuff, " ");
             if ((NULL == pszProfile) || (NULL == pszBuff))
             {
-                SVS_LOG(SVS_LOG_WARNING,"parse sdp fmtp info fail.");
+                MK_LOG(AS_LOG_WARNING,"parse sdp fmtp info fail.");
                 return SVS_ERROR_FAIL;
             }
 
@@ -983,7 +983,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
    {
          m_range =  "";
          m_range.append(pszBuff);
-         SVS_LOG(SVS_LOG_WARNING,"parseRange is [%s]",pszBuff);
+         MK_LOG(AS_LOG_WARNING,"parseRange is [%s]",pszBuff);
          return SVS_ERROR_OK;
    }
 

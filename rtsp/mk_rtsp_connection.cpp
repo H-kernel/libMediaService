@@ -422,7 +422,7 @@ int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
 {
     uint32_t nCseq     = rtspMessage.getCseq();
     uint32_t nRespCode = rtspMessage.getRtspStatusCode();
-    enRtspMethods enMethod   = RtspNotAcceptedHeader;
+    enRtspMethods enMethod   = RtspIllegalMethod;
 
     enMethod = iter->second;
     MK_LOG(AS_LOG_INFO,"rtsp client handle server reponse seq:[%d] ,mothod:[%d].",nCseq,enMethod);
