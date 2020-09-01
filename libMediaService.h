@@ -32,7 +32,7 @@ enum MR_CLIENT_STATUS
     MR_CLIENT_STATUS_MAX
 };
 
-typedef void (*mk_log)(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,...);
+typedef void (*mk_log)(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,va_list argp);
 
 typedef int32_t (*rtsp_server_request)(MR_SERVER server,MR_CLIENT client);
 
