@@ -31,7 +31,7 @@ enum RTSP_INTERLEAVE_NUM
 
 #define RTP_INTERLEAVE_LENGTH   4
 
-class mk_rtsp_connection: public as_tcp_conn_handle,mk_rtsp_rtp_udp_observer,mk_rtp_frame_handler
+class mk_rtsp_connection: public mk_client_connection,as_tcp_conn_handle,mk_rtsp_rtp_udp_observer,mk_rtp_frame_handler
 {
 public:
     mk_rtsp_connection();
@@ -40,6 +40,7 @@ public:
 public:
     virtual int32_t start(const char* pszUrl);
     virtual void    stop();
+    virtual int32_t recv_next();
     virtual void    set_rtp_over_tcp();
 public:
     /* override */
@@ -82,6 +83,7 @@ private:
     uint32_t                     m_ulRecvSize;
     uint32_t                     m_ulSeq;
     mk_rtp_frame_organizer       m_rtpFrameOrganizer;
+    volatile AS_BOOLEAN          m_bDoNextRecv;
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

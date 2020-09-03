@@ -65,6 +65,7 @@ void    mk_rtmp_connection::stop()
 int32_t mk_rtmp_connection::recv_next()
 {
     as_handle::setHandleRecv(AS_TRUE);
+    return AS_ERROR_CODE_OK;
 }
 void mk_rtmp_connection::handle_recv(void)
 {

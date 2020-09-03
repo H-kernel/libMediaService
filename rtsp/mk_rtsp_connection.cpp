@@ -57,6 +57,11 @@ void mk_rtsp_connection::stop()
     MK_LOG(AS_LOG_INFO,"close rtsp client.");
     return;
 }
+int32_t mk_rtsp_connection::recv_next()
+{
+    m_bDoNextRecv = AS_TRUE;
+    return 
+}
 
 void  mk_rtsp_connection::set_rtp_over_tcp()
 {
@@ -122,7 +127,14 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
         return m_rtpFrameOrganizer.insertRtpPacket(pData,len);
     }
     else if(MK_RTSP_UDP_VIDEO_RTP_HANDLE == type) {
+        if(m_ulRecvBufLen < len) {
+            return AS_ERROR_CODE_FAIL;/* drop it */
+        }
         /* send direct */
+        memcpy(m_recvBuf,pData,len);
+        m_ulRecvLen = len;
+        handle_connection_media(enType,pts);
+
     }
     else {
         return AS_ERROR_CODE_FAIL;
