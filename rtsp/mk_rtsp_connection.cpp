@@ -130,6 +130,8 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
         if(m_ulRecvBufLen < len) {
             return AS_ERROR_CODE_FAIL;/* drop it */
         }
+        MR_MEDIA_TYPE enType = MR_MEDIA_TYPE_INVALID;
+        uint32_t      pts    = 0;
         /* send direct */
         memcpy(m_recvBuf,pData,len);
         m_ulRecvLen = len;
