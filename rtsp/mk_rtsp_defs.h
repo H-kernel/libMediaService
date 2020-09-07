@@ -130,4 +130,17 @@
 }
 
 
+enum RTSP_PT_TYPE_VALUE
+{
+    RTSP_PT_TYPE_PCMU  = 0,
+    RTSP_PT_TYPE_PCMA  = 8,
+    RTSP_PT_TYPE_MJPEG = 26,
+    RTSP_PT_TYPE_PS    = 96,
+    RTSP_PT_TYPE_MPEG4 = 97,
+    RTSP_PT_TYPE_H264  = 98,
+    RTSP_PT_TYPE_H265  = 99,
+    RTSP_PT_TYPE_AAC   = 100,
+    RTSP_PT_TYPE_MAX   = 0xFF,
+};
+
 #endif /*__RTSPDEFS_H__ */

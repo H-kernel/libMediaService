@@ -6,6 +6,7 @@
 #include "mk_rtsp_service.h"
 #include <arpa/inet.h>
 #include "mk_media_common.h"
+#include "mk_rtsp_rtp_packet.h"
 
 mk_rtsp_connection::mk_rtsp_connection()
 {
@@ -130,13 +131,27 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
         if(m_ulRecvBufLen < len) {
             return AS_ERROR_CODE_FAIL;/* drop it */
         }
+
+        mk_rtp_packet rtpPacket;
+        if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData, len))
+        {
+            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            return AS_ERROR_CODE_FAIL;
+        }
         MR_MEDIA_TYPE enType = MR_MEDIA_TYPE_INVALID;
-        uint32_t      pts    = 0;
+        if(RTSP_PT_TYPE_PCMU == rtpPacket.GetPayloadType()) {
+            enType = MR_MEDIA_TYPE_G711U;
+        }
+        else if(RTSP_PT_TYPE_PCMA == rtpPacket.GetPayloadType()) {
+            enType = MR_MEDIA_TYPE_G711A;
+        }
+        else {
+            return AS_ERROR_CODE_FAIL;/* drop it */
+        }
         /* send direct */
         memcpy(m_recvBuf,pData,len);
         m_ulRecvLen = len;
-        handle_connection_media(enType,pts);
-
+        handle_connection_media(enType,rtpPacket.GetTimeStamp());
     }
     else {
         return AS_ERROR_CODE_FAIL;
@@ -151,6 +166,12 @@ int32_t mk_rtsp_connection::handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pD
 void mk_rtsp_connection::handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList)
 {
 
+    mk_rtp_packet rtpPacket;
+    if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData, len))
+    {
+        MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+        return ;
+    }
 }
 int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unDataSize)
 {
