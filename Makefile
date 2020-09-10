@@ -2,7 +2,8 @@
 # Makefile for building: gessctrl
 #############################################################################
 PREFIX          = /usr/local
-CC              = gcc 
+CC              = gcc
+C++             = g++  
 AR              = ar 
 COMMON_DIR      = ./as_common/
 COMMON_LIB      = $(PREFIX)/lib
@@ -11,7 +12,7 @@ TARGET_LIB      = ./libMediaService.a
 TARGET_DLL      = ./libMediaService.so
 SRC_DIR         = ./
 
-CFLAGS    += -pipe -g -w -fPIC -O0 -DENV_LINUX
+C++FLAGS  += -pipe -g -w -fPIC -O0 -DENV_LINUX
 ARFLAGS   += 
 
 LIBS      = -shared -fPIC -lm -lpthread 
@@ -36,7 +37,7 @@ CPPOBJS=$(CPPFILES:.cpp=.O)
 
 all: $(TARGET_LIB) $(TARGET_DLL)
 $(TARGET_DLL): $(CPPOBJS) $(COBJS)
-	$(CC) -o $@ $(CPPOBJS) $(COBJS) $(LIBS)
+	$(C++) -o $@ $(CPPOBJS) $(COBJS) $(LIBS)
 
 $(TARGET_LIB): $(CPPOBJS) $(COBJS)
 	$(AR) rcs $@ $(CPPOBJS) $(COBJS) 
