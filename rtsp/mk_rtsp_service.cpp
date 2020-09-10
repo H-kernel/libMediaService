@@ -112,7 +112,7 @@ int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
     mk_rtsp_udp_handle*  pRtpHandle  = NULL;
     mk_rtsp_udp_handle* pRtcpHandle = NULL;
     as_network_addr addr;
-    addr.m_lIpAddr = 0;
+    addr.m_ulIpAddr = 0;
     addr.m_usPort = 0;
     int32_t nRet = AS_ERROR_CODE_OK;
 

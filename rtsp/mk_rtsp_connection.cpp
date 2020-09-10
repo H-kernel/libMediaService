@@ -680,7 +680,7 @@ void mk_rtsp_server::set_callback(rtsp_server_request cb,void* ctx)
     m_cb = cb;
     m_ctx = ctx;
 }
-long mk_rtsp_server::handle_accept(const as_network_addr *pRemoteAddr, as_tcp_conn_handle *&pTcpConnHandle)
+int32_t mk_rtsp_server::handle_accept(const as_network_addr *pRemoteAddr, as_tcp_conn_handle *&pTcpConnHandle)
 {
-    
+    return AS_ERROR_CODE_OK;
 }

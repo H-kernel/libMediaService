@@ -6,6 +6,8 @@
 #include "mk_media_sdp.h"
 #include "mk_rtsp_udp_handle.h"
 #include "mk_rtsp_rtp_frame_organizer.h"
+#include "mk_client_connection.h"
+#include "mk_rtsp_packet.h"
 
 
 typedef enum RTSP_SESSION_STATUS
@@ -94,7 +96,7 @@ public:
     void set_callback(rtsp_server_request cb,void* ctx);
 public:
     /* override */
-    virtual long handle_accept(const as_network_addr *pRemoteAddr, as_tcp_conn_handle *&pTcpConnHandle);
+    virtual int32_t handle_accept(const as_network_addr *pRemoteAddr, as_tcp_conn_handle *&pTcpConnHandle);
 private:
     rtsp_server_request m_cb;
     void*               m_ctx;

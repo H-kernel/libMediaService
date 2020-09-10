@@ -93,7 +93,6 @@ private:
     uint32_t                  m_ulFramebufCount;
 
     typedef std::list<char*>  RECV_BUF_LIST;
-    RECV_BUF_LIST             m_RtpRecvBufList;
     RECV_BUF_LIST             m_FrameBufList;
 
     typedef std::list<uint32_t> CLIENT_INDEX_LIST;

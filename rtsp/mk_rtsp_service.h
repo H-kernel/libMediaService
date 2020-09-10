@@ -56,6 +56,9 @@ private:
     typedef std::list<uint32_t> RTP_RTCP_UDP_PAIR_LIST;
     RTP_RTCP_UDP_PAIR_LIST    m_RtpRtcpfreeList;
 
+    typedef std::list<char*>  RECV_BUF_LIST;
+    RECV_BUF_LIST             m_RtpRecvBufList;
+
     uint32_t                  m_ulRtpBufCount;
 };
 
