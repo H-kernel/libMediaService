@@ -29,9 +29,11 @@ int32_t mk_rtsp_connection::start(const char* pszUrl)
     if(AS_ERROR_CODE_OK != as_parse_url(pszUrl,&m_url)) {
         return AS_ERROR_CODE_FAIL;
     }
-    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this);
+    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
+    struct in_addr sin_addr;    /* AF_INET */
+    inet_aton((char*)&m_url.host[0],&sin_addr);
 
-    remote.m_ulIpAddr = inet_aton((char*)&m_url.host[0]);
+    remote.m_ulIpAddr = sin_addr.s_addr;
     if(0 == m_url.port) {
         remote.m_usPort   = RTSP_DEFAULT_PORT;
     }
@@ -61,13 +63,13 @@ void mk_rtsp_connection::stop()
 int32_t mk_rtsp_connection::recv_next()
 {
     m_bDoNextRecv = AS_TRUE;
-    return 
+    return AS_ERROR_CODE_OK;
 }
 
 void  mk_rtsp_connection::set_rtp_over_tcp()
 {
     m_bSetupTcp = true;
-    return 
+    return;
 }
 
 void mk_rtsp_connection::handle_recv(void)
@@ -165,13 +167,15 @@ int32_t mk_rtsp_connection::handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pD
 
 void mk_rtsp_connection::handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList)
 {
-
+    // todo:
+    /*
     mk_rtp_packet rtpPacket;
     if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData, len))
     {
         MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
         return ;
     }
+    */
 }
 int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unDataSize)
 {
@@ -282,31 +286,35 @@ int32_t mk_rtsp_connection::sendRtspOptionsReq()
 {
     mk_rtsp_packet rtspPacket;
     rtspPacket.setMethodIndex(RtspOptionsMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspOptionsMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspDescribeReq()
 {
     mk_rtsp_packet rtspPacket;
     rtspPacket.setMethodIndex(RtspDescribeMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspDescribeMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
 {
     mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspDescribeMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setMethodIndex(RtspSetupMethod);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
 
     std::string strTransport = "";
@@ -355,6 +363,8 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
 
         mk_rtsp_udp_handle*  pRtpHandle  = NULL;
         mk_rtsp_udp_handle* pRtcpHandle = NULL;
+        MK_RTSP_HANDLE_TYPE rtpType = MK_RTSP_UDP_TYPE_MAX;
+        MK_RTSP_HANDLE_TYPE rtcpType = MK_RTSP_UDP_TYPE_MAX;
 
         if(AS_ERROR_CODE_OK != mk_rtsp_service::instance().get_rtp_rtcp_pair(pRtpHandle,pRtcpHandle)) {
             MK_LOG(AS_LOG_ERROR,"rtsp connection client get rtp and rtcp handle for udp fail.");
@@ -364,18 +374,26 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
         if(MEDIA_TYPE_VALUE_VIDEO == info.ucMediaType) {
             m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]   = pRtpHandle;
             m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]  = pRtcpHandle;
+            rtpType = MK_RTSP_UDP_VIDEO_RTP_HANDLE;
+            rtcpType = MK_RTSP_UDP_VIDEO_RTCP_HANDLE;
         }
         else if(MEDIA_TYPE_VALUE_AUDIO == info.ucMediaType){
             m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]   = pRtpHandle;
             m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]  = pRtcpHandle;
+            rtpType = MK_RTSP_UDP_AUDIO_RTP_HANDLE;
+            rtcpType = MK_RTSP_UDP_AUDIO_RTCP_HANDLE;
         }
         else {
             MK_LOG(AS_LOG_ERROR,"rtsp connection client ,the media type is not rtp and rtcp.");
             return AS_ERROR_CODE_FAIL;
         }
 
-        pRtpHandle->open(this);
-        pRtcpHandle->open(this);
+        if(AS_ERROR_CODE_OK != pRtpHandle->open(rtpType,this)) {
+            return AS_ERROR_CODE_FAIL;
+        }
+        if(AS_ERROR_CODE_OK != pRtcpHandle->open(rtpType,this)) {
+            return AS_ERROR_CODE_FAIL;
+        }
 
         strTransport += RTSP_TRANSPORT_CLIENT_PORT;
         std::stringstream strPort;
@@ -391,85 +409,104 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspSetupMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspPlayReq()
 {
     mk_rtsp_packet rtspPacket;
     rtspPacket.setMethodIndex(RtspPlayMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspPlayMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspRecordReq()
 {
     mk_rtsp_packet rtspPacket;
     rtspPacket.setMethodIndex(RtspRecordMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspRecordMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspGetParameterReq()
 {
     mk_rtsp_packet rtspPacket;
     rtspPacket.setMethodIndex(RtspGetParameterMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspGetParameterMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspAnnounceReq()
 {
     mk_rtsp_packet rtspPacket;
     rtspPacket.setMethodIndex(RtspAnnounceMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspAnnounceMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspPauseReq()
 {
     mk_rtsp_packet rtspPacket;
     rtspPacket.setMethodIndex(RtspPauseMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspPauseMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspTeardownReq()
 {
     mk_rtsp_packet rtspPacket;
     rtspPacket.setMethodIndex(RtspTeardownMethod);
-    rtspPacket.setCseq(m_ulSeq++);
+    rtspPacket.setCseq(m_ulSeq);
     rtspPacket.setRtspUrl(&m_url.uri[0]);
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
         return AS_ERROR_CODE_FAIL;
     }
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspTeardownMethod));
+    m_ulSeq++;
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
 {
     uint32_t nCseq     = rtspMessage.getCseq();
     uint32_t nRespCode = rtspMessage.getRtspStatusCode();
-    enRtspMethods enMethod   = RtspIllegalMethod;
+    uint32_t enMethod   = RtspIllegalMethod;
+
+    SEQ_METHOD_ITER iter = m_SeqMethodMap.find(nCseq);
+    if(iter == m_SeqMethodMap.end()) {
+        return AS_ERROR_CODE_FAIL;
+    }
 
     enMethod = iter->second;
     MK_LOG(AS_LOG_INFO,"rtsp client handle server reponse seq:[%d] ,mothod:[%d].",nCseq,enMethod);
@@ -623,7 +660,6 @@ void mk_rtsp_connection::resetRtspConnect()
 {
     as_init_url(&m_url);
     m_url.port        = RTSP_DEFAULT_PORT;
-    m_RecvBuf         = NULL;
     m_ulRecvSize      = 0;
     m_ulSeq           = 0;
     m_Status          = RTSP_SESSION_STATUS_INIT;

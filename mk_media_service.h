@@ -14,6 +14,7 @@
 #include "mk_rtsp_connection.h"
 #include "mk_rtsp_udp_handle.h"
 #include "mk_rtmp_connection.h"
+#include "mk_media_common.h"
 
 #define RTP_RECV_BUF_SIZE       1500
 #define RTP_RECV_BUF_COUNT      (100*RTSP_CONNECTION_DEFAULT)
@@ -70,7 +71,7 @@ public:
     mk_client_connection* create_client(char* url,handle_client_status cb,void* ctx);
     void destory_client(mk_client_connection* pClient);
 public:
-    as_network_svr* get_client_network_svr(mk_client_connection* pClient);
+    as_network_svr* get_client_network_svr(uint32_t ulIndex);
     void    set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count);
     void    get_rtp_rtcp_udp_port(uint16_t& udpPort,uint32_t& count);
     void    set_rtp_recv_buf_info(uint32_t maxCount);

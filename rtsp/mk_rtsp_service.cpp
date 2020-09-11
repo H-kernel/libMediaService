@@ -111,9 +111,6 @@ int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
     uint32_t pairs = m_ulUdpPairCount/2;
     mk_rtsp_udp_handle*  pRtpHandle  = NULL;
     mk_rtsp_udp_handle* pRtcpHandle = NULL;
-    as_network_addr addr;
-    addr.m_ulIpAddr = 0;
-    addr.m_usPort = 0;
     int32_t nRet = AS_ERROR_CODE_OK;
 
     m_pUdpRtpArray  = AS_NEW(m_pUdpRtpArray,pairs);
@@ -132,26 +129,17 @@ int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
         if(NULL == pRtpHandle) {
             MK_LOG(AS_LOG_CRITICAL,"create rtp handle object fail.");
             return AS_ERROR_CODE_FAIL;
-        }
-        addr.m_usPort = port;
+        }        
+        pRtpHandle->init(i,port);
         port++;
-        nRet = m_NetWorkArray.regUdpSocket(&addr,pRtpHandle);
-        if(AS_ERROR_CODE_OK != nRet) {
-            MK_LOG(AS_LOG_ERROR,"register the rtp udp handle fail,port:[%d].",addr.m_usPort);
-            return AS_ERROR_CODE_FAIL;
-        }
+
         pRtcpHandle = AS_NEW(pRtcpHandle);
         if(NULL == pRtcpHandle) {
             MK_LOG(AS_LOG_CRITICAL,"create rtcp handle object fail.");
             return AS_ERROR_CODE_FAIL;
-        }
-        addr.m_usPort = port;
+        }        
+        pRtcpHandle->init(i,port);
         port++;
-        nRet = m_NetWorkArray.regUdpSocket(&addr,pRtcpHandle);
-        if(AS_ERROR_CODE_OK != nRet) {
-            MK_LOG(AS_LOG_ERROR,"register the rtcp udp handle fail,port:[%d].",addr.m_usPort);
-            return AS_ERROR_CODE_FAIL;
-        }
         m_pUdpRtpArray[i]  = pRtpHandle;
         m_pUdpRtcpArray[i] = pRtcpHandle;
         m_RtpRtcpfreeList.push_back(i);
@@ -172,13 +160,13 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
 
         pRtpHandle = AS_NEW(pRtpHandle);
         if(NULL != pRtpHandle) {
-            m_NetWorkArray.removeUdpSocket(pRtpHandle);
+            pRtpHandle->close();
             AS_DELETE(pRtpHandle);
             m_pUdpRtpArray[i] = NULL;
         }
         pRtcpHandle = AS_NEW(pRtcpHandle);
-        if(NULL != pRtpHandle) {
-            m_NetWorkArray.removeUdpSocket(pRtcpHandle);
+        if(NULL != pRtcpHandle) {
+            pRtcpHandle->close();
             AS_DELETE(pRtcpHandle);
              m_pUdpRtcpArray[i] = NULL;
         }

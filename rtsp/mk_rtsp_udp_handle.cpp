@@ -2,18 +2,25 @@
 #include <string>
 #include "mk_rtsp_service.h"
 #include "mk_media_common.h"
+#include "mk_media_service.h"
 
-mk_rtsp_udp_handle::mk_rtsp_udp_handle(MK_RTSP_HANDLE_TYPE type,uint32_t idx,uint16_t port)
+mk_rtsp_udp_handle::mk_rtsp_udp_handle()
 {
-    m_enType      = type;
-    m_ulIdx       = idx;
-    m_usPort      = port;
+    m_enType      = MK_RTSP_UDP_TYPE_MAX;
+    m_ulIdx       = 0;
+    m_usPort      = 0;
     m_RtpObserver = NULL;
     m_bRunning    = false;
 }
 
 mk_rtsp_udp_handle::~mk_rtsp_udp_handle()
 {
+}
+void mk_rtsp_udp_handle::init(uint32_t idx,uint16_t port)
+{
+    
+    m_ulIdx       = idx;
+    m_usPort      = port;
 }
 
 uint32_t mk_rtsp_udp_handle::get_index()
@@ -24,14 +31,30 @@ uint16_t mk_rtsp_udp_handle::get_port()
 {
     return m_usPort;
 }
-void mk_rtsp_udp_handle::open(mk_rtsp_rtp_udp_observer* pObserver)
+int32_t mk_rtsp_udp_handle::open(MK_RTSP_HANDLE_TYPE type,mk_rtsp_rtp_udp_observer* pObserver)
 {
+    m_enType      = type;
     m_RtpObserver = pObserver;
+    as_network_addr local;
+    local.m_ulIpAddr = 0;
+    local.m_usPort   = m_usPort;
+    as_network_svr* pNetWork =  mk_media_service::instance().get_client_network_svr(m_ulIdx);
+    int nRet = pNetWork->regUdpSocket(&local,this);
+    if(AS_ERROR_CODE_OK != pNetWork) {
+        return AS_ERROR_CODE_FAIL;
+    }
     setHandleRecv(AS_TRUE);
+    return AS_ERROR_CODE_OK;
 }
 void mk_rtsp_udp_handle::close()
 {
+    if(!m_bRunning) {
+        return;
+    }
     m_bRunning    = false;
+    as_network_svr* pNetWork =  mk_media_service::instance().get_client_network_svr(m_ulIdx);
+    pNetWork->removeUdpSocket(this);
+    
 }
 void mk_rtsp_udp_handle::handle_recv(void)
 {

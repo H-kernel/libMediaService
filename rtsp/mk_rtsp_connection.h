@@ -86,6 +86,10 @@ private:
     uint32_t                     m_ulSeq;
     mk_rtp_frame_organizer       m_rtpFrameOrganizer;
     volatile AS_BOOLEAN          m_bDoNextRecv;
+
+    typedef std::map<uint32_t,uint32_t>        SEQ_METHOD_MAP;
+    typedef SEQ_METHOD_MAP::iterator           SEQ_METHOD_ITER;
+    SEQ_METHOD_MAP               m_SeqMethodMap;
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

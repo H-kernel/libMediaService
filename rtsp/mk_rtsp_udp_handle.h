@@ -27,12 +27,13 @@ public:
 class mk_rtsp_udp_handle: public as_udp_sock_handle
 {
 public:
-    mk_rtsp_udp_handle(MK_RTSP_HANDLE_TYPE type,uint32_t idx,uint16_t port);
+    mk_rtsp_udp_handle();
     virtual ~mk_rtsp_udp_handle();
 public:
+    void     init(uint32_t idx,uint16_t port);
     uint32_t get_index();
     uint16_t get_port();
-    void     open(mk_rtsp_rtp_udp_observer* pObserver);
+    int32_t  open(MK_RTSP_HANDLE_TYPE type,mk_rtsp_rtp_udp_observer* pObserver);
     void     close();
 public:
     /* override as_udp_sock_handle */

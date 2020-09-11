@@ -162,10 +162,10 @@ void mk_media_service::destory_client(mk_client_connection* pClient)
     m_ClientFreeList.push_back(ulIdx);
     return;
 }
-as_network_svr* mk_media_service::get_client_network_svr(mk_client_connection* pClient)
+as_network_svr* mk_media_service::get_client_network_svr(uint32_t ulIndex)
 {
-    uint32_t ulIdx = pClient->get_index();
-    ulIdx = ulIdx%m_ulEvnCount;
+    uint32_t ulIdx = ulIndex%m_ulEvnCount;
+    
     return m_NetWorkArray[ulIdx];
 }
 void    mk_media_service::set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count)
