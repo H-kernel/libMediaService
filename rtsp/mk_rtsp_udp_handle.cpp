@@ -40,7 +40,7 @@ int32_t mk_rtsp_udp_handle::open(MK_RTSP_HANDLE_TYPE type,mk_rtsp_rtp_udp_observ
     local.m_usPort   = m_usPort;
     as_network_svr* pNetWork =  mk_media_service::instance().get_client_network_svr(m_ulIdx);
     int nRet = pNetWork->regUdpSocket(&local,this);
-    if(AS_ERROR_CODE_OK != pNetWork) {
+    if(AS_ERROR_CODE_OK != nRet) {
         return AS_ERROR_CODE_FAIL;
     }
     setHandleRecv(AS_TRUE);

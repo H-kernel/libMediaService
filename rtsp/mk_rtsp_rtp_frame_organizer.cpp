@@ -2,6 +2,7 @@
 #include "mk_rtsp_rtp_frame_organizer.h"
 #include "mk_rtsp_rtp_packet.h"
 #include "mk_rtsp_service.h"
+#include "mk_media_common.h"
 
 mk_rtp_frame_organizer::mk_rtp_frame_organizer()
 {
@@ -276,7 +277,7 @@ void mk_rtp_frame_organizer::releaseRtpPacket(RTP_FRAME_INFO_S *pFrameinfo)
     {
         if (NULL != pFrameinfo->PacketQueue[0].pRtpMsgBlock)
         {
-             CMediaBlockBuffer::instance().freeMediaBlock(pFrameinfo->PacketQueue[0].pRtpMsgBlock);
+            mk_rtsp_service::instance().free_rtp_recv_buf(pFrameinfo->PacketQueue[0].pRtpMsgBlock);
         }
         pFrameinfo->PacketQueue.pop_front();
     }

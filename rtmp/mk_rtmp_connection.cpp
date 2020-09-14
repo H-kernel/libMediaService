@@ -41,7 +41,7 @@ int32_t mk_rtmp_connection::start(const char* pszUrl)
         return AS_ERROR_CODE_FAIL;
     }
     /* register the network service */
-    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this);
+    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
     
     if(AS_ERROR_CODE_OK != pNetWork->regTcpMonitorClient(this,Socket)) {
         srs_rtmp_destroy(m_rtmpHandle);
@@ -58,7 +58,7 @@ void    mk_rtmp_connection::stop()
         m_rtmpHandle = NULL;
     }
     /* unregister the network service */
-    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this);
+    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
     pNetWork->removeTcpClient(this);
     return;
 }

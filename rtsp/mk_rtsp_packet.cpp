@@ -143,7 +143,7 @@ int32_t mk_rtsp_packet::checkRtsp(const char* pszRtsp, uint32_t unRtspSize, uint
     }
 
     std::string strLength = strContentLen.substr(0, endLine);
-    M_COMMON::trimString(strLength);
+    mk_rtsp_packet::trimString(strLength);
     uint32_t unContentLen = (uint32_t)atoi(strLength.c_str());
 
     MK_LOG(AS_LOG_INFO,"need to read extra content: %d.", unContentLen);
@@ -542,7 +542,7 @@ int32_t mk_rtsp_packet::readRtspLine(const char* pszMsg, std::string &strLine) c
 }
 
 
-void mk_rtsp_packet::trimString(std::string& srcString) const
+void mk_rtsp_packet::trimString(std::string& srcString)
 {
     string::size_type pos = srcString.find_last_not_of(' ');
     if (pos != string::npos)
@@ -580,115 +580,6 @@ std::string mk_rtsp_packet::double2Str(double num) const
     char szData[16] =  { 0 };
     snprintf(szData, 16, "%6.6f", num);
     return szData;
-}
-
-int32_t mk_rtsp_packet::parseNatInfo(std::string& strNatInfo)
-{
-
-    if ( ';' != strNatInfo.at(strNatInfo.size() - 1) )
-    {
-        strNatInfo += ";";
-    }
-
-    MK_LOG(AS_LOG_DEBUG,"parse nat info: %s", strNatInfo.c_str());
-
-    string::size_type nPos = strNatInfo.find_first_of(";");
-    while (string::npos != nPos)
-    {
-        string strLine = strNatInfo.substr(0, nPos);
-        strNatInfo.erase(0, nPos + 1);
-
-        nPos = strLine.find_first_of("=");
-        if (string::npos == nPos)
-        {
-            return AS_ERROR_CODE_FAIL;
-        }
-        string strKey   = strLine.substr(0, nPos);
-        string strValue = strLine.substr(nPos + 1);
-        trimString(strKey);
-        trimString(strValue);
-
-        do
-        {
-            if (0 == strncasecmp(strKey.c_str(), "type", sizeof("type")))
-            {
-                if ( 0 == strncasecmp( strValue.c_str(), "RTP", sizeof("RTP") ) )
-                {
-                    m_RtspNatInfo.NatType = RTSP_NAT_TYPE_RTP;
-                    MK_LOG(AS_LOG_DEBUG,"nat type: RTP");
-                    break;
-                }
-
-                if (0 == strncasecmp(strValue.c_str(), "RTCP", sizeof("RTCP")))
-                {
-                    m_RtspNatInfo.NatType = RTSP_NAT_TYPE_RTCP;
-                    MK_LOG(AS_LOG_DEBUG,"nat type: RTCP");
-                    break;
-                }
-
-                MK_LOG(AS_LOG_WARNING,"parse nat info fail, invalid nat type[%s].",
-                        strValue.c_str());
-                return AS_ERROR_CODE_FAIL;
-            }
-
-            if (0 == strncasecmp(strKey.c_str(), "local_addr", sizeof("local_addr")))
-            {
-                m_RtspNatInfo.LocalIp = (uint32_t)inet_addr(strValue.c_str());
-                m_RtspNatInfo.LocalIp = ntohl(m_RtspNatInfo.LocalIp);
-                if (0 == m_RtspNatInfo.LocalIp)
-                {
-                    return AS_ERROR_CODE_FAIL;
-                }
-
-                MK_LOG(AS_LOG_DEBUG,"local_addr: %s", strValue.c_str());
-                break;
-            }
-
-            if (0 == strncasecmp(strKey.c_str(), "local_port", sizeof("local_port")))
-            {
-                m_RtspNatInfo.LocalPort = (uint16_t)atoi(strValue.c_str());
-                if (0 == m_RtspNatInfo.LocalPort)
-                {
-                    return AS_ERROR_CODE_FAIL;
-                }
-
-                MK_LOG(AS_LOG_DEBUG,"local_port: %d", m_RtspNatInfo.LocalPort);
-                break;
-            }
-
-            if (0 == strncasecmp(strKey.c_str(), "src_addr", sizeof("src_addr")))
-            {
-                m_RtspNatInfo.SrcIp = (uint32_t)inet_addr(strValue.c_str());
-                m_RtspNatInfo.SrcIp = ntohl(m_RtspNatInfo.SrcIp);
-                if (0 == m_RtspNatInfo.SrcIp)
-                {
-                    return AS_ERROR_CODE_FAIL;
-                }
-
-                MK_LOG(AS_LOG_DEBUG,"src_addr: %s", strValue.c_str());
-                break;
-            }
-
-            if (0 == strncasecmp(strKey.c_str(), "src_port", sizeof("src_port")))
-            {
-                m_RtspNatInfo.SrcPort = (uint16_t) atoi(strValue.c_str());
-                if (0 == m_RtspNatInfo.SrcPort)
-                {
-                    return AS_ERROR_CODE_FAIL;
-                }
-
-                MK_LOG(AS_LOG_DEBUG,"src_port: %d", m_RtspNatInfo.SrcPort);
-                break;
-            }
-
-            MK_LOG(AS_LOG_WARNING,"parse fail, key[%s] invalid", strKey.c_str());
-            return AS_ERROR_CODE_FAIL;
-        }while(1);  //lint !e506
-
-        nPos = strNatInfo.find_first_of(";");
-    }
-
-    return AS_ERROR_CODE_OK;
 }
 
 
@@ -805,8 +696,6 @@ int32_t mk_rtsp_packet::generateRtspResp(std::string& strResp)
     generateAcceptedHeader(strResp);
 
 
-    generateNatInfo(strResp);
-
     if ("" != m_strRtpInfo)
     {
         strResp += m_strRtspHeaders[RtspRtpInfoHeader];
@@ -838,8 +727,6 @@ int32_t mk_rtsp_packet::generateRtspReq(std::string& strReq)
     generateCommonHeader( strReq);
 
     generateAcceptedHeader(strReq);
-
-    generateNatInfo(strReq);
 
     strReq += RTSP_END_LINE;
 

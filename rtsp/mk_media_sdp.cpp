@@ -6,67 +6,12 @@
  */
 #include <sstream>
 #include <string.h>
-#include "vms.h"
-#include "MK_LOG.h"
-#include "svs_media_sdp.h"
+#include "mk_media_common.h"
+#include "mk_media_sdp.h"
 #include "mk_media_common.h"
 
 using namespace std;
 
-static std::string  GB_STR_FORMAT_UNKNOW   =  string("/") ;
-
-static std::string GB_STR_VIDEO_TYPE [GB_VIDEO_TYPE_MAX] = {
-                         string("/") ,
-                         string("/1"),
-                         string("/2"),
-                         string("/3"),
-                         string("/4"),
-                         string("/5")
-                        };
-
-static std::string GB_STR_VIDEO_RESOLUTION [GB_VIDEO_RES_MAX] = {
-                         string("/") ,
-                         string("/1"),
-                         string("/2"),
-                         string("/3"),
-                         string("/4"),
-                         string("/5"),
-                         string("/6")
-                        };
-
-static std::string GB_STR_VIDEO_CONTROL[GB_VIDEO_CONTROL_MAX] = {
-                         string("/") ,
-                         string("/1"),
-                         string("/2")
-                        };
-
-static std::string GB_STR_AUDIO_TYPE [GB_AUDIO_TYPE_MAX] = {
-                         string("/") ,
-                         string("/1"),
-                         string("/2"),
-                         string("/3"),
-                         string("/4")
-                        };
-
-static std::string GB_STR_AUDIO_BITERATE [GB_AUDIO_BITERATE_MAX] = {
-                         string("/") ,
-                         string("/1"),
-                         string("/2"),
-                         string("/3"),
-                         string("/4"),
-                         string("/5"),
-                         string("/6"),
-                         string("/7"),
-                         string("/8")
-                        };
-
-static std::string GB_STR_AUDIO_KHZ [GB_AUDIO_KHZ_MAX] = {
-                         string("/") ,
-                         string("/1"),
-                         string("/2"),
-                         string("/3"),
-                         string("/4")
-                        };
 
 mk_media_sdp::mk_media_sdp()
 {
@@ -281,7 +226,7 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
     {
         MK_LOG(AS_LOG_WARNING,"no sdp info, decode fail.");
 
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
     MK_LOG(AS_LOG_DEBUG,"start decode sdp:\n%s", strSdp.c_str());
 
@@ -292,9 +237,9 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
     SDP_MEDIA_INFO *pMediaInfo = NULL;
 
     char *pszTmp = NULL;
-    int32_t nRet = SVS_ERROR_OK;
+    int32_t nRet = AS_ERROR_CODE_OK;
     bool bFirst = true;
-    while (bRet && (SVS_ERROR_OK == nRet))
+    while (bRet && (AS_ERROR_CODE_OK == nRet))
     {
         pszTmp = const_cast<char*> (strBuff.c_str());
         JUMP_SPACE(pszTmp);
@@ -317,7 +262,7 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
             if (('v' != tolower(cCode)) && bFirst)
             {
                 MK_LOG(AS_LOG_WARNING,"Version is not the first statement.");
-                return SVS_ERROR_FAIL;
+                return AS_ERROR_CODE_FAIL;
             }
 
             switch (tolower(cCode))
@@ -350,7 +295,7 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
         else
         {
             MK_LOG(AS_LOG_WARNING,"parse sdp fail, invalid line[%s].", strBuff.c_str());
-            return SVS_ERROR_FAIL;
+            return AS_ERROR_CODE_FAIL;
         }
 
         bRet = getNextLine(strSdp, nNextStart, strBuff);
@@ -361,7 +306,7 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp fail, no video/audio info.");
 
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     MK_LOG(AS_LOG_INFO,"decode sdp success.");
@@ -490,7 +435,7 @@ int32_t mk_media_sdp::encodeSdp(std::string   &strSdp,int32_t isplayback,std::st
     // SDP END
     //strSdp += SDP_END_TAG;
     MK_LOG(AS_LOG_DEBUG,"success to encode sdp:\n%s.", strSdp.c_str());
-    return SVS_ERROR_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 int32_t mk_media_sdp::encode200Sdp(std::string &strSdp, int32_t isplayback, std::string timeRange, long startTime, long endTime, std::string AudioOutputIp, uint16_t AudioOutputport)
@@ -624,7 +569,7 @@ int32_t mk_media_sdp::encode200Sdp(std::string &strSdp, int32_t isplayback, std:
     // SDP END
     //strSdp += SDP_END_TAG;
     MK_LOG(AS_LOG_DEBUG,"success to encode sdp:\n%s.", strSdp.c_str());
-    return SVS_ERROR_OK;
+    return AS_ERROR_CODE_OK;
 }
 void mk_media_sdp::copy(mk_media_sdp& rtspSdp)
 {
@@ -689,7 +634,7 @@ void mk_media_sdp::makeRtpmap(std::string& strRtpmap,uint8_t ucPT,uint32_t ulClo
         }
     }
 
-    ACE_OS::snprintf(szBuf,STR_SDP_BUF_LEN,"%d",ulClockFre);
+    snprintf(szBuf,STR_SDP_BUF_LEN,"%d",ulClockFre);
     strRtpmap = strName + "/";
     strRtpmap += szBuf;
     return;
@@ -727,7 +672,7 @@ int32_t mk_media_sdp::parseConnDesc(char *pszBuff)
     if ((NULL == pszConnDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no Connect type.");
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     JUMP_SPACE(pszBuff);
@@ -735,19 +680,19 @@ int32_t mk_media_sdp::parseConnDesc(char *pszBuff)
     if ((NULL == pszConnDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no IP Type.");
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     JUMP_SPACE(pszBuff);
 
 
     m_strConnAddr =pszBuff;
-    return SVS_ERROR_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 int32_t mk_media_sdp::parseTimeDesc(char *pszBuff)
 {
-    return SVS_ERROR_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
@@ -755,7 +700,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     if (NULL == pszBuff)
     {
         MK_LOG(AS_LOG_WARNING,"input param for decoding sdp media is null.");
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     MK_LOG(AS_LOG_DEBUG,"start to decode media info: %s", pszBuff);
@@ -764,14 +709,14 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     {
         m_enParseStatus = SDP_GLOBAL_INFO;
         MK_LOG(AS_LOG_INFO,"ignore not accepted media info: %s", pszBuff);
-        return SVS_ERROR_OK;
+        return AS_ERROR_CODE_OK;
     }
 
     char *pszMediaDesc = strsep(&pszBuff, " ");
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no media type.");
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     JUMP_SPACE(pszBuff);
@@ -779,7 +724,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no port.");
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     JUMP_SPACE(pszBuff);
@@ -787,14 +732,14 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no RTP/AVP field.");
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     JUMP_SPACE(pszBuff);
     if ('\0' == *pszBuff)
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no payload field.");
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     SDP_MEDIA_INFO stMediaInfo;
@@ -824,7 +769,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
         pMediaInfo = (SDP_MEDIA_INFO*)&(*m_AudioInfoList.rbegin());
     }
 
-    return SVS_ERROR_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 
@@ -832,7 +777,7 @@ int32_t mk_media_sdp::parseAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaInfo)
 {
     if (NULL == pszBuff)
     {
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     switch(m_enParseStatus)
@@ -844,14 +789,14 @@ int32_t mk_media_sdp::parseAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaInfo)
         return parseGlobalAttributes(pszBuff);
     }
 
-    return SVS_ERROR_OK;
+    return AS_ERROR_CODE_OK;
 }
 
 int32_t mk_media_sdp::parseGlobalAttributes(char *pszBuff)
 {
     if (NULL == pszBuff)
     {
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
 
@@ -862,7 +807,7 @@ int32_t mk_media_sdp::parseGlobalAttributes(char *pszBuff)
         {
             m_strUrl = "";
             m_strUrl.append(pszBuff + STR_SDP_CONTROL_ATTR.length());
-            return SVS_ERROR_OK;
+            return AS_ERROR_CODE_OK;
         }
     }
 
@@ -881,22 +826,22 @@ int32_t mk_media_sdp::parseGlobalAttributes(char *pszBuff)
         {
             m_enTransDirect = TRANS_DIRECTION_SENDRECV;
         }
-        return SVS_ERROR_OK;
+        return AS_ERROR_CODE_OK;
     }
 
-   return SVS_ERROR_OK;
+   return AS_ERROR_CODE_OK;
 }
 
 int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaInfo)
 {
     if (NULL == pszBuff)
     {
-        return SVS_ERROR_FAIL;
+        return AS_ERROR_CODE_FAIL;
     }
 
     if(NULL == pMediaInfo)
     {
-         return SVS_ERROR_FAIL;
+         return AS_ERROR_CODE_FAIL;
     }
 
     // a=control:
@@ -906,7 +851,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
         {
             m_strUrl = "";
             m_strUrl.append(pszBuff + STR_SDP_CONTROL_ATTR.length());
-            return SVS_ERROR_OK;
+            return AS_ERROR_CODE_OK;
         }
     }
 
@@ -917,17 +862,17 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
         if (0 == strncmp(pszBuff, STR_SDP_RECVONLY_ATTR.c_str(), STR_SDP_RECVONLY_ATTR.length()))
         {
             m_enTransDirect = TRANS_DIRECTION_RECVONLY;
-            return SVS_ERROR_OK;
+            return AS_ERROR_CODE_OK;
         }
         else if (0 == strncmp(pszBuff, STR_SDP_SENDONLY_ATTR.c_str(), STR_SDP_SENDONLY_ATTR.length()))
         {
             m_enTransDirect = TRANS_DIRECTION_SENDONLY;
-            return SVS_ERROR_OK;
+            return AS_ERROR_CODE_OK;
         }
         else if (0 == strncmp(pszBuff, STR_SDP_SENDRECV_ATTR.c_str(), STR_SDP_SENDRECV_ATTR.length()))
         {
             m_enTransDirect = TRANS_DIRECTION_SENDRECV;
-            return SVS_ERROR_OK;
+            return AS_ERROR_CODE_OK;
         }
     }
 
@@ -940,12 +885,12 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
             if ((NULL == pszProfile) || (NULL == pszBuff))
             {
                 MK_LOG(AS_LOG_WARNING,"parse sdp rtpmap info fail.");
-                return SVS_ERROR_FAIL;
+                return AS_ERROR_CODE_FAIL;
             }
 
             pMediaInfo->strRtpmap = "";
             pMediaInfo->strRtpmap.append(pszBuff);
-            return SVS_ERROR_OK;
+            return AS_ERROR_CODE_OK;
         }
     }
 
@@ -958,12 +903,12 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
             if ((NULL == pszProfile) || (NULL == pszBuff))
             {
                 MK_LOG(AS_LOG_WARNING,"parse sdp fmtp info fail.");
-                return SVS_ERROR_FAIL;
+                return AS_ERROR_CODE_FAIL;
             }
 
             pMediaInfo->strFmtp = "";
             pMediaInfo->strFmtp.append(pszBuff);
-            return SVS_ERROR_OK;
+            return AS_ERROR_CODE_OK;
         }
     }
 
@@ -974,7 +919,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
         {
             pMediaInfo->strControl = "";
             pMediaInfo->strControl.append(pszBuff + STR_SDP_CONTROL_ATTR.length());
-            return SVS_ERROR_OK;
+            return AS_ERROR_CODE_OK;
         }
     }
 
@@ -984,10 +929,10 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
          m_range =  "";
          m_range.append(pszBuff);
          MK_LOG(AS_LOG_WARNING,"parseRange is [%s]",pszBuff);
-         return SVS_ERROR_OK;
+         return AS_ERROR_CODE_OK;
    }
 
-   return SVS_ERROR_OK;
+   return AS_ERROR_CODE_OK;
 }
 
 

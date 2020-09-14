@@ -12,7 +12,7 @@ TARGET_LIB      = ./libMediaService.a
 TARGET_DLL      = ./libMediaService.so
 SRC_DIR         = ./
 
-C++FLAGS  += -pipe -g -w -fPIC -O0 -DENV_LINUX
+C++FLAGS  += -pipe -g -w -W -Wall -fPIC -O0 -DENV_LINUX -std=c++98
 ARFLAGS   += 
 
 LIBS      = -shared -fPIC -lm -lpthread 

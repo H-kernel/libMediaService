@@ -23,6 +23,11 @@
 #define RTSP_MSG_RSP        1
 #endif
 
+enum PLAY_TIME_TYPE
+{
+    ABSOLUTE_TIME,
+    RELATIVE_TIME
+};
 
 enum _enRTSP_LENGTH_DEFINE
 {
@@ -201,7 +206,7 @@ private:
 
     int32_t   readRtspLine(const char* pszMsg, std::string &strLine) const;
 private:
-    void        trimString(std::string& srcString) const;
+    static void  trimString(std::string& srcString);
 
     std::string uint64ToStr(uint64_t num) const;
 
