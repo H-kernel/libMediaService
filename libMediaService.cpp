@@ -4,13 +4,13 @@
 
 static mk_log g_log = NULL;
 /* init the media rtsp libary */
-MR_API int32_t   mk_lib_rtsp_init(uint32_t EvnCount,mk_log log)
+MR_API int32_t   mk_lib_init(uint32_t EvnCount,mk_log log)
 {
     g_log =  log;
     return mk_media_service::instance().init(udpstart,count);
 }
 /* release the media rtsp bibary */
-MR_API void      mk_lib_rtsp_release()
+MR_API void      mk_lib_release()
 {
     mk_media_service::instance().release();
     return;

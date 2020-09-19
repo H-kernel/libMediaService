@@ -47,13 +47,13 @@ extern "C"
 {
 #endif
 #endif
-    /* init the media rtsp libary */
-    MR_API int32_t   mk_lib_rtsp_init(uint32_t EvnCount,mk_log log);
-    /* release the media rtsp bibary */
-    MR_API void      mk_lib_rtsp_release();
-    /* create a media rtsp server handle */
+    /* init the media  libary */
+    MR_API int32_t   mk_lib_init(uint32_t EvnCount,mk_log log);
+    /* release the media  bibary */
+    MR_API void      mk_lib_release();
+    /* create a media server handle */
     MR_API MR_SERVER mk_create_rtsp_server_handle(uint16_t port,rtsp_server_request cb,void* ctx);
-    /* destory the media rtsp server handle */
+    /* destory the media  server handle */
     MR_API void      mk_destory_rtsp_server_handle(MR_SERVER server);
     /* create a media client handle */
     MR_API MR_CLIENT mk_create_client_handle(char* url,handle_client_status cb,void* ctx);

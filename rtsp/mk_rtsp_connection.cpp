@@ -167,7 +167,22 @@ int32_t mk_rtsp_connection::handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pD
 
 void mk_rtsp_connection::handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList)
 {
-    // todo:
+    mk_rtp_packet rtpPacket;
+    if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pFrameinfo->PacketQueue[0].pRtpMsgBlock,pFrameinfo->PacketQueue[0].len))
+    {
+        MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+        return ;
+    }
+    for (uint32_t i = 0; i < pFrameinfo->PacketQueue.size(); i++)
+    {
+        if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pFrameinfo->PacketQueue[i].pRtpMsgBlock,pFrameinfo->PacketQueue[i].len))
+        {
+            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            return ;
+        }
+
+        memcpy(&m_recvBuf[m_ulRecvLen],pFrameinfo->PacketQueue[i].pRtpMsgBlock,pFrameinfo->PacketQueue[i].len);
+    }
     /*
     mk_rtp_packet rtpPacket;
     if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData, len))
