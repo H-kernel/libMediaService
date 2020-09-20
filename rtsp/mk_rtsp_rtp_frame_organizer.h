@@ -46,6 +46,7 @@ typedef struct _stRTP_FRAME_INFO_S
 {
     uint32_t        unTimestamp;
     bool            bMarker;
+    uint8_t         PayloadType;
     RTP_PACK_QUEUE  PacketQueue;
 }RTP_FRAME_INFO_S;
 typedef std::map<uint32_t,RTP_FRAME_INFO_S*> RTP_FRAME_MAP_S;
@@ -61,7 +62,7 @@ public:
 
     virtual ~mk_rtp_frame_handler(){}
 
-    virtual void handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList) = 0;
+    virtual void handleRtpFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rtpFrameList) = 0;
 };
 
 class mk_rtp_frame_organizer
@@ -85,7 +86,7 @@ private:
     void handleFinishedFrame(RTP_FRAME_INFO_S *pFrameinfo);
 
     void releaseRtpPacket(RTP_FRAME_INFO_S *pFrameinfo);
-    RTP_FRAME_INFO_S* InsertFrame(uint32_t  unTimestamp);
+    RTP_FRAME_INFO_S* InsertFrame(uint8_t PayloadType,uint32_t  unTimestamp);
     RTP_FRAME_INFO_S* GetSmallFrame();
 private:
     uint32_t                 m_unMaxCacheFrameNum;

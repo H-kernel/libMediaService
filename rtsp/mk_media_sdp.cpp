@@ -640,7 +640,27 @@ void mk_media_sdp::makeRtpmap(std::string& strRtpmap,uint8_t ucPT,uint32_t ulClo
     return;
 }
 
+uint8_t mk_media_sdp::getPayloadTypeByRtpmap(std::string& strRtpmap)
+{
+    uint8_t PayloadType = PT_TYPE_MAX;
+    MEDIA_INFO_LIST::iterator iter = m_VideoInfoList.begin();
+    for(;iter != m_VideoInfoList.end(); ++iter) {
+        if(0 == strncmp(iter->strRtpmap,strRtpmap.c_str(),strRtpmap.length())) {
+            PayloadType = iter->ucPayloadType;
+            return PayloadType;
+        }
+    }
+    
+    iter = m_AudioInfoList.begin();
+    for(;iter != m_AudioInfoList.end(); ++iter) {
+        if(0 == strncmp(iter->strRtpmap,strRtpmap.c_str(),strRtpmap.length())) {
+            PayloadType = iter->ucPayloadType;
+            return PayloadType;
+        }
+    }
 
+    return PayloadType;
+}
 bool mk_media_sdp::getNextLine(const std::string &strSdpMsg,
                             uint32_t &nNextStart,
                             std::string  &strBuff) const

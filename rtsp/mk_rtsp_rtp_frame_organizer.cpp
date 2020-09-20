@@ -78,7 +78,7 @@ int32_t mk_rtp_frame_organizer::insertRtpPacket(char* pRtpBlock,uint32_t len)
 
     if(iter == m_RtpFrameMap.end())
     {
-        pFrameInfo = InsertFrame(rtpInfo.unTimestamp);
+        pFrameInfo = InsertFrame(rtpPacket.GetPayloadType(),rtpInfo.unTimestamp);
     }
     else
     {
@@ -253,7 +253,7 @@ void mk_rtp_frame_organizer::handleFinishedFrame(RTP_FRAME_INFO_S *pFrameinfo)
         return;
     }
 
-    m_pRtpFrameHandler->handleRtpFrame(pFrameinfo->PacketQueue);
+    m_pRtpFrameHandler->handleRtpFrame(pFrameinfo->PayloadType,pFrameinfo->PacketQueue);
 
     return;
 }
@@ -289,7 +289,7 @@ void mk_rtp_frame_organizer::releaseRtpPacket(RTP_FRAME_INFO_S *pFrameinfo)
 
     return;
 }
-RTP_FRAME_INFO_S* mk_rtp_frame_organizer::InsertFrame(uint32_t  unTimestamp)
+RTP_FRAME_INFO_S* mk_rtp_frame_organizer::InsertFrame(uint8_t PayloadType,uint32_t  unTimestamp)
 {
     if(0 == m_RtpFrameFreeList.size())
     {
@@ -298,6 +298,7 @@ RTP_FRAME_INFO_S* mk_rtp_frame_organizer::InsertFrame(uint32_t  unTimestamp)
     RTP_FRAME_INFO_S* pFrame = m_RtpFrameFreeList.front();
     m_RtpFrameFreeList.pop_front();
     pFrame->bMarker = false;
+    pFrame->PayloadType = PayloadType;
     pFrame->unTimestamp = unTimestamp;
     m_RtpFrameMap.insert(RTP_FRAME_MAP_S::value_type(unTimestamp,pFrame));
     return pFrame;

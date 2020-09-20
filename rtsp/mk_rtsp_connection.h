@@ -33,6 +33,44 @@ enum RTSP_INTERLEAVE_NUM
 
 #define RTP_INTERLEAVE_LENGTH   4
 
+
+typedef struct
+{
+    //byte 0
+    uint8_t TYPE:5;
+    uint8_t NRI:2;
+    uint8_t F:1;
+} H264_NALU_HEADER; /**//* 1 BYTES */
+
+typedef struct
+{
+    //byte 0
+    uint8_t LATERID0:1;
+    uint8_t TYPE:6;
+    uint8_t F:1;
+    //byte 1
+    uint8_t TID:3;
+    uint8_t LATERID1:5;
+} H265_NALU_HEADER; /**//* 2 BYTES */
+
+
+typedef struct
+{
+    //byte 0
+    uint8_t TYPE:5;
+    uint8_t NRI:2;
+    uint8_t F:1;
+} FU_INDICATOR; /**//* 1 BYTES */
+
+typedef struct
+{
+    //byte 0
+    uint8_t TYPE:5;
+    uint8_t R:1;
+    uint8_t E:1;
+    uint8_t S:1;
+} FU_HEADER; /**//* 1 BYTES */
+
 class mk_rtsp_connection: public mk_client_connection,as_tcp_conn_handle,mk_rtsp_rtp_udp_observer,mk_rtp_frame_handler
 {
 public:
@@ -52,7 +90,7 @@ public:
     virtual int32_t handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len);
     virtual int32_t handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len);
 
-    virtual void handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList); 
+    virtual void handleRtpFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rtpFrameList); 
 private:
     int32_t processRecvedMessage(const char* pData, uint32_t unDataSize);
     int32_t handleRTPRTCPData(const char* pData, uint32_t unDataSize);
@@ -69,6 +107,10 @@ private:
     int32_t handleRtspResp(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspDescribeResp(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspSetUpResp(mk_rtsp_packet &rtspMessage);
+private:
+    void    handleH264Frame(RTP_PACK_QUEUE &rtpFrameList);
+    void    handleH265Frame(RTP_PACK_QUEUE &rtpFrameList);
+    void    handleOtherFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rtpFrameList);
 private:
     int32_t sendMsg(const char* pszData,uint32_t len);
     void    resetRtspConnect();
@@ -90,6 +132,9 @@ private:
     typedef std::map<uint32_t,uint32_t>        SEQ_METHOD_MAP;
     typedef SEQ_METHOD_MAP::iterator           SEQ_METHOD_ITER;
     SEQ_METHOD_MAP               m_SeqMethodMap;
+
+    uint8_t                      m_ucH264PayloadType;
+    uint8_t                      m_ucH265PayloadType;
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

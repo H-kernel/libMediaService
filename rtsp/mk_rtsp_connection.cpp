@@ -165,32 +165,17 @@ int32_t mk_rtsp_connection::handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pD
     return AS_ERROR_CODE_OK;
 }
 
-void mk_rtsp_connection::handleRtpFrame(RTP_PACK_QUEUE &rtpFrameList)
+void mk_rtsp_connection::handleRtpFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rtpFrameList)
 {
-    mk_rtp_packet rtpPacket;
-    if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pFrameinfo->PacketQueue[0].pRtpMsgBlock,pFrameinfo->PacketQueue[0].len))
-    {
-        MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
-        return ;
+    if(m_ucH264PayloadType == PayloadType) {
+        handleH264Frame(rtpFrameList);
     }
-    for (uint32_t i = 0; i < pFrameinfo->PacketQueue.size(); i++)
-    {
-        if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pFrameinfo->PacketQueue[i].pRtpMsgBlock,pFrameinfo->PacketQueue[i].len))
-        {
-            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
-            return ;
-        }
-
-        memcpy(&m_recvBuf[m_ulRecvLen],pFrameinfo->PacketQueue[i].pRtpMsgBlock,pFrameinfo->PacketQueue[i].len);
+    else if(m_ucH265PayloadType == PayloadType) {
+        handleH265Frame(rtpFrameList);
     }
-    /*
-    mk_rtp_packet rtpPacket;
-    if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData, len))
-    {
-        MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
-        return ;
+    else{
+        handleOtherFrame(rtpFrameList);
     }
-    */
 }
 int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unDataSize)
 {
@@ -624,6 +609,9 @@ int32_t mk_rtsp_connection::handleRtspDescribeResp(mk_rtsp_packet &rtspMessage)
         return AS_ERROR_CODE_FAIL;
     }
 
+    m_ucH264PayloadType = m_sdpInfo.getPayloadTypeByRtpmap(H264_VIDEO_RTPMAP);
+    m_ucH265PayloadType = m_sdpInfo.getPayloadTypeByRtpmap(H265_VIDEO_RTPMAP);; 
+
     m_mediaInfoList.clear();
     m_sdpInfo.getVideoInfo(m_mediaInfoList);
     m_sdpInfo.getAudioInfo(m_mediaInfoList);
@@ -671,6 +659,176 @@ int32_t mk_rtsp_connection::sendMsg(const char* pszData,uint32_t len)
 {
     return AS_ERROR_CODE_OK;
 }
+void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
+{
+    mk_rtp_packet rtpPacket;
+    uint32_t      rtpHeadLen;
+    uint32_t      rtpPayloadLen;
+    char*         pData;
+    uint32_t      DataLen;
+    uint32_t      TimeStam;
+    H264_NALU_HEADER  *nalu_hdr = NULL;
+    FU_INDICATOR  *fu_ind   = NULL;
+    FU_HEADER     *fu_hdr   = NULL;
+    if(0 == rtpFrameList.size()) {
+        return;
+    }
+    m_recvBuf[0] = 0x00;
+    m_recvBuf[1] = 0x00;
+    m_recvBuf[2] = 0x00;
+    m_recvBuf[3] = 0x01;
+    m_ulRecvLen  = 4;
+
+    if(1 == rtpFrameList.size()) {  
+        pData =  pFrameinfo->PacketQueue[0].pRtpMsgBlock;
+        DataLen = pFrameinfo->PacketQueue[0].len;
+        if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
+        {
+            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            return ;
+        }
+        
+        rtpHeadLen   = rtpPacket.GetHeadLen();
+        TimeStam     = rtpPacket.GetTimeStamp();
+        rtpPayloadLen = DataLen - rtpHeadLen;
+        memcpy(&m_recvBuf[m_ulRecvLen],pData[rtpHeadLen],rtpPayloadLen);
+        m_ulRecvLen += rtpPayloadLen;
+        handle_connection_media(MR_MEDIA_TYPE_H264,TimeStam);
+        return;
+    }
+    
+    for(uint32_t i = 0; i < pFrameinfo->PacketQueue.size();i++) {
+        pData =  pFrameinfo->PacketQueue[i].pRtpMsgBlock;
+        DataLen = pFrameinfo->PacketQueue[i].len;
+        if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
+        {
+            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            return ;
+        }
+
+        pData = &pData[rtpHeadLen];
+        rtpPayloadLen = DataLen - rtpHeadLen;
+
+        fu_ind = (FU_INDICATOR*)pData;    pData++;
+        fu_hdr = (FU_HEADER*)pData; pData++;
+        rtpPayloadLen -= 2;
+        if(0 == i) {
+            /* first packet */
+            nalu_hdr = (H264_NALU_HEADER*)&m_recvBuf[m_ulRecvLen];
+            nalu_hdr->TYPE = fu_hdr->TYPE;
+            nalu_hdr->F    = fu_ind->F;
+            nalu_hdr->NRI  = fu_ind->NRI;
+            m_ulRecvLen++; /* 1 byte */
+            TimeStam     = rtpPacket.GetTimeStamp();
+        }
+        memcpy(&m_recvBuf[m_ulRecvLen],pData,rtpPayloadLen);
+        m_ulRecvLen += rtpPayloadLen;
+    }
+    handle_connection_media(MR_MEDIA_TYPE_H264,TimeStam);
+}
+void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
+{
+    mk_rtp_packet rtpPacket;
+    uint32_t      rtpHeadLen;
+    uint32_t      rtpPayloadLen;
+    char*         pData;
+    uint32_t      DataLen;
+    uint32_t      TimeStam;
+    uint32_t      fu_type;
+    if(0 == rtpFrameList.size()) {
+        return;
+    }
+    m_recvBuf[0] = 0x00;
+    m_recvBuf[1] = 0x00;
+    m_recvBuf[2] = 0x00;
+    m_recvBuf[3] = 0x01;
+    m_ulRecvLen  = 4;
+
+    if(1 == rtpFrameList.size()) {  
+        pData =  pFrameinfo->PacketQueue[0].pRtpMsgBlock;
+        DataLen = pFrameinfo->PacketQueue[0].len;
+        if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
+        {
+            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            return ;
+        }
+        
+        rtpHeadLen   = rtpPacket.GetHeadLen();
+        TimeStam     = rtpPacket.GetTimeStamp();
+        rtpPayloadLen = DataLen - rtpHeadLen;
+        memcpy(&m_recvBuf[m_ulRecvLen],pData[rtpHeadLen],rtpPayloadLen);
+        m_ulRecvLen += rtpPayloadLen;
+        handle_connection_media(MR_MEDIA_TYPE_H265,TimeStam);
+        return;
+    }
+    for(uint32_t i = 0; i < pFrameinfo->PacketQueue.size();i++) {
+        pData =  pFrameinfo->PacketQueue[i].pRtpMsgBlock;
+        DataLen = pFrameinfo->PacketQueue[i].len;
+        if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
+        {
+            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            return ;
+        }
+
+        pData = &pData[rtpHeadLen];
+        rtpPayloadLen = DataLen - rtpHeadLen;
+        fu_type = pData[3] & 0x3f;        
+        if(0 == i) {
+            /* first packet */
+            m_recvBuf[m_ulRecvLen] = (rtp_pl[0] & 0x81) | (fu_type << 1);
+            m_ulRecvLen++;
+            m_recvBuf[m_ulRecvLen] = pData[1];
+            m_ulRecvLen++;
+            TimeStam     = rtpPacket.GetTimeStamp();
+        }
+        pData += 3;
+        rtpPayloadLen -= 3;
+
+        memcpy(&m_recvBuf[m_ulRecvLen],pData,rtpPayloadLen);
+        m_ulRecvLen += rtpPayloadLen;
+    }
+    handle_connection_media(MR_MEDIA_TYPE_H265,TimeStam);
+}
+void mk_rtsp_connection::handleOtherFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rtpFrameList)
+{
+    mk_rtp_packet rtpPacket;
+    uint32_t      rtpHeadLen;
+    uint32_t      rtpPayloadLen;
+    char*         pData;
+    uint32_t      DataLen;
+    uint32_t      TimeStam;
+    MR_MEDIA_TYPE type = MR_MEDIA_TYPE_INVALID;
+    if(0 == rtpFrameList.size()) {
+        return;
+    }
+
+    if(PT_TYPE_PCMU == PayloadType) {
+        type = MR_MEDIA_TYPE_G711U;
+    }
+    else if(PT_TYPE_PCMA == PayloadType) {
+        type = MR_MEDIA_TYPE_G711A;
+    }
+    else {
+        return;
+    }
+
+    for(uint32_t i = 0; i < pFrameinfo->PacketQueue.size();i++) {
+        pData =  pFrameinfo->PacketQueue[i].pRtpMsgBlock;
+        DataLen = pFrameinfo->PacketQueue[i].len;
+        if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
+        {
+            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            return ;
+        }
+
+        pData = &pData[rtpHeadLen];
+        rtpPayloadLen = DataLen - rtpHeadLen;
+
+        memcpy(&m_recvBuf[m_ulRecvLen],pData,rtpPayloadLen);
+        m_ulRecvLen += rtpPayloadLen;
+    }
+    handle_connection_media(type,TimeStam);
+}
 void mk_rtsp_connection::resetRtspConnect()
 {
     as_init_url(&m_url);
@@ -692,7 +850,9 @@ void mk_rtsp_connection::resetRtspConnect()
     }
     m_rtpFrameOrganizer.release();
     m_rtpFrameOrganizer.init(this);
-    
+
+    m_ucH264PayloadType = PT_TYPE_MAX;
+    m_ucH265PayloadType = PT_TYPE_MAX;    
 }
 void mk_rtsp_connection::trimString(std::string& srcString) const
 {

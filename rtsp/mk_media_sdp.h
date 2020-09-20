@@ -1,12 +1,5 @@
-/*
- * RtspSdp.h
- *
- *  Created on: 2016-5-20
- *      Author:
- */
-
-#ifndef RTSPSDP_H_
-#define RTSPSDP_H_
+#ifndef __MK_RTSP_SDP_INCLUDE___
+#define __MK_RTSP_SDP_INCLUDE___
 
 #include <string>
 #include <list>
@@ -148,6 +141,8 @@ public:
     void copy(mk_media_sdp& rtspSdp);
 
     void makeRtpmap(std::string& strRtpmap,uint8_t ucPT,uint32_t ulClockFre);
+
+    uint8_t getPayloadTypeByRtpmap(std::string& strRtpmap);
 	
 	int32_t encode200Sdp(std::string &strSdp, int32_t isplayback, std::string timeRange, long startTime, long endTime, std::string AudioOutputIp, uint16_t AudioOutputport);
 protected:
@@ -188,4 +183,4 @@ protected:
 };
 
 
-#endif /* RTSPSDP_H_ */
+#endif /* __MK_RTSP_SDP_INCLUDE___ */
