@@ -645,7 +645,7 @@ uint8_t mk_media_sdp::getPayloadTypeByRtpmap(std::string& strRtpmap)
     uint8_t PayloadType = PT_TYPE_MAX;
     MEDIA_INFO_LIST::iterator iter = m_VideoInfoList.begin();
     for(;iter != m_VideoInfoList.end(); ++iter) {
-        if(0 == strncmp(iter->strRtpmap,strRtpmap.c_str(),strRtpmap.length())) {
+        if(iter->strRtpmap == strRtpmap) {
             PayloadType = iter->ucPayloadType;
             return PayloadType;
         }
@@ -653,7 +653,7 @@ uint8_t mk_media_sdp::getPayloadTypeByRtpmap(std::string& strRtpmap)
     
     iter = m_AudioInfoList.begin();
     for(;iter != m_AudioInfoList.end(); ++iter) {
-        if(0 == strncmp(iter->strRtpmap,strRtpmap.c_str(),strRtpmap.length())) {
+        if(iter->strRtpmap == strRtpmap) {
             PayloadType = iter->ucPayloadType;
             return PayloadType;
         }
