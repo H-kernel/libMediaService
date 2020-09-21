@@ -59,10 +59,14 @@ extern "C"
     MR_API MR_CLIENT mk_create_client_handle(char* url,handle_client_status cb,void* ctx);
     /* destory the media client handle */
     MR_API void      mk_destory_client_handle(MR_CLIENT client);
+    /* start the media client handle */
+    MR_API int32_t   mk_start_client_handle(MR_CLIENT client,char* buf,uint32_t len,handle_client_media cb,void* data);
+    /* stop the media client handle */
+    MR_API void      mk_stop_client_handle(MR_CLIENT client);
     /* set a media client callback */
     MR_API void      mk_set_client_callback(MR_CLIENT client,handle_client_status cb,void* ctx);
     /* recv media data from media client */
-    MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client,char* buf,uint32_t len,handle_client_media cb,void* data);
+    MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client,char* buf,uint32_t len);
     /* set a media rtsp client media transport tcp*/
     MR_API void      mk_create_rtsp_client_set_tcp(MR_CLIENT client);
     /* set a media rtsp client/server rtp/rtcp udp port */

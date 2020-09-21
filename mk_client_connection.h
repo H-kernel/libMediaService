@@ -19,7 +19,9 @@ public:
     MK_CLIENT_TYPE client_type();
     MR_CLIENT_STATUS get_status();
     void     set_status_callback(handle_client_status cb,void* ctx);
-    int32_t  do_next_recv(char* buf,uint32_t len,handle_client_media cb,void* data);
+    int32_t  start_recv(char* buf,uint32_t len,handle_client_media cb,void* data);
+    int32_t  stop_recv();
+    int32_t  do_next_recv(char* buf,uint32_t len);
     void     set_index(uint32_t ulIdx);
     uint32_t get_index();
 public:

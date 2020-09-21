@@ -31,13 +31,24 @@ void  mk_client_connection::set_status_callback(handle_client_status cb,void* ct
     m_StatusCallBack = cb;
     m_pStatusCbData  = ctx;
 }
-int32_t  mk_client_connection::do_next_recv(char* buf,uint32_t len,handle_client_media cb,void* data)
+int32_t  mk_client_connection::start_recv(char* buf,uint32_t len,handle_client_media cb,void* data)
 {
     m_recvBuf        = buf;
     m_ulRecvBufLen   = len;
     m_ulRecvLen      = 0;
     m_MediaCallBack  = cb;
     m_pMediaCbData   = data;
+    return AS_ERROR_CODE_OK;
+}
+int32_t  stop_recv()
+{
+
+}
+int32_t  mk_client_connection::do_next_recv(char* buf,uint32_t len)
+{
+    m_recvBuf        = buf;
+    m_ulRecvBufLen   = len;
+    m_ulRecvLen      = 0;
     return recv_next();
 }
 void     mk_client_connection::set_index(uint32_t ulIdx)

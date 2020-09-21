@@ -39,6 +39,19 @@ MR_API void      mk_destory_client_handle(MR_CLIENT client)
     mk_media_service::instance().destory_rtsp_client(pClient);
     return;
 }
+/* start the media client handle */
+MR_API int32_t   mk_start_client_handle(MR_CLIENT client,char* buf,uint32_t len,handle_client_media cb,void* data)
+{
+    mk_client_connection* pClient = (mk_client_connection*)client;
+    return pClient->start_recv(buf,len,cb,data);
+}
+/* stop the media client handle */
+MR_API void   mk_stop_client_handle(MR_CLIENT client)
+{
+    mk_client_connection* pClient = (mk_client_connection*)client;
+    pClient->stop_recv();
+    return;
+}
 /* set a media client callback */
 MR_API void      mk_set_client_callback(MR_CLIENT client,handle_client_status cb,void* ctx)
 {
@@ -47,10 +60,10 @@ MR_API void      mk_set_client_callback(MR_CLIENT client,handle_client_status cb
     return;
 }
 /* recv media data from media client */
-MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client,char* buf,uint32_t len,handle_client_media cb,void* data)
+MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client,char* buf,uint32_t len)
 {
     mk_client_connection* pClient = (mk_client_connection*)client;
-    return pClient->do_next_recv(buf,len,cb,data);
+    return pClient->do_next_recv(buf,len);
 }
 /* set a media rtsp client media transport tcp */
 MR_API void      mk_create_rtsp_client_set_tcp(MR_CLIENT client)
