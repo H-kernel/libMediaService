@@ -44,6 +44,7 @@ int32_t mk_rtsp_connection::start(const char* pszUrl)
     if(AS_ERROR_CODE_OK != pNetWork->regTcpClient(&remote,&remote,this,enSyncOp,5)) {
         return AS_ERROR_CODE_FAIL;
     }
+    handle_connection_status(MR_CLIENT_STATUS_CONNECTED);
 
     if(AS_ERROR_CODE_OK != this->sendRtspOptionsReq()) {
         MK_LOG(AS_LOG_WARNING,"options:rtsp client send message fail.");
@@ -533,12 +534,14 @@ int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
         {
             //nothing to do close the socket
             m_Status = RTSP_SESSION_STATUS_TEARDOWN;
+            handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
             break;
         }
         case RtspPlayMethod:
         {
             //start rtcp and media check timer
             m_Status = RTSP_SESSION_STATUS_PLAY;
+            handle_connection_status(MR_CLIENT_STATUS_RUNNING);
             break;
         }
         case RtspPauseMethod:
@@ -649,6 +652,7 @@ int32_t mk_rtsp_connection::handleRtspSetUpResp(mk_rtsp_packet &rtspMessage)
     }
     else {
         m_Status = RTSP_SESSION_STATUS_SETUP;
+        handle_connection_status(MR_CLIENT_STATUS_HANDSHAKE);
         /* send play */
         MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response,send play messgae.");
         nRet = sendRtspPlayReq();

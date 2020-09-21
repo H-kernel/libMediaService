@@ -20,18 +20,21 @@ int32_t mk_rtmp_connection::start(const char* pszUrl)
     if(NULL == m_rtmpHandle) {
         return AS_ERROR_CODE_FAIL;
     }
+    handle_connection_status(MR_CLIENT_STATUS_CONNECTED);
 
     if(AS_ERROR_CODE_OK != srs_rtmp_connect_app(m_rtmpHandle)) {
         srs_rtmp_destroy(m_rtmpHandle);
         m_rtmpHandle = NULL;
         return AS_ERROR_CODE_FAIL;
     }
+    handle_connection_status(MR_CLIENT_STATUS_HANDSHAKE);
     
     if(AS_ERROR_CODE_OK != srs_rtmp_play_stream(m_rtmpHandle)) {
         srs_rtmp_destroy(m_rtmpHandle);
         m_rtmpHandle = NULL;
         return AS_ERROR_CODE_FAIL;
     }
+    handle_connection_status(MR_CLIENT_STATUS_RUNNING);
 
     SOCKET Socket = srs_rtmp_get_socket(m_rtmpHandle);
     
