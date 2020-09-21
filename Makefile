@@ -30,6 +30,10 @@ HEADFILES += $(wildcard ./rtsp/*.h)
 CPPFILES  += $(wildcard ./rtmp/*.cpp)
 CFILES    += $(wildcard ./rtmp/*.c)
 HEADFILES += $(wildcard ./rtmp/*.h)
+
+CPPFILES  += $(wildcard ./*.cpp)
+CFILES    += $(wildcard ./*.c)
+HEADFILES += $(wildcard ./*.h)
    
 COBJS=$(CFILES:.c=.o)
 CPPOBJS=$(CPPFILES:.cpp=.O)

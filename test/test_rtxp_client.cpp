@@ -11,6 +11,7 @@ class rtxp_client
 public:
     rtxp_client(std::string& strUrl)
     {
+        m_hanlde = NULL;
         m_strUrl = strUrl;
     }
     virtual ~rtxp_client()
@@ -32,17 +33,38 @@ public:
             return;
         }
         mk_stop_client_handle(m_hanlde);
-        
         return;
     }
     int32_t handle_lib_media_data(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len)
     {
         return mk_recv_next_media_data(client,m_szBuf,RECV_DATA_BUF_SIZE);
     }
-public:
-    static int32_t rtxp_client_handle_status(MR_CLIENT client,MR_CLIENT_STATUS method,void* ctx)
+    int32_t hanlde_lib_status(MR_CLIENT client,MR_CLIENT_STATUS status)
     {
+        if(MR_CLIENT_STATUS_CONNECTED == status) {
+            printf("connected,url:[%s] fail\n",m_strUrl.c_str());
+        }
+        else if(MR_CLIENT_STATUS_HANDSHAKE == status) {
+            printf("handshake,url:[%s] fail\n",m_strUrl.c_str());
+        }
+        else if(MR_CLIENT_STATUS_RUNNING == status) {
+            printf("running,url:[%s] fail\n",m_strUrl.c_str());
+        }
+        else if(MR_CLIENT_STATUS_TEARDOWN == status) {
+            printf("teardown,url:[%s] fail\n",m_strUrl.c_str());
+            if(NULL != m_hanlde) {
+                mk_destory_client_handle(m_hanlde);
+                m_hanlde = NULL;
+                delete this;
+            }
+        }
         return AS_ERROR_CODE_OK;
+    }
+public:
+    static int32_t rtxp_client_handle_status(MR_CLIENT client,MR_CLIENT_STATUS status,void* ctx)
+    {
+        rtxp_client* pClient = (rtxp_client*)ctx;
+        return pClient->hanlde_lib_status(client,status);
     }
     static int32_t rtxp_client_handle_media(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len,void* ctx)
     {
@@ -57,7 +79,10 @@ private:
 
 static void lib_mk_log(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,va_list argp)
 {
-
+    char buf[1024];
+    (void)::vsnprintf(buf, 1024, format, argp);
+    buf[1023] = '\0';
+    printf("%s:%d %s\n",szFileName,lLine,buf);    
 }
 
 int main(int argc,char* argv[])

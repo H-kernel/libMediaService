@@ -5,7 +5,7 @@
 #include "mk_client_connection.h"
 
 
-class mk_rtmp_connection:public as_tcp_monitor_handle,mk_client_connection
+class mk_rtmp_connection:public mk_client_connection,as_tcp_monitor_handle
 {
 public:
     mk_rtmp_connection();

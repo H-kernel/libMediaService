@@ -97,9 +97,9 @@ mk_rtsp_server* mk_media_service::create_rtsp_server(uint16_t port,rtsp_server_r
     }
     pRtspServer->set_callback(cb,ctx);
     as_network_addr local;
-    local.m_lIpAddr = 0;
+    local.m_ulIpAddr = 0;
     local.m_usPort  = port;
-    int32_t nRet = m_NetWorkArray.regTcpServer(&local,pRtspServer);
+    int32_t nRet = m_NetWorkArray[0]->regTcpServer(&local,pRtspServer);
     if(AS_ERROR_CODE_OK != nRet) {
         AS_DELETE(pRtspServer);
         pRtspServer = NULL;
@@ -111,7 +111,7 @@ void mk_media_service::destory_rtsp_server(mk_rtsp_server* pServer)
     if(NULL == pServer) {
         return;
     }
-    m_NetWorkArray.removeTcpServer(pServer);
+    m_NetWorkArray[0]->removeTcpServer(pServer);
     AS_DELETE(pServer);
     return;
 }
@@ -136,7 +136,7 @@ mk_client_connection* mk_media_service::create_client(char* url,handle_client_st
     }
 
     if(NULL == pClient) {
-        return AS_ERROR_CODE_FAIL;
+        return NULL;
     }
 
     uint32_t ulIdx = m_ClientFreeList.front();

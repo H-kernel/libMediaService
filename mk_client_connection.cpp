@@ -40,9 +40,9 @@ int32_t  mk_client_connection::start_recv(char* buf,uint32_t len,handle_client_m
     m_pMediaCbData   = data;
     return AS_ERROR_CODE_OK;
 }
-int32_t  stop_recv()
+int32_t  mk_client_connection::stop_recv()
 {
-
+    return AS_ERROR_CODE_OK;
 }
 int32_t  mk_client_connection::do_next_recv(char* buf,uint32_t len)
 {

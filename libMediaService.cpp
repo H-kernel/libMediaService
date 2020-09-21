@@ -2,12 +2,12 @@
 #include "mk_media_service.h"
 #include "mk_client_connection.h"
 
-static mk_log g_log = NULL;
+mk_log g_log = NULL;
 /* init the media rtsp libary */
 MR_API int32_t   mk_lib_init(uint32_t EvnCount,mk_log log)
 {
     g_log =  log;
-    return mk_media_service::instance().init(udpstart,count);
+    return mk_media_service::instance().init(EvnCount,1024);
 }
 /* release the media rtsp bibary */
 MR_API void      mk_lib_release()
@@ -36,7 +36,7 @@ MR_API MR_CLIENT mk_create_client_handle(char* url,handle_client_status cb,void*
 MR_API void      mk_destory_client_handle(MR_CLIENT client)
 {
     mk_client_connection* pClient = (mk_client_connection*)client;
-    mk_media_service::instance().destory_rtsp_client(pClient);
+    mk_media_service::instance().destory_client(pClient);
     return;
 }
 /* start the media client handle */

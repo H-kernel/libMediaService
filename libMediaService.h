@@ -36,7 +36,7 @@ typedef void (*mk_log)(const char* szFileName, int32_t lLine,int32_t lLevel, con
 
 typedef int32_t (*rtsp_server_request)(MR_SERVER server,MR_CLIENT client);
 
-typedef int32_t (*handle_client_status)(MR_CLIENT client,MR_CLIENT_STATUS method,void* ctx);
+typedef int32_t (*handle_client_status)(MR_CLIENT client,MR_CLIENT_STATUS status,void* ctx);
 
 typedef int32_t (*handle_client_media)(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len,void* ctx);
 
