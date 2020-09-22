@@ -58,6 +58,12 @@ public:
                 delete this;
             }
         }
+        else if(MR_CLIENT_STATUS_TIMEOUT == status) {
+            printf("timeout,url:[%s] fail\n",m_strUrl.c_str());
+            if(NULL != m_hanlde) {
+                mk_stop_client_handle(m_hanlde);
+            }
+        }
         return AS_ERROR_CODE_OK;
     }
 public:

@@ -136,6 +136,8 @@ private:
 
     uint8_t                      m_ucH264PayloadType;
     uint8_t                      m_ucH265PayloadType;
+
+    time_t                       m_ulLastRecv;
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

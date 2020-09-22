@@ -19,6 +19,7 @@ public:
     virtual void handle_send(void);
 private:
     srs_rtmp_t    m_rtmpHandle;
+    time_t        m_ulLastRecv;
 };
 
 #endif /* __MK_RTMP_CONNECTION_INCLUDE_H__ */

@@ -6,6 +6,7 @@
 mk_rtmp_connection::mk_rtmp_connection()
 {
     m_rtmpHandle = NULL;
+    m_ulLastRecv = time(NULL);
 }
 mk_rtmp_connection::~mk_rtmp_connection()
 {
@@ -51,27 +52,35 @@ int32_t mk_rtmp_connection::start()
         m_rtmpHandle = NULL;
         return AS_ERROR_CODE_FAIL;
     }
+    m_ulLastRecv = time(NULL);
 
     return AS_ERROR_CODE_OK;
 }
 void    mk_rtmp_connection::stop()
 {
+    /* unregister the network service */
+    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
+    pNetWork->removeTcpClient(this);
+
     if(NULL != m_rtmpHandle) {
         srs_rtmp_destroy(m_rtmpHandle);
         m_rtmpHandle = NULL;
     }
-    /* unregister the network service */
-    as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
-    pNetWork->removeTcpClient(this);
+    
     return;
 }
 int32_t mk_rtmp_connection::recv_next()
 {
+    m_ulLastRecv = time(NULL);
     as_handle::setHandleRecv(AS_TRUE);
     return AS_ERROR_CODE_OK;
 }
 void mk_rtmp_connection::check_client()
 {
+    time_t cur = time(NULL);
+    if(MK_CLIENT_RECV_TIMEOUT < (cur - m_ulLastRecv)) {
+        handle_connection_status(MR_CLIENT_STATUS_TIMEOUT);
+    }
     return;
 }
 void mk_rtmp_connection::handle_recv(void)
@@ -145,6 +154,7 @@ void mk_rtmp_connection::handle_recv(void)
     m_ulRecvLen = size;
     handle_connection_media(enType,pts);
     free(data);
+    m_ulLastRecv = time(NULL);
     return;
 }
 void mk_rtmp_connection::handle_send(void)

@@ -68,6 +68,10 @@ int32_t mk_rtsp_connection::recv_next()
 }
 void  mk_rtsp_connection::check_client()
 {
+    time_t cur = time(NULL);
+    if(MK_CLIENT_RECV_TIMEOUT < (cur - m_ulLastRecv)) {
+        handle_connection_status(MR_CLIENT_STATUS_TIMEOUT);
+    }
     return;
 }
 
@@ -123,6 +127,7 @@ void mk_rtsp_connection::handle_recv(void)
     }
     m_ulRecvSize = dataSize;
     setHandleSend(AS_TRUE);
+    m_ulLastRecv = time(NULL);
     return;
 }
 void mk_rtsp_connection::handle_send(void)
@@ -861,7 +866,9 @@ void mk_rtsp_connection::resetRtspConnect()
     m_rtpFrameOrganizer.init(this);
 
     m_ucH264PayloadType = PT_TYPE_MAX;
-    m_ucH265PayloadType = PT_TYPE_MAX;    
+    m_ucH265PayloadType = PT_TYPE_MAX;
+
+    m_ulLastRecv = time(NULL);    
 }
 void mk_rtsp_connection::trimString(std::string& srcString) const
 {

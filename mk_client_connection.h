@@ -12,6 +12,7 @@ enum MK_CLIENT_TYPE
 };
 
 #define MK_CLIENT_TIMER_INTERVAL 100
+#define MK_CLIENT_RECV_TIMEOUT   5
 
 class mk_client_timer:public ITrigger
 {
