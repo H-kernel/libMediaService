@@ -40,8 +40,10 @@ int32_t mk_rtsp_connection::start()
     else {
         remote.m_usPort   = m_url.port;
     }
+
+    MK_LOG(AS_LOG_INFO,"rtsp client connect to [%s:%d].",(char*)&m_url.host[0],m_url.port);
     
-    if(AS_ERROR_CODE_OK != pNetWork->regTcpClient(&remote,&remote,this,enSyncOp,5)) {
+    if(AS_ERROR_CODE_OK != pNetWork->regTcpClient(&local,&remote,this,enSyncOp,5)) {
         return AS_ERROR_CODE_FAIL;
     }
     handle_connection_status(MR_CLIENT_STATUS_CONNECTED);

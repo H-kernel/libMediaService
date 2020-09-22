@@ -97,7 +97,7 @@ int main(int argc,char* argv[])
     rtxp_client* pClient = NULL;
     std::string  strUrl;
 
-    if(1 <= argc) {
+    if(1 >= argc) {
         printf("need input rtsp/rtmp url\n");
         return -1;
     }
