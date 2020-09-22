@@ -53,4 +53,4 @@ $(TARGET_LIB): $(CPPOBJS) $(COBJS)
 	$(C++) -c  $(C++FLAGS) $(INCPATH) $< -o $@	
 
 clean:
-	rm -f $(TARGET) $(CPPOBJS) $(COBJS)
+	rm -f $(TARGET_LIB) $(TARGET_DLL)  $(CPPOBJS) $(COBJS)
