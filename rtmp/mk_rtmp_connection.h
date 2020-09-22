@@ -10,9 +10,10 @@ class mk_rtmp_connection:public mk_client_connection,as_tcp_monitor_handle
 public:
     mk_rtmp_connection();
     virtual ~mk_rtmp_connection();
-    virtual int32_t start(const char* pszUrl);
+    virtual int32_t start();
     virtual void    stop();
     virtual int32_t recv_next();
+    virtual void    check_client();
 public:
     virtual void handle_recv(void);
     virtual void handle_send(void);

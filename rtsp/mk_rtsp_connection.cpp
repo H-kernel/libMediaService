@@ -22,11 +22,11 @@ mk_rtsp_connection::~mk_rtsp_connection()
 }
 
 
-int32_t mk_rtsp_connection::start(const char* pszUrl)
+int32_t mk_rtsp_connection::start()
 {
     as_network_addr local;
     as_network_addr remote;
-    if(AS_ERROR_CODE_OK != as_parse_url(pszUrl,&m_url)) {
+    if(AS_ERROR_CODE_OK != as_parse_url(m_strurl.c_str(),&m_url)) {
         return AS_ERROR_CODE_FAIL;
     }
     as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
@@ -65,6 +65,10 @@ int32_t mk_rtsp_connection::recv_next()
 {
     m_bDoNextRecv = AS_TRUE;
     return AS_ERROR_CODE_OK;
+}
+void  mk_rtsp_connection::check_client()
+{
+    return;
 }
 
 void  mk_rtsp_connection::set_rtp_over_tcp()

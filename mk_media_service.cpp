@@ -144,11 +144,7 @@ mk_client_connection* mk_media_service::create_client(char* url,handle_client_st
 
     pClient->set_index(ulIdx);
     pClient->set_status_callback(cb,ctx);
-    if(AS_ERROR_CODE_OK != pClient->start(url)) {
-        AS_DELETE(pClient);
-        m_ClientFreeList.push_back(ulIdx);
-        return NULL;
-    }
+    pClient->set_url(url);
     return pClient;
 }
 void mk_media_service::destory_client(mk_client_connection* pClient)
@@ -157,7 +153,6 @@ void mk_media_service::destory_client(mk_client_connection* pClient)
         return;
     }
     uint32_t ulIdx = pClient->get_index();    
-    pClient->stop();
     AS_DELETE(pClient);
     m_ClientFreeList.push_back(ulIdx);
     return;
@@ -167,6 +162,10 @@ as_network_svr* mk_media_service::get_client_network_svr(uint32_t ulIndex)
     uint32_t ulIdx = ulIndex%m_ulEvnCount;
     
     return m_NetWorkArray[ulIdx];
+}
+as_timer& mk_media_service::get_client_check_timer()
+{
+    return m_CheckTimer;
 }
 void    mk_media_service::set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count)
 {

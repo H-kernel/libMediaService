@@ -72,6 +72,7 @@ public:
     void destory_client(mk_client_connection* pClient);
 public:
     as_network_svr* get_client_network_svr(uint32_t ulIndex);
+    as_timer& get_client_check_timer();
     void    set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count);
     void    get_rtp_rtcp_udp_port(uint16_t& udpPort,uint32_t& count);
     void    set_rtp_recv_buf_info(uint32_t maxCount);
@@ -89,6 +90,7 @@ private:
     as_network_svr**          m_NetWorkArray;
     uint32_t                  m_ulEvnCount;
     mk_conn_log               m_connLog;
+    as_timer                  m_CheckTimer;
 
     uint32_t                  m_ulFrameBufSize;
     uint32_t                  m_ulFramebufCount;

@@ -78,9 +78,10 @@ public:
     virtual ~mk_rtsp_connection();
 
 public:
-    virtual int32_t start(const char* pszUrl);
+    virtual int32_t start();
     virtual void    stop();
     virtual int32_t recv_next();
+    virtual void    check_client();
     virtual void    set_rtp_over_tcp();
 public:
     /* override */

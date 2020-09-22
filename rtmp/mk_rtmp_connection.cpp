@@ -14,9 +14,9 @@ mk_rtmp_connection::~mk_rtmp_connection()
         m_rtmpHandle = NULL;
     }
 }
-int32_t mk_rtmp_connection::start(const char* pszUrl)
+int32_t mk_rtmp_connection::start()
 {
-    m_rtmpHandle = srs_rtmp_create(pszUrl);
+    m_rtmpHandle = srs_rtmp_create(m_strurl.c_str());
     if(NULL == m_rtmpHandle) {
         return AS_ERROR_CODE_FAIL;
     }
@@ -69,6 +69,10 @@ int32_t mk_rtmp_connection::recv_next()
 {
     as_handle::setHandleRecv(AS_TRUE);
     return AS_ERROR_CODE_OK;
+}
+void mk_rtmp_connection::check_client()
+{
+    return;
 }
 void mk_rtmp_connection::handle_recv(void)
 {
