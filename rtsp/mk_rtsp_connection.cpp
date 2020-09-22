@@ -35,10 +35,10 @@ int32_t mk_rtsp_connection::start()
 
     remote.m_ulIpAddr = sin_addr.s_addr;
     if(0 == m_url.port) {
-        remote.m_usPort   = RTSP_DEFAULT_PORT;
+        remote.m_usPort   = htons(RTSP_DEFAULT_PORT);
     }
     else {
-        remote.m_usPort   = m_url.port;
+        remote.m_usPort   = htons(m_url.port);
     }
 
     MK_LOG(AS_LOG_INFO,"rtsp client connect to [%s:%d].",(char*)&m_url.host[0],m_url.port);
@@ -112,7 +112,9 @@ void mk_rtsp_connection::handle_recv(void)
         nSize = processRecvedMessage((const char*)&m_RecvBuf[processedSize],
                                      m_ulRecvSize - processedSize);
         if (nSize < 0) {
-            MK_LOG(AS_LOG_WARNING,"tsp connection process recv data fail, close handle. ");
+            MK_LOG(AS_LOG_WARNING,"rtsp connection process recv data fail, close handle. ");
+            stop();
+            handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
             return;
         }
 
@@ -673,6 +675,10 @@ int32_t mk_rtsp_connection::handleRtspSetUpResp(mk_rtsp_packet &rtspMessage)
 }
 int32_t mk_rtsp_connection::sendMsg(const char* pszData,uint32_t len)
 {
+    int32_t lSendSize = as_tcp_conn_handle::send(pszData,len,enSyncOp);
+    if(lSendSize != len) {
+        return AS_ERROR_CODE_FAIL;
+    }
     return AS_ERROR_CODE_OK;
 }
 void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)

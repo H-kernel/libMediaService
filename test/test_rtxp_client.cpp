@@ -42,16 +42,16 @@ public:
     int32_t hanlde_lib_status(MR_CLIENT client,MR_CLIENT_STATUS status)
     {
         if(MR_CLIENT_STATUS_CONNECTED == status) {
-            printf("connected,url:[%s] fail\n",m_strUrl.c_str());
+            printf("connected,url:[%s]\n",m_strUrl.c_str());
         }
         else if(MR_CLIENT_STATUS_HANDSHAKE == status) {
-            printf("handshake,url:[%s] fail\n",m_strUrl.c_str());
+            printf("handshake,url:[%s]\n",m_strUrl.c_str());
         }
         else if(MR_CLIENT_STATUS_RUNNING == status) {
-            printf("running,url:[%s] fail\n",m_strUrl.c_str());
+            printf("running,url:[%s]\n",m_strUrl.c_str());
         }
         else if(MR_CLIENT_STATUS_TEARDOWN == status) {
-            printf("teardown,url:[%s] fail\n",m_strUrl.c_str());
+            printf("teardown,url:[%s]\n",m_strUrl.c_str());
             if(NULL != m_hanlde) {
                 mk_destory_client_handle(m_hanlde);
                 m_hanlde = NULL;
@@ -59,7 +59,7 @@ public:
             }
         }
         else if(MR_CLIENT_STATUS_TIMEOUT == status) {
-            printf("timeout,url:[%s] fail\n",m_strUrl.c_str());
+            printf("timeout,url:[%s]\n",m_strUrl.c_str());
             if(NULL != m_hanlde) {
                 mk_stop_client_handle(m_hanlde);
             }

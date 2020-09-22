@@ -67,6 +67,18 @@ int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
     }
 
     MK_LOG(AS_LOG_INFO,"create frame recv bufs success.");
+
+    if(AS_ERROR_CODE_OK != m_CheckTimer.init(DefaultTimerScale)) {
+        MK_LOG(AS_LOG_WARNING,"init the timer fail.");
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    if(AS_ERROR_CODE_OK != m_CheckTimer.run()) {
+        MK_LOG(AS_LOG_WARNING,"run the timer fail.");
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    MK_LOG(AS_LOG_INFO,"run the timer success.");
     
     return mk_rtsp_service::instance().init();
 }

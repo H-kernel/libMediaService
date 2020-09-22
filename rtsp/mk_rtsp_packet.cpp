@@ -94,6 +94,7 @@ int32_t mk_rtsp_packet::checkRtsp(const char* pszRtsp, uint32_t unRtspSize, uint
 
     if (nMethodsIndex >= RtspIllegalMethod)
     {
+        MK_LOG(AS_LOG_WARNING,"rtsp method index:[%d] invalid.", nMethodsIndex)
         return AS_ERROR_CODE_FAIL;
     }
 
