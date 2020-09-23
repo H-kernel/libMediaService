@@ -41,7 +41,7 @@ int32_t mk_rtsp_connection::start()
         remote.m_usPort   = htons(m_url.port);
     }
 
-    MK_LOG(AS_LOG_INFO,"rtsp client connect to [%s:%d].",(char*)&m_url.host[0],m_url.port);
+    MK_LOG(AS_LOG_INFO,"rtsp client connect to [%s:%d] ,uri:[%s].",(char*)&m_url.host[0],m_url.port,(char*)&m_url.uri[0]);
     
     if(AS_ERROR_CODE_OK != pNetWork->regTcpClient(&local,&remote,this,enSyncOp,5)) {
         return AS_ERROR_CODE_FAIL;
@@ -95,7 +95,9 @@ void mk_rtsp_connection::handle_recv(void)
         return;
     }
 
-    iRecvLen = this->recv((char*)&m_RecvBuf[iRecvLen],&peer,iRecvLen,enAsyncOp);
+    MK_LOG(AS_LOG_INFO,"rtsp connection handle recv event begin.");
+
+    iRecvLen = this->recv((char*)&m_RecvBuf[m_ulRecvSize],&peer,iRecvLen,enAsyncOp);
     if (iRecvLen <= 0)
     {
         MK_LOG(AS_LOG_INFO,"rtsp connection recv data fail.");
@@ -130,8 +132,9 @@ void mk_rtsp_connection::handle_recv(void)
         memmove(&m_RecvBuf[0],&m_RecvBuf[processedSize], dataSize);
     }
     m_ulRecvSize = dataSize;
-    setHandleSend(AS_TRUE);
+    setHandleRecv(AS_TRUE);
     m_ulLastRecv = time(NULL);
+    MK_LOG(AS_LOG_INFO,"rtsp connection handle recv event end.");
     return;
 }
 void mk_rtsp_connection::handle_send(void)
@@ -215,6 +218,7 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
         return AS_ERROR_CODE_FAIL;
     }
     if(0 == ulMsgLen) {
+        MK_LOG(AS_LOG_DEBUG,"rtsp connection need recv more data.");
         return 0; /* need more data deal */
     }
 
@@ -224,6 +228,8 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
         MK_LOG(AS_LOG_WARNING,"rtsp connection parser rtsp message fail.");
         return AS_ERROR_CODE_FAIL;
     }
+
+    MK_LOG(AS_LOG_INFO,"rtsp connection handle method index:[%d].",rtspPacket.getMethodIndex());
 
     switch (rtspPacket.getMethodIndex())
     {
@@ -308,6 +314,7 @@ int32_t mk_rtsp_connection::sendRtspOptionsReq()
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspOptionsMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send OPTIONS request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspDescribeReq()
@@ -322,6 +329,7 @@ int32_t mk_rtsp_connection::sendRtspDescribeReq()
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspDescribeMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send DESCRIBE request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
@@ -425,6 +433,7 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspSetupMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send SETUP request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspPlayReq()
@@ -439,6 +448,7 @@ int32_t mk_rtsp_connection::sendRtspPlayReq()
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspPlayMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send PLAY request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspRecordReq()
@@ -453,6 +463,7 @@ int32_t mk_rtsp_connection::sendRtspRecordReq()
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspRecordMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send RECORD request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspGetParameterReq()
@@ -467,6 +478,7 @@ int32_t mk_rtsp_connection::sendRtspGetParameterReq()
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspGetParameterMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send GET_PARAMETER request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspAnnounceReq()
@@ -481,6 +493,7 @@ int32_t mk_rtsp_connection::sendRtspAnnounceReq()
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspAnnounceMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send ANNOUNCE request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspPauseReq()
@@ -495,6 +508,7 @@ int32_t mk_rtsp_connection::sendRtspPauseReq()
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspPauseMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send PAUSE request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::sendRtspTeardownReq()
@@ -509,6 +523,7 @@ int32_t mk_rtsp_connection::sendRtspTeardownReq()
     }
     m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspTeardownMethod));
     m_ulSeq++;
+    MK_LOG(AS_LOG_INFO,"rtsp connection send TEARDOWN request.");
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
 }
 int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
@@ -517,15 +532,21 @@ int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
     uint32_t nRespCode = rtspMessage.getRtspStatusCode();
     uint32_t enMethod   = RtspIllegalMethod;
 
+    MK_LOG(AS_LOG_INFO,"rtsp client handle server reponse seq:[%d] ,Response Code:[%d].",nCseq,nRespCode);
+
     SEQ_METHOD_ITER iter = m_SeqMethodMap.find(nCseq);
     if(iter == m_SeqMethodMap.end()) {
+        MK_LOG(AS_LOG_WARNING,"rtsp client there server reponse, not find the request Cseq:[%d].",nCseq);
         return AS_ERROR_CODE_FAIL;
     }
 
     enMethod = iter->second;
     MK_LOG(AS_LOG_INFO,"rtsp client handle server reponse seq:[%d] ,mothod:[%d].",nCseq,enMethod);
 
-    if(RtspStatus_200 != nRespCode) {
+    if(RTSP_STATUS_UNAUTHORIZED == nRespCode) {
+    
+    }
+    else if(RTSP_STATUS_OK != nRespCode) {
         /*close socket */
         MK_LOG(AS_LOG_WARNING,"rtsp client there server reponse code:[%d].",nRespCode);
         return AS_ERROR_CODE_FAIL;

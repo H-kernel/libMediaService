@@ -13,7 +13,7 @@
 #define RTSP_VERSION             string("RTSP/1.0")
 #define RTSP_END_LINE            string("\r\n")
 #define RTSP_END_MSG             string("\r\n\r\n")
-#define RTSP_USER_AGENT          string("AllCam adapter/v1.0.0.0")
+#define RTSP_USER_AGENT          string("H.Kernel 2020.06.08")
 #define RTSP_URL_PROTOCOL        string("rtsp://")
 #define RTSP_DEFAULT_PORT        554
 
@@ -69,21 +69,108 @@ enum _enRtspHeaders
     RtspTransPortHeader     = 7,
     RtspRtpInfoHeader       = 8,
     RtspContentType         = 9,
+    RtspAuthenticate        = 10,
 
     RtspNotAcceptedHeader
 };
 
 enum _enRtspStatusCode
 {
-    RtspStatus_200          = 0,        // 200 OK
-    RtspStatus_300          = 1,        // 300 Multiple Choices
-    RtspStatus_400          = 2,        // 400 Bad Request
-    RtspStatus_401          = 3,        // 400 Bad Request
-    RtspStatus_404          = 4,        // 404 Not Found
-    RtspStatus_406          = 5,        // 406 Not Acceptable
-    RtspStatus_500          = 6,        // 500 Internal Server Error
+    RtspStatus_Index_100          = 0,        // 100 Continue
+    RtspStatus_Index_200          = 1,        // 200 OK
+    RtspStatus_Index_201          = 2,        // 201 Created
+    RtspStatus_Index_250          = 3,        // 250 Low on Storage Space
+    RtspStatus_Index_300          = 4,        // 300 Multiple Choices
+    RtspStatus_Index_301          = 5,        // 301 Moved Permanently
+    RtspStatus_Index_302          = 6,        // 302 Moved Temporarily
+    RtspStatus_Index_303          = 7,        // 303 See Other
+    RtspStatus_Index_304          = 8,        // 304 Not Modified
+    RtspStatus_Index_305          = 9,        // 305 Use Proxy
+    RtspStatus_Index_400          = 10,       // 400 Bad Request
+    RtspStatus_Index_401          = 11,       // 401 Unauthorized
+    RtspStatus_Index_402          = 12,       // 402 Payment Required
+    RtspStatus_Index_403          = 13,       // 403 Forbidden
+    RtspStatus_Index_404          = 14,       // 404 Not Found
+    RtspStatus_Index_405          = 15,       // 405 Method Not Allowed
+    RtspStatus_Index_406          = 16,       // 406 Not Acceptable
+    RtspStatus_Index_407          = 17,       // 407 Proxy Authentication Required
+    RtspStatus_Index_408          = 18,       // 408 Request Time-out
+    RtspStatus_Index_410          = 19,       // 410 Gone
+    RtspStatus_Index_411          = 20,       // 411 Length Required
+    RtspStatus_Index_412          = 21,       // 412 Precondition Failed
+    RtspStatus_Index_413          = 22,       // 413 Request Entity Too Large
+    RtspStatus_Index_414          = 23,       // 414 Request URI Too Large
+    RtspStatus_Index_415          = 24,       // 415 Unsupported Media Type
+    RtspStatus_Index_451          = 25,       // 451 Parameter Not Understood
+    RtspStatus_Index_452          = 26,       // 452 Conference Not Found
+    RtspStatus_Index_453          = 27,       // 453 Not Enough Bandwidth
+    RtspStatus_Index_454          = 28,       // 454 Session Not Found
+    RtspStatus_Index_455          = 29,       // 455 Method Not Valid in This State
+    RtspStatus_Index_456          = 30,       // 456 Header Field Not Valid for Resource
+    RtspStatus_Index_457          = 31,       // 457 Invalid Range
+    RtspStatus_Index_458          = 32,       // 458 Parameter Is Read-Only
+    RtspStatus_Index_459          = 33,       // 459 Aggregate Operation no Allowed
+    RtspStatus_Index_460          = 34,       // 460 Only Aggregate Operation Allowed
+    RtspStatus_Index_461          = 35,       // 461 Unsupported Transport
+    RtspStatus_Index_462          = 36,       // 462 Destination Unreachable
+    RtspStatus_Index_500          = 37,       // 500 Internal Server Error
+    RtspStatus_Index_501          = 38,       // 501 Not Implemented
+    RtspStatus_Index_502          = 39,       // 502 Bad Gateway
+    RtspStatus_Index_503          = 40,       // 503 Service Unavailable
+    RtspStatus_Index_504          = 41,       // 504 Gateway Time-out
+    RtspStatus_Index_505          = 42,       // 505 RTSP Version not Supported
+    RtspStatus_Index_551          = 43,       // 551 Option not supported
 
     RtspNotAcceptedStatus
+};
+
+
+/** RTSP handling */
+enum RTSPStatusCode {
+    RTSP_STATUS_CONTINUE             = 100,
+    RTSP_STATUS_OK                   = 200,
+    RTSP_STATUS_CREATED              = 201,
+    RTSP_STATUS_LOW_ON_STORAGE_SPACE = 250,
+    RTSP_STATUS_MULTIPLE_CHOICES     = 300,
+    RTSP_STATUS_MOVED_PERMANENTLY    = 301,
+    RTSP_STATUS_MOVED_TEMPORARILY    = 302,
+    RTSP_STATUS_SEE_OTHER            = 303,
+    RTSP_STATUS_NOT_MODIFIED         = 304,
+    RTSP_STATUS_USE_PROXY            = 305,
+    RTSP_STATUS_BAD_REQUEST          = 400,
+    RTSP_STATUS_UNAUTHORIZED         = 401,
+    RTSP_STATUS_PAYMENT_REQUIRED     = 402,
+    RTSP_STATUS_FORBIDDEN            = 403,
+    RTSP_STATUS_NOT_FOUND            = 404,
+    RTSP_STATUS_METHOD               = 405,
+    RTSP_STATUS_NOT_ACCEPTABLE       = 406,
+    RTSP_STATUS_PROXY_AUTH_REQUIRED  = 407,
+    RTSP_STATUS_REQ_TIME_OUT         = 408,
+    RTSP_STATUS_GONE                 = 410,
+    RTSP_STATUS_LENGTH_REQUIRED      = 411,
+    RTSP_STATUS_PRECONDITION_FAILED  = 412,
+    RTSP_STATUS_REQ_ENTITY_2LARGE    = 413,
+    RTSP_STATUS_REQ_URI_2LARGE       = 414,
+    RTSP_STATUS_UNSUPPORTED_MTYPE    = 415,
+    RTSP_STATUS_PARAM_NOT_UNDERSTOOD = 451,
+    RTSP_STATUS_CONFERENCE_NOT_FOUND = 452,
+    RTSP_STATUS_BANDWIDTH            = 453,
+    RTSP_STATUS_SESSION              = 454,
+    RTSP_STATUS_STATE                = 455,
+    RTSP_STATUS_INVALID_HEADER_FIELD = 456,
+    RTSP_STATUS_INVALID_RANGE        = 457,
+    RTSP_STATUS_RONLY_PARAMETER      = 458,
+    RTSP_STATUS_AGGREGATE            = 459,
+    RTSP_STATUS_ONLY_AGGREGATE       = 460,
+    RTSP_STATUS_TRANSPORT            = 461,
+    RTSP_STATUS_UNREACHABLE          = 462,
+    RTSP_STATUS_INTERNAL             = 500,
+    RTSP_STATUS_NOT_IMPLEMENTED      = 501,
+    RTSP_STATUS_BAD_GATEWAY          = 502,
+    RTSP_STATUS_SERVICE              = 503,
+    RTSP_STATUS_GATEWAY_TIME_OUT     = 504,
+    RTSP_STATUS_VERSION              = 505,
+    RTSP_STATUS_UNSUPPORTED_OPTION   = 551,
 };
 
 typedef enum _enRTSP_NAT_TYPE
@@ -151,7 +238,11 @@ public:
 
     void      setRtspStatusCode(uint32_t unRespCode);
 
+    uint32_t  getRtspStatusCodeIndex() const;
+
     uint32_t  getRtspStatusCode() const;
+
+    std::string& getRtspStatusString() const;
 
     void      setRtspUrl(const std::string &strUrl);
 
@@ -189,6 +280,10 @@ public:
 
     void      SetContent(std::string &strContent);
 
+    int32_t   getAuthenticate(std::string &strAuthenticate);
+
+    void      setAuthenticate(std::string &strAuthenticate);
+
     int32_t   generateRtspResp(std::string& strResp);
 
     int32_t   generateRtspReq(std::string& strReq);
@@ -218,6 +313,7 @@ private:
     static std::string  m_strRtspMethods[];
     static std::string  m_strRtspHeaders[];
     static std::string  m_strRtspStatusCode[];
+    static uint32_t     m_ulRtspStatusCode[];
     static uint32_t     m_unRtspCseq;
 
     RTSP_COMMON_INFO    m_RtspCommonInfo;

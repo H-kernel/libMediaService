@@ -40,20 +40,106 @@ string mk_rtsp_packet::m_strRtspHeaders[] =
     string("Speed"),
     string("Content-Length"),
     string("Transport"),
-    string("Content-Type"),
-
     string("RTP-Info"),
+    string("Content-Type"),
+    string("WWW-Authenticate"),    
 };
 
+uint32_t mk_rtsp_packet::m_ulRtspStatusCode[] =
+{
+    RTSP_STATUS_CONTINUE,
+    RTSP_STATUS_OK,
+    RTSP_STATUS_CREATED,
+    RTSP_STATUS_LOW_ON_STORAGE_SPACE,
+    RTSP_STATUS_MULTIPLE_CHOICES,
+    RTSP_STATUS_MOVED_PERMANENTLY,
+    RTSP_STATUS_MOVED_TEMPORARILY,
+    RTSP_STATUS_SEE_OTHER,
+    RTSP_STATUS_NOT_MODIFIED,
+    RTSP_STATUS_USE_PROXY,
+    RTSP_STATUS_BAD_REQUEST,
+    RTSP_STATUS_UNAUTHORIZED,
+    RTSP_STATUS_PAYMENT_REQUIRED,
+    RTSP_STATUS_FORBIDDEN,
+    RTSP_STATUS_NOT_FOUND,
+    RTSP_STATUS_METHOD,
+    RTSP_STATUS_NOT_ACCEPTABLE,
+    RTSP_STATUS_PROXY_AUTH_REQUIRED,
+    RTSP_STATUS_REQ_TIME_OUT,
+    RTSP_STATUS_GONE,
+    RTSP_STATUS_LENGTH_REQUIRED,
+    RTSP_STATUS_PRECONDITION_FAILED,
+    RTSP_STATUS_REQ_ENTITY_2LARGE,
+    RTSP_STATUS_REQ_URI_2LARGE,
+    RTSP_STATUS_UNSUPPORTED_MTYPE,
+    RTSP_STATUS_PARAM_NOT_UNDERSTOOD,
+    RTSP_STATUS_CONFERENCE_NOT_FOUND,
+    RTSP_STATUS_BANDWIDTH,
+    RTSP_STATUS_SESSION,
+    RTSP_STATUS_STATE,
+    RTSP_STATUS_INVALID_HEADER_FIELD,
+    RTSP_STATUS_INVALID_RANGE,
+    RTSP_STATUS_RONLY_PARAMETER,
+    RTSP_STATUS_AGGREGATE,
+    RTSP_STATUS_ONLY_AGGREGATE,
+    RTSP_STATUS_TRANSPORT,
+    RTSP_STATUS_UNREACHABLE,
+    RTSP_STATUS_INTERNAL,
+    RTSP_STATUS_NOT_IMPLEMENTED,
+    RTSP_STATUS_BAD_GATEWAY,
+    RTSP_STATUS_SERVICE,
+    RTSP_STATUS_GATEWAY_TIME_OUT,
+    RTSP_STATUS_VERSION,
+    RTSP_STATUS_UNSUPPORTED_OPTION,
+
+    0
+};
 string mk_rtsp_packet::m_strRtspStatusCode[] =
 {
+    string("100 Continue"),
     string("200 OK"),
-    string("300 Multiple Choices"),
-    string("400 Bad Request"),
-    string("401 Unauthorized"),
-    string("404 Not Found"),
-    string("406 Not Acceptable"),
-    string("500 Internal Server Error"),
+    string("200 Created"),
+    string("200 Low on Storage Space"),
+    string("200 Multiple Choices"),
+    string("200 Moved Permanently"),
+    string("200 Moved Temporarily"),
+    string("200 See Other"),
+    string("200 Not Modified"),
+    string("200 Use Proxy"),
+    string("200 Bad Request"),
+    string("200 Unauthorized"),
+    string("200 Payment Required"),
+    string("200 Forbidden"),
+    string("200 Not Found"),
+    string("200 Method Not Allowed"),
+    string("200 Not Acceptable"),
+    string("200 Proxy Authentication Required"),
+    string("200 Request Time-out"),
+    string("200 Gone"),
+    string("200 Length Required"),
+    string("200 Precondition Failed"),
+    string("200 Request Entity Too Large"),
+    string("200 Request URI Too Large"),
+    string("200 Unsupported Media Type"),
+    string("200 Parameter Not Understood"),
+    string("200 Conference Not Found"),
+    string("200 Not Enough Bandwidth"),
+    string("200 Session Not Found"),
+    string("200 Method Not Valid in This State"),
+    string("200 Header Field Not Valid for Resource"),
+    string("200 Invalid Range"),
+    string("200 Parameter Is Read-Only"),
+    string("200 Aggregate Operation no Allowed"),
+    string("200 Only Aggregate Operation Allowed"),
+    string("200 Unsupported Transport"),
+    string("200 Destination Unreachable"),
+    string("200 Internal Server Error"),
+    string("200 Not Implemented"),
+    string("200 Bad Gateway"),
+    string("200 Service Unavailable"),
+    string("200 Gateway Time-out"),
+    string("200 RTSP Version not Supported"),
+    string("200 Option not supported"),
 
     string("Unknown")
 };
@@ -170,11 +256,26 @@ void mk_rtsp_packet::setRtspStatusCode(uint32_t unRespCode)
     return;
 }
 
-uint32_t mk_rtsp_packet::getRtspStatusCode() const
+uint32_t mk_rtsp_packet::getRtspStatusCodeIndex() const
 {
     return m_RtspCommonInfo.StatusCodeIndex;
 }
 
+uint32_t  mk_rtsp_packet::getRtspStatusCode() const
+{
+    if(RtspNotAcceptedStatus <= m_RtspCommonInfo.StatusCodeIndex) {
+        return AS_ERROR_CODE_OK;
+    }
+    return m_ulRtspStatusCode[m_RtspCommonInfo.StatusCodeIndex];
+}
+
+std::string& mk_rtsp_packet::getRtspStatusString() const
+{
+    if(RtspNotAcceptedStatus <= m_RtspCommonInfo.StatusCodeIndex) {
+        return m_strRtspStatusCode[RtspNotAcceptedStatus];
+    }
+    return m_strRtspStatusCode[m_RtspCommonInfo.StatusCodeIndex];
+}
 
 int32_t mk_rtsp_packet::parse(const char* pszRtsp, uint32_t unRtspSize)
 {
