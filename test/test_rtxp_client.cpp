@@ -12,6 +12,8 @@ typedef struct
 } NALU_HEADER; /**//* 1 BYTES */
 #define RECV_DATA_BUF_SIZE (1024*1024)
 
+//#define _DUMP_WRITE
+
 class rtxp_client
 {
 public:
@@ -19,7 +21,9 @@ public:
     {
         m_hanlde = NULL;
         m_strUrl = strUrl;
+#ifdef _DUMP_WRITE
         m_WriteFd = NULL;
+#endif
     }
     virtual ~rtxp_client()
     {
@@ -33,10 +37,12 @@ public:
             return -1;
         }
         mk_create_rtsp_client_set_tcp(m_hanlde);
+#ifdef _DUMP_WRITE
         m_WriteFd = fopen("./a.264","wb+");
         if(NULL == m_WriteFd) {
             return -1;
         }
+#endif
         return mk_start_client_handle(m_hanlde,m_szBuf,RECV_DATA_BUF_SIZE,rtxp_client_handle_media,this);
     }
     void close()
@@ -45,16 +51,20 @@ public:
             return;
         }
         mk_stop_client_handle(m_hanlde);
+#ifdef _DUMP_WRITE
         if(NULL != m_WriteFd) {
             fclose(m_WriteFd);
             m_WriteFd = NULL;
         }
+#endif
         return;
     }
     int32_t handle_lib_media_data(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len)
     {
         if(type == MR_MEDIA_TYPE_H264) {
+#ifdef _DUMP_WRITE
             fwrite(data,1,len,m_WriteFd);
+#endif
             NALU_HEADER* nalu = (NALU_HEADER*)&data[4];
             printf("H264 NALU:[%d]\n",nalu->TYPE);
         }
