@@ -35,5 +35,5 @@ $(TARGET): $(CPPOBJS) $(COBJS)
 	$(C++) -c  $(C++FLAGS) $(INCPATH) $< -o $@	
 
 clean:
-	rm -f $(TARGET) $(CPPOBJS) $(COBJS)
+	rm -f $(TARGET) $(CPPOBJS) $(COBJS) ./libMediaService.so
 

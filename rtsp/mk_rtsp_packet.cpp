@@ -42,7 +42,8 @@ string mk_rtsp_packet::m_strRtspHeaders[] =
     string("Transport"),
     string("RTP-Info"),
     string("Content-Type"),
-    string("WWW-Authenticate"),    
+    string("WWW-Authenticate"),
+    string("Authorization"),     
 };
 
 uint32_t mk_rtsp_packet::m_ulRtspStatusCode[] =
@@ -98,48 +99,48 @@ string mk_rtsp_packet::m_strRtspStatusCode[] =
 {
     string("100 Continue"),
     string("200 OK"),
-    string("200 Created"),
-    string("200 Low on Storage Space"),
-    string("200 Multiple Choices"),
-    string("200 Moved Permanently"),
-    string("200 Moved Temporarily"),
-    string("200 See Other"),
-    string("200 Not Modified"),
-    string("200 Use Proxy"),
-    string("200 Bad Request"),
-    string("200 Unauthorized"),
-    string("200 Payment Required"),
-    string("200 Forbidden"),
-    string("200 Not Found"),
-    string("200 Method Not Allowed"),
-    string("200 Not Acceptable"),
-    string("200 Proxy Authentication Required"),
-    string("200 Request Time-out"),
-    string("200 Gone"),
-    string("200 Length Required"),
-    string("200 Precondition Failed"),
-    string("200 Request Entity Too Large"),
-    string("200 Request URI Too Large"),
-    string("200 Unsupported Media Type"),
-    string("200 Parameter Not Understood"),
-    string("200 Conference Not Found"),
-    string("200 Not Enough Bandwidth"),
-    string("200 Session Not Found"),
-    string("200 Method Not Valid in This State"),
-    string("200 Header Field Not Valid for Resource"),
-    string("200 Invalid Range"),
-    string("200 Parameter Is Read-Only"),
-    string("200 Aggregate Operation no Allowed"),
-    string("200 Only Aggregate Operation Allowed"),
-    string("200 Unsupported Transport"),
-    string("200 Destination Unreachable"),
-    string("200 Internal Server Error"),
-    string("200 Not Implemented"),
-    string("200 Bad Gateway"),
-    string("200 Service Unavailable"),
-    string("200 Gateway Time-out"),
-    string("200 RTSP Version not Supported"),
-    string("200 Option not supported"),
+    string("201 Created"),
+    string("250 Low on Storage Space"),
+    string("300 Multiple Choices"),
+    string("301 Moved Permanently"),
+    string("302 Moved Temporarily"),
+    string("303 See Other"),
+    string("304 Not Modified"),
+    string("305 Use Proxy"),
+    string("400 Bad Request"),
+    string("401 Unauthorized"),
+    string("402 Payment Required"),
+    string("403 Forbidden"),
+    string("404 Not Found"),
+    string("405 Method Not Allowed"),
+    string("406 Not Acceptable"),
+    string("407 Proxy Authentication Required"),
+    string("408 Request Time-out"),
+    string("410 Gone"),
+    string("411 Length Required"),
+    string("412 Precondition Failed"),
+    string("413 Request Entity Too Large"),
+    string("414 Request URI Too Large"),
+    string("415 Unsupported Media Type"),
+    string("451 Parameter Not Understood"),
+    string("452 Conference Not Found"),
+    string("453 Not Enough Bandwidth"),
+    string("454 Session Not Found"),
+    string("455 Method Not Valid in This State"),
+    string("456 Header Field Not Valid for Resource"),
+    string("457 Invalid Range"),
+    string("458 Parameter Is Read-Only"),
+    string("459 Aggregate Operation no Allowed"),
+    string("460 Only Aggregate Operation Allowed"),
+    string("461 Unsupported Transport"),
+    string("462 Destination Unreachable"),
+    string("500 Internal Server Error"),
+    string("501 Not Implemented"),
+    string("502 Bad Gateway"),
+    string("503 Service Unavailable"),
+    string("504 Gateway Time-out"),
+    string("505 RTSP Version not Supported"),
+    string("551 Option not supported"),
 
     string("Unknown")
 };
@@ -155,9 +156,11 @@ mk_rtsp_packet::mk_rtsp_packet()
     m_dScale        = 0;
 
 
-    m_strRtpInfo    = "";
-    m_ulContenLength= 0;
-    m_strContentType= "";
+    m_strRtpInfo      = "";
+    m_ulContenLength  = 0;
+    m_strContentType  = "";
+    m_strAuthenticate = "";
+    m_strAuthorization= "";
 }
 
 mk_rtsp_packet::~mk_rtsp_packet()
@@ -243,6 +246,10 @@ int32_t mk_rtsp_packet::checkRtsp(const char* pszRtsp, uint32_t unRtspSize, uint
 uint32_t mk_rtsp_packet::getRtspCseqNo()
 {
     return m_unRtspCseq++;
+}
+std::string& mk_rtsp_packet::getMethodString(enRtspMethods method)
+{
+    return m_strRtspMethods[method];
 }
 
 void mk_rtsp_packet::setRtspStatusCode(uint32_t unRespCode)
@@ -475,8 +482,14 @@ int32_t mk_rtsp_packet::parseRtspHeaderValue(int32_t nHeaderIndex, const std::st
     }
     case RtspSessionHeader:
     {
+        nPos = strValue.find(";");
+        if (string::npos != nPos)
+        {
+            strValue = strValue.substr(0,nPos);
+        }
+        trimString(strValue);
         m_RtspCommonInfo.SessionID = strtoull(strValue.c_str(), NULL, 0);
-        MK_LOG(AS_LOG_DEBUG,"parsed SessionID: [%lld]", m_RtspCommonInfo.SessionID);
+        MK_LOG(AS_LOG_DEBUG,"parsed SessionID:[%s] [%lld]",strValue.c_str(), m_RtspCommonInfo.SessionID);
         break;
     }
 
@@ -533,6 +546,28 @@ int32_t mk_rtsp_packet::parseRtspHeaderValue(int32_t nHeaderIndex, const std::st
         }
 
         m_strRtpInfo = strValue;
+        break;
+    }
+    case RtspAuthenticate:
+    {
+        if (0 == strValue.size())
+        {
+            nRet = -1;
+            break;
+        }
+
+        m_strAuthenticate = strValue;
+        break;
+    }
+    case RtspAuthorization:
+    {
+        if (0 == strValue.size())
+        {
+            nRet = -1;
+            break;
+        }
+
+        m_strAuthorization = strValue;
         break;
     }
     default:
@@ -801,8 +836,16 @@ int32_t mk_rtsp_packet::generateRtspResp(std::string& strResp)
     if ("" != m_strRtpInfo)
     {
         strResp += m_strRtspHeaders[RtspRtpInfoHeader];
-        strResp += ":";
+        strResp += ": ";
         strResp += m_strRtpInfo;
+        strResp += RTSP_END_LINE;
+    }
+    /* WWW-Authenticate */
+    if ("" != m_strAuthenticate)
+    {
+        strResp += m_strRtspHeaders[RtspAuthenticate];
+        strResp += ": ";
+        strResp += m_strAuthenticate;
         strResp += RTSP_END_LINE;
     }
 
@@ -829,6 +872,14 @@ int32_t mk_rtsp_packet::generateRtspReq(std::string& strReq)
     generateCommonHeader( strReq);
 
     generateAcceptedHeader(strReq);
+    /* Authorization */
+    if ("" != m_strAuthorization)
+    {
+        strReq += m_strRtspHeaders[RtspAuthorization];
+        strReq += ": ";
+        strReq += m_strAuthorization;
+        strReq += RTSP_END_LINE;
+    }
 
     strReq += RTSP_END_LINE;
 
@@ -839,27 +890,27 @@ void mk_rtsp_packet::generateCommonHeader(std::string& strRtsp)
 {
     // SessionID
     strRtsp += m_strRtspHeaders[RtspSessionHeader];
-    strRtsp += ":";
+    strRtsp += ": ";
     strRtsp += uint64ToStr(m_RtspCommonInfo.SessionID);
     strRtsp += RTSP_END_LINE;
 
     // CSeq
     strRtsp += m_strRtspHeaders[RtspCseqHeader];
-    strRtsp += ":";
+    strRtsp += ": ";
     strRtsp += uint32ToStr(m_RtspCommonInfo.Cseq);
     strRtsp += RTSP_END_LINE;
 
     if ("" != m_strRange)
     {
         strRtsp += m_strRtspHeaders[RtspRangeHeader];
-        strRtsp += ":";
+        strRtsp += ": ";
         strRtsp += m_strRange;
         strRtsp += RTSP_END_LINE;
     }
 
     // User-Agent
     strRtsp += m_strRtspHeaders[RtspUserAgentHeader];
-    strRtsp += ":";
+    strRtsp += ": ";
     strRtsp += RTSP_USER_AGENT;
     strRtsp += RTSP_END_LINE;
 
@@ -871,7 +922,7 @@ void mk_rtsp_packet::generateAcceptedHeader(std::string& strRtsp)
     if (0 != m_dSpeed)
     {
         strRtsp += m_strRtspHeaders[RtspSpeedHeader];
-        strRtsp += ":";
+        strRtsp += ": ";
         strRtsp += double2Str(m_dSpeed);
         strRtsp += RTSP_END_LINE;
     }
@@ -879,7 +930,7 @@ void mk_rtsp_packet::generateAcceptedHeader(std::string& strRtsp)
     if (0 != m_dScale)
     {
         strRtsp += m_strRtspHeaders[RtspScaleHeader];
-        strRtsp += ":";
+        strRtsp += ": ";
         strRtsp += double2Str(m_dScale);
         strRtsp += RTSP_END_LINE;
     }
@@ -887,7 +938,7 @@ void mk_rtsp_packet::generateAcceptedHeader(std::string& strRtsp)
     // Transport
     if("" != m_strTransPort) {
         strRtsp += m_strRtspHeaders[RtspTransPortHeader];
-        strRtsp += ":";
+        strRtsp += ": ";
         strRtsp += m_strTransPort;
         strRtsp += RTSP_END_LINE;
     }
@@ -1070,7 +1121,35 @@ void     mk_rtsp_packet::SetContent(std::string &strContent)
     m_strContent = strContent;
 }
 
+int32_t mk_rtsp_packet::getAuthenticate(std::string &strAuthenticate)
+{
+    if(0 == m_strAuthenticate.length()) {
+        return AS_ERROR_CODE_FAIL;
+    }
 
+    strAuthenticate = m_strAuthenticate;
+    return AS_ERROR_CODE_OK;
+}
+
+void mk_rtsp_packet::setAuthenticate(std::string &strAuthenticate)
+{
+    m_strAuthenticate = strAuthenticate;
+}
+
+int32_t mk_rtsp_packet::getAuthorization(std::string &strAuthorization)
+{
+    if(0 == m_strAuthorization.length()) {
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    strAuthorization = m_strAuthorization;
+    return AS_ERROR_CODE_OK;
+}
+
+void mk_rtsp_packet::setAuthorization(std::string &strAuthorization)
+{
+    m_strAuthorization = strAuthorization;
+}
 void mk_rtsp_packet::getRtpInfo(std::string &strRtpInfo) const
 {
     strRtpInfo = m_strRtpInfo;

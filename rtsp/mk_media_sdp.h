@@ -94,7 +94,7 @@ typedef struct _stSDP_MEDIA_INFO
     std::string     strControl;
 }SDP_MEDIA_INFO;
 
-typedef std::list<SDP_MEDIA_INFO>     MEDIA_INFO_LIST;
+typedef std::list<SDP_MEDIA_INFO*>     MEDIA_INFO_LIST;
 class mk_media_sdp
 {
 public:

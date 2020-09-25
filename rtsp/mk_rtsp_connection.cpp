@@ -26,6 +26,9 @@ int32_t mk_rtsp_connection::start()
 {
     as_network_addr local;
     as_network_addr remote;
+    if (AS_ERROR_CODE_OK != as_digest_init(&m_Authen,1)) {
+        return AS_ERROR_CODE_FAIL;
+    }
     if(AS_ERROR_CODE_OK != as_parse_url(m_strurl.c_str(),&m_url)) {
         return AS_ERROR_CODE_FAIL;
     }
@@ -42,6 +45,7 @@ int32_t mk_rtsp_connection::start()
     }
 
     MK_LOG(AS_LOG_INFO,"rtsp client connect to [%s:%d] ,uri:[%s].",(char*)&m_url.host[0],m_url.port,(char*)&m_url.uri[0]);
+    MK_LOG(AS_LOG_INFO,"rtsp client usrname:[%s] password:[%s].",(char*)&m_url.username[0],(char*)&m_url.password[0]);
     
     if(AS_ERROR_CODE_OK != pNetWork->regTcpClient(&local,&remote,this,enSyncOp,5)) {
         return AS_ERROR_CODE_FAIL;
@@ -95,9 +99,7 @@ void mk_rtsp_connection::handle_recv(void)
         return;
     }
 
-    MK_LOG(AS_LOG_INFO,"rtsp connection handle recv event begin.");
-
-    iRecvLen = this->recv((char*)&m_RecvBuf[m_ulRecvSize],&peer,iRecvLen,enAsyncOp);
+    iRecvLen = this->recv((char*)&m_RecvTcpBuf[m_ulRecvSize],&peer,iRecvLen,enAsyncOp);
     if (iRecvLen <= 0)
     {
         MK_LOG(AS_LOG_INFO,"rtsp connection recv data fail.");
@@ -111,7 +113,7 @@ void mk_rtsp_connection::handle_recv(void)
     int32_t nSize = 0;
     do
     {
-        nSize = processRecvedMessage((const char*)&m_RecvBuf[processedSize],
+        nSize = processRecvedMessage((const char*)&m_RecvTcpBuf[processedSize],
                                      m_ulRecvSize - processedSize);
         if (nSize < 0) {
             MK_LOG(AS_LOG_WARNING,"rtsp connection process recv data fail, close handle. ");
@@ -123,18 +125,17 @@ void mk_rtsp_connection::handle_recv(void)
         if (0 == nSize) {
             break;
         }
-
         processedSize += (uint32_t) nSize;
     }while (processedSize < totalSize);
 
     uint32_t dataSize = m_ulRecvSize - processedSize;
     if(0 < dataSize) {
-        memmove(&m_RecvBuf[0],&m_RecvBuf[processedSize], dataSize);
+        memmove(&m_RecvTcpBuf[0],&m_RecvTcpBuf[processedSize], dataSize);
     }
     m_ulRecvSize = dataSize;
     setHandleRecv(AS_TRUE);
     m_ulLastRecv = time(NULL);
-    MK_LOG(AS_LOG_INFO,"rtsp connection handle recv event end.");
+
     return;
 }
 void mk_rtsp_connection::handle_send(void)
@@ -205,7 +206,6 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
     {
         return handleRTPRTCPData(pData, unDataSize);
     }
-    
     /* rtsp message */
     mk_rtsp_packet rtspPacket;
     uint32_t ulMsgLen  = 0;
@@ -265,7 +265,8 @@ int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unData
         return 0;
     }
 
-    if(unDataSize > RTP_RECV_BUF_SIZE ) {
+    if(unMediaSize > RTP_RECV_BUF_SIZE ) {
+        MK_LOG(AS_LOG_ERROR,"rtsp connection process rtp or rtcp size:[%d] is too big.",unMediaSize);
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -301,44 +302,84 @@ int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unData
 
     return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
 }
-
-int32_t mk_rtsp_connection::sendRtspOptionsReq()
+int32_t mk_rtsp_connection::sendRtspReq(enRtspMethods enMethod,std::string& strUri,std::string& strTransport,uint64_t ullSessionId)
 {
+    std::string strUrl =  std::string("rtsp://") + (char*)&m_url.host[0];
+    if(0 != m_url.port) {
+        std::stringstream strPort;
+        strPort << m_url.port;
+        strUrl += ":" + strPort.str();
+    }
+    if("" == strUri) {
+        strUrl += (char*)&m_url.uri[0];
+    }
+    else {
+        strUrl = strUri;
+    }
+
     mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspOptionsMethod);
+    rtspPacket.setMethodIndex(enMethod);
     rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
+    rtspPacket.setRtspUrl(strUrl);
+    if("" != strTransport) {
+        rtspPacket.setTransPort(strTransport);
+    }
+    /* Authorization */
+    if(('\0' != m_url.username[0]) && ('\0' != m_url.password[0]) && ("" != m_strAuthenticate)) {
+        char   Digest[RTSP_DIGEST_LENS_MAX] = {0};
+        as_digest_attr_value_t value;
+        value.string = (char*)&m_url.username[0];
+        as_digest_set_attr(&m_Authen, D_ATTR_USERNAME,value);
+        value.string = (char*)&m_url.password[0];
+        as_digest_set_attr(&m_Authen, D_ATTR_PASSWORD,value);
+        value.number = DIGEST_ALGORITHM_NOT_SET;
+        as_digest_set_attr(&m_Authen, D_ATTR_ALGORITHM,value);
+
+        value.string = (char*)strUrl.c_str();
+        as_digest_set_attr(&m_Authen, D_ATTR_URI,value);
+        //value.number = DIGEST_QOP_AUTH;
+        //as_digest_set_attr(&m_Authen, D_ATTR_QOP, value);
+        std::string strMethod = mk_rtsp_packet::getMethodString(enMethod);
+        value.string = (char*)strMethod.c_str();
+        as_digest_set_attr(&m_Authen, D_ATTR_METHOD, value);
+
+        MK_LOG(AS_LOG_INFO,"rtsp connection auth username:[%s] passwrod:[%s]\n"
+                           "url:[%s] method:[%s]",
+                           (char*)&m_url.username[0],(char*)&m_url.password[0],
+                           (char*)strUri.c_str(),strMethod.c_str());
+
+        if (-1 == as_digest_client_generate_header(&m_Authen, Digest, sizeof (Digest))) {
+            MK_LOG(AS_LOG_INFO,"generate digest fail.");
+            return AS_ERROR_CODE_FAIL;
+        }
+        MK_LOG(AS_LOG_INFO,"generate digest :[%s].",Digest);
+        std::string strAuthorization = (char*)&Digest[0];
+        rtspPacket.setAuthorization(strAuthorization);
+    }
+
+    if(0 != ullSessionId) {
+        rtspPacket.setSessionID(ullSessionId);
+    }
     std::string m_strMsg;
     if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
+        MK_LOG(AS_LOG_INFO,"rtsp connect  generate Rtsp Req fail.");
         return AS_ERROR_CODE_FAIL;
     }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspOptionsMethod));
+    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,enMethod));
     m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send OPTIONS request:\n%s",m_strMsg.c_str());
+    MK_LOG(AS_LOG_INFO,"rtsp connection send request:\n%s",m_strMsg.c_str());
     return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+}
+int32_t mk_rtsp_connection::sendRtspOptionsReq()
+{
+    return sendRtspReq(RtspOptionsMethod,STR_NULL,STR_NULL);
 }
 int32_t mk_rtsp_connection::sendRtspDescribeReq()
 {
-    mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspDescribeMethod);
-    rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
-    std::string m_strMsg;
-    if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspDescribeMethod));
-    m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send DESCRIBE request:\n%s",m_strMsg.c_str());
-    return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+    return sendRtspReq(RtspDescribeMethod,STR_NULL,STR_NULL);
 }
-int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
+int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO* info)
 {
-    mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspSetupMethod);
-    rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
-
     std::string strTransport = "";
 
     // (RTP)
@@ -360,20 +401,20 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
         strTransport += SIGN_SEMICOLON;
         strTransport += RTSP_TRANSPORT_INTERLEAVED;
         std::stringstream strChannelNo;
-        if(MEDIA_TYPE_VALUE_VIDEO == info.ucMediaType) {
+        if(MEDIA_TYPE_VALUE_VIDEO == info->ucMediaType) {
             strChannelNo << RTSP_INTERLEAVE_NUM_VIDEO_RTP;
         }
-        else if(MEDIA_TYPE_VALUE_AUDIO == info.ucMediaType){
+        else if(MEDIA_TYPE_VALUE_AUDIO == info->ucMediaType){
             strChannelNo << RTSP_INTERLEAVE_NUM_AUDIO_RTP;
         }
 
         strTransport += strChannelNo.str() + SIGN_H_LINE;
 
         strChannelNo.str("");
-        if(MEDIA_TYPE_VALUE_VIDEO == info.ucMediaType) {
+        if(MEDIA_TYPE_VALUE_VIDEO == info->ucMediaType) {
             strChannelNo << RTSP_INTERLEAVE_NUM_VIDEO_RTCP;
         }
-        else if(MEDIA_TYPE_VALUE_AUDIO == info.ucMediaType){
+        else if(MEDIA_TYPE_VALUE_AUDIO == info->ucMediaType){
             strChannelNo << RTSP_INTERLEAVE_NUM_AUDIO_RTCP + 1;
         }
         strTransport += strChannelNo.str();
@@ -393,13 +434,13 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
             return AS_ERROR_CODE_FAIL;
         }
 
-        if(MEDIA_TYPE_VALUE_VIDEO == info.ucMediaType) {
+        if(MEDIA_TYPE_VALUE_VIDEO == info->ucMediaType) {
             m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]   = pRtpHandle;
             m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]  = pRtcpHandle;
             rtpType = MK_RTSP_UDP_VIDEO_RTP_HANDLE;
             rtcpType = MK_RTSP_UDP_VIDEO_RTCP_HANDLE;
         }
-        else if(MEDIA_TYPE_VALUE_AUDIO == info.ucMediaType){
+        else if(MEDIA_TYPE_VALUE_AUDIO == info->ucMediaType){
             m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]   = pRtpHandle;
             m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]  = pRtcpHandle;
             rtpType = MK_RTSP_UDP_AUDIO_RTP_HANDLE;
@@ -425,106 +466,39 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO& info)
         strPort << pRtcpHandle->get_port();
         strTransport += strPort.str();
     }
-    rtspPacket.setTransPort(strTransport);
+
+    MK_LOG(AS_LOG_ERROR,"rtsp connection client ,setup control:[%s].",info->strControl.c_str());
+
+    std::string strUri =  STR_NULL;
+    if("" != info->strControl) {
+        strUri = info->strControl;
+    }
     
-    std::string m_strMsg;
-    if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspSetupMethod));
-    m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send SETUP request:\n%s",m_strMsg.c_str());
-    return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+    return sendRtspReq(RtspSetupMethod,strUri,strTransport);
 }
-int32_t mk_rtsp_connection::sendRtspPlayReq()
+int32_t mk_rtsp_connection::sendRtspPlayReq(uint64_t ullSessionId)
 {
-    mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspPlayMethod);
-    rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
-    std::string m_strMsg;
-    if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspPlayMethod));
-    m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send PLAY request:\n%s",m_strMsg.c_str());
-    return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+    return sendRtspReq(RtspPlayMethod,STR_NULL,STR_NULL,ullSessionId);
 }
 int32_t mk_rtsp_connection::sendRtspRecordReq()
 {
-    mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspRecordMethod);
-    rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
-    std::string m_strMsg;
-    if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspRecordMethod));
-    m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send RECORD request:\n%s",m_strMsg.c_str());
-    return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+    return sendRtspReq(RtspRecordMethod,STR_NULL,STR_NULL);
 }
 int32_t mk_rtsp_connection::sendRtspGetParameterReq()
 {
-    mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspGetParameterMethod);
-    rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
-    std::string m_strMsg;
-    if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspGetParameterMethod));
-    m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send GET_PARAMETER request:\n%s",m_strMsg.c_str());
-    return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+    return sendRtspReq(RtspGetParameterMethod,STR_NULL,STR_NULL);
 }
 int32_t mk_rtsp_connection::sendRtspAnnounceReq()
 {
-    mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspAnnounceMethod);
-    rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
-    std::string m_strMsg;
-    if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspAnnounceMethod));
-    m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send ANNOUNCE request:\n%s",m_strMsg.c_str());
-    return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+    return sendRtspReq(RtspAnnounceMethod,STR_NULL,STR_NULL);
 }
 int32_t mk_rtsp_connection::sendRtspPauseReq()
 {
-    mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspPauseMethod);
-    rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
-    std::string m_strMsg;
-    if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspPauseMethod));
-    m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send PAUSE request:\n%s",m_strMsg.c_str());
-    return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+    return sendRtspReq(RtspPauseMethod,STR_NULL,STR_NULL);
 }
 int32_t mk_rtsp_connection::sendRtspTeardownReq()
 {
-    mk_rtsp_packet rtspPacket;
-    rtspPacket.setMethodIndex(RtspTeardownMethod);
-    rtspPacket.setCseq(m_ulSeq);
-    rtspPacket.setRtspUrl(&m_url.uri[0]);
-    std::string m_strMsg;
-    if(AS_ERROR_CODE_OK != rtspPacket.generateRtspReq(m_strMsg)) {
-        return AS_ERROR_CODE_FAIL;
-    }
-    m_SeqMethodMap.insert(SEQ_METHOD_MAP::value_type(m_ulSeq,RtspTeardownMethod));
-    m_ulSeq++;
-    MK_LOG(AS_LOG_INFO,"rtsp connection send TEARDOWN request.");
-    return sendMsg(m_strMsg.c_str(),m_strMsg.length());
+    return sendRtspReq(RtspTeardownMethod,STR_NULL,STR_NULL);
 }
 int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
 {
@@ -544,7 +518,27 @@ int32_t mk_rtsp_connection::handleRtspResp(mk_rtsp_packet &rtspMessage)
     MK_LOG(AS_LOG_INFO,"rtsp client handle server reponse seq:[%d] ,mothod:[%d].",nCseq,enMethod);
 
     if(RTSP_STATUS_UNAUTHORIZED == nRespCode) {
-    
+        if(RTSP_AUTH_TRY_MAX < m_ulAuthenTime) {
+            MK_LOG(AS_LOG_WARNING,"rtsp server need Authen, but try:[%d] time,so error auth info.",m_ulAuthenTime);
+            return AS_ERROR_CODE_FAIL;
+        }
+        if(AS_ERROR_CODE_OK != rtspMessage.getAuthenticate(m_strAuthenticate)) {
+            MK_LOG(AS_LOG_WARNING,"rtsp server need Authen, get Authenticate header fail.");
+            return AS_ERROR_CODE_FAIL;
+        }
+        MK_LOG(AS_LOG_INFO,"rtsp client handle authInfo:[%s].",m_strAuthenticate.c_str());
+        if (AS_ERROR_CODE_OK != as_digest_is_digest(m_strAuthenticate.c_str())) {
+            MK_LOG(AS_LOG_WARNING,"the WWW-Authenticate is not digest.");
+            return AS_ERROR_CODE_FAIL;
+        }
+
+        if (AS_ERROR_CODE_OK == as_digest_client_parse(&m_Authen, m_strAuthenticate.c_str())) {
+            MK_LOG(AS_LOG_WARNING,"parser WWW-Authenticate info fail.");
+            return AS_ERROR_CODE_FAIL;
+        }
+        m_ulAuthenTime++;
+        MK_LOG(AS_LOG_INFO,"rtsp server need Authen, send request with Authorization info,time:[%d].",m_ulAuthenTime);
+        return sendRtspReq((enRtspMethods)enMethod,STR_NULL,STR_NULL);
     }
     else if(RTSP_STATUS_OK != nRespCode) {
         /*close socket */
@@ -659,7 +653,7 @@ int32_t mk_rtsp_connection::handleRtspDescribeResp(mk_rtsp_packet &rtspMessage)
         return AS_ERROR_CODE_FAIL;
     }
 
-    SDP_MEDIA_INFO& info = m_mediaInfoList.front();
+    SDP_MEDIA_INFO* info = m_mediaInfoList.front();
     nRet = sendRtspSetupReq(info);
     if(AS_ERROR_CODE_OK != nRet) {
         MK_LOG(AS_LOG_WARNING,"rtsp connection handle describe response,send setup fail.");
@@ -676,7 +670,7 @@ int32_t mk_rtsp_connection::handleRtspSetUpResp(mk_rtsp_packet &rtspMessage)
     int32_t nRet = AS_ERROR_CODE_OK;
     if(0 < m_mediaInfoList.size()) {
         MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response,send next setup messgae.");
-        SDP_MEDIA_INFO& info = m_mediaInfoList.front();
+        SDP_MEDIA_INFO* info = m_mediaInfoList.front();
         nRet = sendRtspSetupReq(info);
         if(AS_ERROR_CODE_OK != nRet) {
             MK_LOG(AS_LOG_WARNING,"rtsp connection handle setup response,send next setup fail.");
@@ -688,8 +682,8 @@ int32_t mk_rtsp_connection::handleRtspSetUpResp(mk_rtsp_packet &rtspMessage)
         m_Status = RTSP_SESSION_STATUS_SETUP;
         handle_connection_status(MR_CLIENT_STATUS_HANDSHAKE);
         /* send play */
-        MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response,send play messgae.");
-        nRet = sendRtspPlayReq();
+        MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response,sessionid:[%lld],send play messgae.",rtspMessage.getSessionID());
+        nRet = sendRtspPlayReq(rtspMessage.getSessionID());
     }
     MK_LOG(AS_LOG_INFO,"rtsp client connection handle setup response end.");
     return nRet;
@@ -698,8 +692,10 @@ int32_t mk_rtsp_connection::sendMsg(const char* pszData,uint32_t len)
 {
     int32_t lSendSize = as_tcp_conn_handle::send(pszData,len,enSyncOp);
     if(lSendSize != len) {
+        MK_LOG(AS_LOG_WARNING,"rtsp connection send msg len:[%d] return:[%d] fail.",len,lSendSize);
         return AS_ERROR_CODE_FAIL;
     }
+    MK_LOG(AS_LOG_WARNING,"rtsp connection send msg len:[%d] succcess.",len);
     return AS_ERROR_CODE_OK;
 }
 void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
@@ -748,9 +744,11 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
             MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
             return ;
         }
+        rtpHeadLen   = rtpPacket.GetHeadLen();
+        TimeStam     = rtpPacket.GetTimeStamp();
+        rtpPayloadLen = DataLen - rtpHeadLen;
 
         pData = &pData[rtpHeadLen];
-        rtpPayloadLen = DataLen - rtpHeadLen;
 
         fu_ind = (FU_INDICATOR*)pData;    pData++;
         fu_hdr = (FU_HEADER*)pData; pData++;
@@ -897,7 +895,9 @@ void mk_rtsp_connection::resetRtspConnect()
     m_ucH264PayloadType = PT_TYPE_MAX;
     m_ucH265PayloadType = PT_TYPE_MAX;
 
-    m_ulLastRecv = time(NULL);    
+    m_ulLastRecv = time(NULL);
+    m_ulAuthenTime = 0;
+    m_strAuthenticate = "";
 }
 void mk_rtsp_connection::trimString(std::string& srcString) const
 {

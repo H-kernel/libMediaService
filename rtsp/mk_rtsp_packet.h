@@ -70,9 +70,11 @@ enum _enRtspHeaders
     RtspRtpInfoHeader       = 8,
     RtspContentType         = 9,
     RtspAuthenticate        = 10,
+    RtspAuthorization       = 11,
 
     RtspNotAcceptedHeader
 };
+
 
 enum _enRtspStatusCode
 {
@@ -220,6 +222,8 @@ public:
 
     static uint32_t getRtspCseqNo();
 
+    static std::string& getMethodString(enRtspMethods method);
+
     int32_t   parse(const char* pszRtsp, uint32_t unRtspSize);
 
     uint32_t  getCseq() const;
@@ -279,10 +283,14 @@ public:
     void      getContent(std::string &strContent) const;
 
     void      SetContent(std::string &strContent);
-
+    /* WWW-Authenticate */
     int32_t   getAuthenticate(std::string &strAuthenticate);
 
     void      setAuthenticate(std::string &strAuthenticate);
+    /* Authorization */
+    int32_t   getAuthorization(std::string &strAuthorization);
+
+    void      setAuthorization(std::string &strAuthorization);
 
     int32_t   generateRtspResp(std::string& strResp);
 
@@ -324,7 +332,9 @@ private:
     std::string         m_strRange;
     double              m_dSpeed;
     double              m_dScale;
-
+    
+    std::string         m_strAuthenticate;
+    std::string         m_strAuthorization;
     std::string         m_strRtpInfo;
     std::string         m_strTransPort;
 };

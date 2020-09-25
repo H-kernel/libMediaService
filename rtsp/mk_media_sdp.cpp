@@ -20,7 +20,7 @@ mk_media_sdp::mk_media_sdp()
     m_strUrl        = "";
     m_strConnAddr   = "";
     m_range         = "";
-    m_strSessionName= "allcamera media server";
+    m_strSessionName= "hx media kernel";
     m_enTransDirect = TRANS_DIRECTION_MAX;
     m_strSsrc       = "";
     m_strOwner      = "vds";
@@ -31,13 +31,18 @@ mk_media_sdp::mk_media_sdp()
 
 mk_media_sdp::~mk_media_sdp()
 {
-    if(0 < m_VideoInfoList.size())
+    SDP_MEDIA_INFO* info;
+    while(0 < m_VideoInfoList.size())
     {
-        m_VideoInfoList.clear();
+        info = m_VideoInfoList.front();
+        m_VideoInfoList.pop_front();
+        AS_DELETE(info);
     }
-    if(0 < m_AudioInfoList.size())
+    while(0 < m_AudioInfoList.size())
     {
-        m_AudioInfoList.clear();
+        info = m_AudioInfoList.front();
+        m_AudioInfoList.pop_front();
+        AS_DELETE(info);
     }
 }
 
@@ -86,9 +91,12 @@ std::string mk_media_sdp::getConnAddr() const
 void mk_media_sdp::getVideoInfo(MEDIA_INFO_LIST &infoList)
 {
     MEDIA_INFO_LIST::iterator iter = m_VideoInfoList.begin();
-
     for(; iter != m_VideoInfoList.end();++iter)
     {
+        MK_LOG(AS_LOG_DEBUG,"get video info: ucMediaType:[%d],ucPayloadType:[%d],usPort:[%d]"
+                            "strRtpmap:[%s],strFmtp:[%s],strControl:[%s]", 
+                            (*iter)->ucMediaType,(*iter)->ucPayloadType,(*iter)->usPort,
+                            (*iter)->strRtpmap,(*iter)->strFmtp,(*iter)->strControl);
         infoList.push_back(*iter);
     }
 
@@ -97,52 +105,56 @@ void mk_media_sdp::getVideoInfo(MEDIA_INFO_LIST &infoList)
 
 void mk_media_sdp::addVideoInfo(const SDP_MEDIA_INFO &info)
 {
-    SDP_MEDIA_INFO stVideoInfo;
-    stVideoInfo.ucPayloadType = INVALID_PAYLOAD_TYPE;
-    stVideoInfo.usPort        = 0;
-    stVideoInfo.strRtpmap     = "";
-    stVideoInfo.strFmtp       = "";
-    stVideoInfo.strControl    = "";
+    SDP_MEDIA_INFO* stVideoInfo = NULL;
+    stVideoInfo = AS_NEW(stVideoInfo);
+    if(NULL == stVideoInfo) {
+        return;
+    }
+    stVideoInfo->ucPayloadType = INVALID_PAYLOAD_TYPE;
+    stVideoInfo->usPort        = 0;
+    stVideoInfo->strRtpmap     = "";
+    stVideoInfo->strFmtp       = "";
+    stVideoInfo->strControl    = "";
 
-    stVideoInfo.ucPayloadType = info.ucPayloadType;
-    stVideoInfo.strRtpmap     = info.strRtpmap;
-    stVideoInfo.strFmtp       = info.strFmtp;
-    stVideoInfo.strControl    = info.strControl;
-    stVideoInfo.usPort        = info.usPort;
+    stVideoInfo->ucPayloadType = info.ucPayloadType;
+    stVideoInfo->strRtpmap     = info.strRtpmap;
+    stVideoInfo->strFmtp       = info.strFmtp;
+    stVideoInfo->strControl    = info.strControl;
+    stVideoInfo->usPort        = info.usPort;
 
-    if ("" == stVideoInfo.strRtpmap)
+    if ("" == stVideoInfo->strRtpmap)
     {
 
-        switch(stVideoInfo.ucPayloadType)
+        switch(stVideoInfo->ucPayloadType)
         {
             case PT_TYPE_MJPEG:
             {
-                stVideoInfo.strRtpmap = MJPEG_VIDEO_RTPMAP;
+                stVideoInfo->strRtpmap = MJPEG_VIDEO_RTPMAP;
                 break;
             }
             case PT_TYPE_PS:
             {
-                stVideoInfo.strRtpmap = PS_VIDEO_RTPMAP;
+                stVideoInfo->strRtpmap = PS_VIDEO_RTPMAP;
                 break;
             }
             case PT_TYPE_MPEG4:
             {
-                stVideoInfo.strRtpmap = MPEG4_VIDEO_RTPMAP;
+                stVideoInfo->strRtpmap = MPEG4_VIDEO_RTPMAP;
                 break;
             }
             case PT_TYPE_H264:
             {
-                stVideoInfo.strRtpmap = H264_VIDEO_RTPMAP;
+                stVideoInfo->strRtpmap = H264_VIDEO_RTPMAP;
                 break;
             }
             case PT_TYPE_H265:
             {
-                stVideoInfo.strRtpmap = H265_VIDEO_RTPMAP;
+                stVideoInfo->strRtpmap = H265_VIDEO_RTPMAP;
                 break;
             }
             default:
             {
-                stVideoInfo.strRtpmap = H264_VIDEO_RTPMAP;
+                stVideoInfo->strRtpmap = H264_VIDEO_RTPMAP;
                 break;
             }
         }
@@ -155,11 +167,14 @@ void mk_media_sdp::addVideoInfo(const SDP_MEDIA_INFO &info)
 
 void mk_media_sdp::getAudioInfo(MEDIA_INFO_LIST &infoList)
 {
-
     MEDIA_INFO_LIST::iterator iter = m_AudioInfoList.begin();
-
+    SDP_MEDIA_INFO info;
     for(; iter != m_AudioInfoList.end();++iter)
     {
+        MK_LOG(AS_LOG_DEBUG,"get audio info: ucMediaType:[%d],ucPayloadType:[%d],usPort:[%d]"
+                            "strRtpmap:[%s],strFmtp:[%s],strControl:[%s]", 
+                            (*iter)->ucMediaType,(*iter)->ucPayloadType,(*iter)->usPort,
+                            (*iter)->strRtpmap,(*iter)->strFmtp,(*iter)->strControl);
         infoList.push_back(*iter);
     }
 
@@ -168,29 +183,33 @@ void mk_media_sdp::getAudioInfo(MEDIA_INFO_LIST &infoList)
 
 void mk_media_sdp::addAudioInfo(const SDP_MEDIA_INFO &info)
 {
-    SDP_MEDIA_INFO stAudioInfo;
-    stAudioInfo.ucPayloadType = INVALID_PAYLOAD_TYPE;
-    stAudioInfo.usPort        = 0;
-    stAudioInfo.strRtpmap     = "";
-    stAudioInfo.strFmtp       = "";
-    stAudioInfo.strControl    = "";
+    SDP_MEDIA_INFO* stAudioInfo = NULL;
+    stAudioInfo = AS_NEW(stAudioInfo);
+    if(NULL == stAudioInfo) {
+        return;
+    }
+    stAudioInfo->ucPayloadType = INVALID_PAYLOAD_TYPE;
+    stAudioInfo->usPort        = 0;
+    stAudioInfo->strRtpmap     = "";
+    stAudioInfo->strFmtp       = "";
+    stAudioInfo->strControl    = "";
 
-    stAudioInfo.ucPayloadType = info.ucPayloadType;
-    stAudioInfo.strRtpmap     = info.strRtpmap;
-    stAudioInfo.strFmtp       = info.strFmtp;
-    stAudioInfo.strControl    = info.strControl;
-    stAudioInfo.usPort        = info.usPort;
+    stAudioInfo->ucPayloadType = info.ucPayloadType;
+    stAudioInfo->strRtpmap     = info.strRtpmap;
+    stAudioInfo->strFmtp       = info.strFmtp;
+    stAudioInfo->strControl    = info.strControl;
+    stAudioInfo->usPort        = info.usPort;
 
-    if ("" == stAudioInfo.strRtpmap)
+    if ("" == stAudioInfo->strRtpmap)
     {
-        if (PT_TYPE_PCMU == stAudioInfo.ucPayloadType)
+        if (PT_TYPE_PCMU == stAudioInfo->ucPayloadType)
         {
-            stAudioInfo.strRtpmap = DEFAULT_AUDIO_PCMU;
+            stAudioInfo->strRtpmap = DEFAULT_AUDIO_PCMU;
         }
 
-        if (PT_TYPE_PCMA == stAudioInfo.ucPayloadType)
+        if (PT_TYPE_PCMA == stAudioInfo->ucPayloadType)
         {
-            stAudioInfo.strRtpmap = DEFAULT_AUDIO_PCMA;
+            stAudioInfo->strRtpmap = DEFAULT_AUDIO_PCMA;
         }
     }
 
@@ -241,6 +260,7 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
     bool bFirst = true;
     while (bRet && (AS_ERROR_CODE_OK == nRet))
     {
+        MK_LOG(AS_LOG_DEBUG,"parser line:%s", strBuff.c_str());
         pszTmp = const_cast<char*> (strBuff.c_str());
         JUMP_SPACE(pszTmp);
 
@@ -645,16 +665,16 @@ uint8_t mk_media_sdp::getPayloadTypeByRtpmap(std::string& strRtpmap)
     uint8_t PayloadType = PT_TYPE_MAX;
     MEDIA_INFO_LIST::iterator iter = m_VideoInfoList.begin();
     for(;iter != m_VideoInfoList.end(); ++iter) {
-        if(iter->strRtpmap == strRtpmap) {
-            PayloadType = iter->ucPayloadType;
+        if((*iter)->strRtpmap == strRtpmap) {
+            PayloadType = (*iter)->ucPayloadType;
             return PayloadType;
         }
     }
     
     iter = m_AudioInfoList.begin();
     for(;iter != m_AudioInfoList.end(); ++iter) {
-        if(iter->strRtpmap == strRtpmap) {
-            PayloadType = iter->ucPayloadType;
+        if((*iter)->strRtpmap == strRtpmap) {
+            PayloadType = (*iter)->ucPayloadType;
             return PayloadType;
         }
     }
@@ -762,31 +782,36 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
         return AS_ERROR_CODE_FAIL;
     }
 
-    SDP_MEDIA_INFO stMediaInfo;
-    stMediaInfo.ucPayloadType = INVALID_PAYLOAD_TYPE;
-    stMediaInfo.usPort        = 0;
-    stMediaInfo.strRtpmap     = "";
-    stMediaInfo.strFmtp       = "";
-    stMediaInfo.strControl    = "";
+    SDP_MEDIA_INFO* stMediaInfo;
+    stMediaInfo = AS_NEW(stMediaInfo);
+    if(NULL == stMediaInfo) {
+        MK_LOG(AS_LOG_WARNING,"parse sdp media info fail,no memory.");
+        return AS_ERROR_CODE_FAIL;
+    }
+    stMediaInfo->ucPayloadType = INVALID_PAYLOAD_TYPE;
+    stMediaInfo->usPort        = 0;
+    stMediaInfo->strRtpmap     = "";
+    stMediaInfo->strFmtp       = "";
+    stMediaInfo->strControl    = "";
 
     uint32_t unPt = (uint32_t)atoi(pszBuff);
     if ('v' == cType)
     {
-        stMediaInfo.ucMediaType   = MEDIA_TYPE_VALUE_VIDEO;
-        stMediaInfo.ucPayloadType = (uint8_t)unPt;
+        stMediaInfo->ucMediaType   = MEDIA_TYPE_VALUE_VIDEO;
+        stMediaInfo->ucPayloadType = (uint8_t)unPt;
         m_enParseStatus = SDP_VIDEO_INFO;
 
         m_VideoInfoList.push_back(stMediaInfo);
-        pMediaInfo = (SDP_MEDIA_INFO*)&(*m_VideoInfoList.rbegin());
+        pMediaInfo = stMediaInfo;
     }
     else
     {
-        stMediaInfo.ucMediaType   = MEDIA_TYPE_VALUE_AUDIO;
-        stMediaInfo.ucPayloadType = (uint8_t)unPt;
+        stMediaInfo->ucMediaType   = MEDIA_TYPE_VALUE_AUDIO;
+        stMediaInfo->ucPayloadType = (uint8_t)unPt;
         m_enParseStatus = SDP_AUDIO_INFO;
 
         m_AudioInfoList.push_back(stMediaInfo);
-        pMediaInfo = (SDP_MEDIA_INFO*)&(*m_AudioInfoList.rbegin());
+        pMediaInfo = stMediaInfo;
     }
 
     return AS_ERROR_CODE_OK;
@@ -864,33 +889,24 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
          return AS_ERROR_CODE_FAIL;
     }
 
-    // a=control:
-    if (strlen(pszBuff) > STR_SDP_CONTROL_ATTR.length())
-    {
-        if (0 == strncmp(pszBuff, STR_SDP_CONTROL_ATTR.c_str(), STR_SDP_CONTROL_ATTR.length()))
-        {
-            m_strUrl = "";
-            m_strUrl.append(pszBuff + STR_SDP_CONTROL_ATTR.length());
-            return AS_ERROR_CODE_OK;
-        }
-    }
-
-
     //a=recvonly,a=sendonly,a=sendrecv
    if (strlen(pszBuff) > STR_SDP_RECVONLY_ATTR.length())
     {
         if (0 == strncmp(pszBuff, STR_SDP_RECVONLY_ATTR.c_str(), STR_SDP_RECVONLY_ATTR.length()))
         {
+            MK_LOG(AS_LOG_INFO,"parse sdp: a=recvonly.");
             m_enTransDirect = TRANS_DIRECTION_RECVONLY;
             return AS_ERROR_CODE_OK;
         }
         else if (0 == strncmp(pszBuff, STR_SDP_SENDONLY_ATTR.c_str(), STR_SDP_SENDONLY_ATTR.length()))
         {
+            MK_LOG(AS_LOG_INFO,"parse sdp: a=sendonly.");
             m_enTransDirect = TRANS_DIRECTION_SENDONLY;
             return AS_ERROR_CODE_OK;
         }
         else if (0 == strncmp(pszBuff, STR_SDP_SENDRECV_ATTR.c_str(), STR_SDP_SENDRECV_ATTR.length()))
         {
+            MK_LOG(AS_LOG_INFO,"parse sdp: a=sendrecv.");
             m_enTransDirect = TRANS_DIRECTION_SENDRECV;
             return AS_ERROR_CODE_OK;
         }
@@ -910,6 +926,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
 
             pMediaInfo->strRtpmap = "";
             pMediaInfo->strRtpmap.append(pszBuff);
+            MK_LOG(AS_LOG_INFO,"parse sdp: a=rtpmap:%s.",pMediaInfo->strRtpmap.c_str());
             return AS_ERROR_CODE_OK;
         }
     }
@@ -928,6 +945,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
 
             pMediaInfo->strFmtp = "";
             pMediaInfo->strFmtp.append(pszBuff);
+            MK_LOG(AS_LOG_INFO,"parse sdp: a=fmtp:%s.",pMediaInfo->strFmtp.c_str());
             return AS_ERROR_CODE_OK;
         }
     }
@@ -939,6 +957,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
         {
             pMediaInfo->strControl = "";
             pMediaInfo->strControl.append(pszBuff + STR_SDP_CONTROL_ATTR.length());
+            MK_LOG(AS_LOG_INFO,"parse sdp: a=control:%s.",pMediaInfo->strControl.c_str());
             return AS_ERROR_CODE_OK;
         }
     }
@@ -973,7 +992,7 @@ void mk_media_sdp::encodeMediaDesc(std::string &strSdp, uint32_t unStatus)
 
     MEDIA_INFO_LIST::iterator iter = pMediaInfoList->begin();
 
-    pMediaInfo = (SDP_MEDIA_INFO *)&(*iter);
+    pMediaInfo = (SDP_MEDIA_INFO *)(*iter);
 
     if (SDP_VIDEO_INFO == unStatus)
     {

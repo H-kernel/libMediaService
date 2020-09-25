@@ -33,6 +33,12 @@ enum RTSP_INTERLEAVE_NUM
 
 #define RTP_INTERLEAVE_LENGTH   4
 
+#define RTSP_AUTH_TRY_MAX       3
+
+#define RTSP_DIGEST_LENS_MAX    1024
+
+static std::string STR_NULL = std::string("");
+
 
 typedef struct
 {
@@ -96,10 +102,11 @@ private:
     int32_t processRecvedMessage(const char* pData, uint32_t unDataSize);
     int32_t handleRTPRTCPData(const char* pData, uint32_t unDataSize);
 private:
+    int32_t sendRtspReq(enRtspMethods enMethod,std::string& strUri,std::string& strTransport,uint64_t ullSessionId = 0);
     int32_t sendRtspOptionsReq();
     int32_t sendRtspDescribeReq();
-    int32_t sendRtspSetupReq(SDP_MEDIA_INFO& info);
-    int32_t sendRtspPlayReq();
+    int32_t sendRtspSetupReq(SDP_MEDIA_INFO* info);
+    int32_t sendRtspPlayReq(uint64_t ullSessionId);
     int32_t sendRtspRecordReq();
     int32_t sendRtspGetParameterReq();
     int32_t sendRtspAnnounceReq();
@@ -124,7 +131,7 @@ private:
     as_url_t                     m_url;
     mk_media_sdp                 m_sdpInfo;
     MEDIA_INFO_LIST              m_mediaInfoList;
-    char*                        m_RecvBuf[MAX_BYTES_PER_RECEIVE];
+    char                         m_RecvTcpBuf[MAX_BYTES_PER_RECEIVE];
     uint32_t                     m_ulRecvSize;
     uint32_t                     m_ulSeq;
     mk_rtp_frame_organizer       m_rtpFrameOrganizer;
@@ -138,6 +145,9 @@ private:
     uint8_t                      m_ucH265PayloadType;
 
     time_t                       m_ulLastRecv;
+    as_digest_t                  m_Authen;
+    uint32_t                     m_ulAuthenTime;
+    std::string                  m_strAuthenticate;
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

@@ -3,7 +3,13 @@
 #include <string>
 #include <list>
 #include "../libMediaService.h"
-
+typedef struct
+{
+    //byte 0
+    uint8_t TYPE:5;
+    uint8_t NRI:2;
+    uint8_t F:1;
+} NALU_HEADER; /**//* 1 BYTES */
 #define RECV_DATA_BUF_SIZE (1024*1024)
 
 class rtxp_client
@@ -13,6 +19,7 @@ public:
     {
         m_hanlde = NULL;
         m_strUrl = strUrl;
+        m_WriteFd = NULL;
     }
     virtual ~rtxp_client()
     {
@@ -25,6 +32,11 @@ public:
             printf("create client handle fail.url:[%s]\n",m_strUrl.c_str());
             return -1;
         }
+        mk_create_rtsp_client_set_tcp(m_hanlde);
+        m_WriteFd = fopen("./a.264","wb+");
+        if(NULL == m_WriteFd) {
+            return -1;
+        }
         return mk_start_client_handle(m_hanlde,m_szBuf,RECV_DATA_BUF_SIZE,rtxp_client_handle_media,this);
     }
     void close()
@@ -33,10 +45,20 @@ public:
             return;
         }
         mk_stop_client_handle(m_hanlde);
+        if(NULL != m_WriteFd) {
+            fclose(m_WriteFd);
+            m_WriteFd = NULL;
+        }
         return;
     }
     int32_t handle_lib_media_data(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len)
     {
+        if(type == MR_MEDIA_TYPE_H264) {
+            fwrite(data,1,len,m_WriteFd);
+            NALU_HEADER* nalu = (NALU_HEADER*)&data[4];
+            printf("H264 NALU:[%d]\n",nalu->TYPE);
+        }
+        printf("data start:[0x%0x 0x%0x 0x%0x 0x%0x]\n",data[0],data[1],data[2],data[3]);
         return mk_recv_next_media_data(client,m_szBuf,RECV_DATA_BUF_SIZE);
     }
     int32_t hanlde_lib_status(MR_CLIENT client,MR_CLIENT_STATUS status)
@@ -81,6 +103,7 @@ private:
     std::string m_strUrl;
     MR_CLIENT   m_hanlde;
     char        m_szBuf[RECV_DATA_BUF_SIZE];
+    FILE*       m_WriteFd;
 };
 
 static void lib_mk_log(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,va_list argp)
@@ -129,7 +152,8 @@ int main(int argc,char* argv[])
     }
 
     while(true) {
-        sleep(10);
+        sleep(30);
+        break;
     }
 
     iter = clientList.begin();
