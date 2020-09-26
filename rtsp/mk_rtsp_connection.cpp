@@ -147,7 +147,7 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
     if(MK_RTSP_UDP_VIDEO_RTP_HANDLE == type) {
         return m_rtpFrameOrganizer.insertRtpPacket(pData,len);
     }
-    else if(MK_RTSP_UDP_VIDEO_RTP_HANDLE == type) {
+    else if(MK_RTSP_UDP_AUDIO_RTP_HANDLE == type) {
         if(m_ulRecvBufLen < len) {
             return AS_ERROR_CODE_FAIL;/* drop it */
         }
@@ -168,9 +168,11 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
         else {
             return AS_ERROR_CODE_FAIL;/* drop it */
         }
+        uint32_t ulRtpHeadLen = rtpPacket.GetHeadLen();
+        uint32_t ulAudioLen = len - ulRtpHeadLen- rtpPacket.GetTailLen();
         /* send direct */
-        memcpy(m_recvBuf,pData,len);
-        m_ulRecvLen = len;
+        memcpy(m_recvBuf,&pData[ulRtpHeadLen],ulAudioLen);
+        m_ulRecvLen = ulAudioLen;
         handle_connection_media(enType,rtpPacket.GetTimeStamp());
     }
     else {
@@ -275,6 +277,7 @@ int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unData
         /* drop it */
         return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
     }
+    MK_LOG(AS_LOG_ERROR,"rtsp connection process rtp or rtcp size:[%d].",unMediaSize);
 
     memcpy(buf,&pData[RTSP_INTERLEAVE_HEADER_LEN],unMediaSize);
 
@@ -700,6 +703,7 @@ int32_t mk_rtsp_connection::sendMsg(const char* pszData,uint32_t len)
 }
 void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
 {
+    MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet list:[%d].",rtpFrameList.size());
     mk_rtp_packet rtpPacket;
     uint32_t      rtpHeadLen;
     uint32_t      rtpPayloadLen;
@@ -729,7 +733,9 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
         
         rtpHeadLen   = rtpPacket.GetHeadLen();
         TimeStam     = rtpPacket.GetTimeStamp();
-        rtpPayloadLen = DataLen - rtpHeadLen;
+        rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
+        nalu_hdr = (H264_NALU_HEADER*)&pData[rtpHeadLen];
+        MK_LOG(AS_LOG_ERROR, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
         memcpy(&m_recvBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
         handle_connection_media(MR_MEDIA_TYPE_H264,TimeStam);
@@ -746,7 +752,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
         }
         rtpHeadLen   = rtpPacket.GetHeadLen();
         TimeStam     = rtpPacket.GetTimeStamp();
-        rtpPayloadLen = DataLen - rtpHeadLen;
+        rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
 
         pData = &pData[rtpHeadLen];
 
@@ -761,6 +767,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
             nalu_hdr->NRI  = fu_ind->NRI;
             m_ulRecvLen++; /* 1 byte */
             TimeStam     = rtpPacket.GetTimeStamp();
+            MK_LOG(AS_LOG_ERROR, "##handle nalu:[%d],rtpHeadLen[%d] pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
         }
         memcpy(&m_recvBuf[m_ulRecvLen],pData,rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
@@ -796,7 +803,7 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
         
         rtpHeadLen   = rtpPacket.GetHeadLen();
         TimeStam     = rtpPacket.GetTimeStamp();
-        rtpPayloadLen = DataLen - rtpHeadLen;
+        rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
         memcpy(&m_recvBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
         handle_connection_media(MR_MEDIA_TYPE_H265,TimeStam);
@@ -812,7 +819,7 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
         }
 
         pData = &pData[rtpHeadLen];
-        rtpPayloadLen = DataLen - rtpHeadLen;
+        rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
         fu_type = pData[3] & 0x3f;        
         if(0 == i) {
             /* first packet */
