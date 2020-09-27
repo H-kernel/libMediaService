@@ -40,42 +40,6 @@ enum RTSP_INTERLEAVE_NUM
 static std::string STR_NULL = std::string("");
 
 
-typedef struct
-{
-    //byte 0
-    uint8_t TYPE:5;
-    uint8_t NRI:2;
-    uint8_t F:1;
-} H264_NALU_HEADER; /**//* 1 BYTES */
-
-typedef struct
-{
-    //byte 0
-    uint8_t LATERID0:1;
-    uint8_t TYPE:6;
-    uint8_t F:1;
-    //byte 1
-    uint8_t TID:3;
-    uint8_t LATERID1:5;
-} H265_NALU_HEADER; /**//* 2 BYTES */
-
-
-typedef struct
-{
-    //byte 0
-    uint8_t TYPE:5;
-    uint8_t NRI:2;
-    uint8_t F:1;
-} FU_INDICATOR; /**//* 1 BYTES */
-
-typedef struct
-{
-    //byte 0
-    uint8_t TYPE:5;
-    uint8_t R:1;
-    uint8_t E:1;
-    uint8_t S:1;
-} FU_HEADER; /**//* 1 BYTES */
 
 class mk_rtsp_connection: public mk_client_connection,as_tcp_conn_handle,mk_rtsp_rtp_udp_observer,mk_rtp_frame_handler
 {

@@ -12,7 +12,7 @@ typedef struct
 } NALU_HEADER; /**//* 1 BYTES */
 #define RECV_DATA_BUF_SIZE (1024*1024)
 
-//#define _DUMP_WRITE
+#define _DUMP_WRITE
 
 class rtxp_client
 {

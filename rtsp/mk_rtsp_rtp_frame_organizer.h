@@ -22,13 +22,89 @@ typedef enum
     RTP_H264_NALU_TYPE_END
 }RTP_H264_NALU_TYPE;
 
+/**
+ * Table 7-1: NAL unit type codes
+ */
+typedef enum  {
+    RTP_HEVC_NAL_TRAIL_N    = 0,
+    RTP_HEVC_NAL_TRAIL_R    = 1,
+    RTP_HEVC_NAL_TSA_N      = 2,
+    RTP_HEVC_NAL_TSA_R      = 3,
+    RTP_HEVC_NAL_STSA_N     = 4,
+    RTP_HEVC_NAL_STSA_R     = 5,
+    RTP_HEVC_NAL_RADL_N     = 6,
+    RTP_HEVC_NAL_RADL_R     = 7,
+    RTP_HEVC_NAL_RASL_N     = 8,
+    RTP_HEVC_NAL_RASL_R     = 9,
+    RTP_HEVC_NAL_VCL_N10    = 10,
+    RTP_HEVC_NAL_VCL_R11    = 11,
+    RTP_HEVC_NAL_VCL_N12    = 12,
+    RTP_HEVC_NAL_VCL_R13    = 13,
+    RTP_HEVC_NAL_VCL_N14    = 14,
+    RTP_HEVC_NAL_VCL_R15    = 15,
+    RTP_HEVC_NAL_BLA_W_LP   = 16,
+    RTP_HEVC_NAL_BLA_W_RADL = 17,
+    RTP_HEVC_NAL_BLA_N_LP   = 18,
+    RTP_HEVC_NAL_IDR_W_RADL = 19,
+    RTP_HEVC_NAL_IDR_N_LP   = 20,
+    RTP_HEVC_NAL_CRA_NUT    = 21,
+    RTP_HEVC_NAL_IRAP_VCL22 = 22,
+    RTP_HEVC_NAL_IRAP_VCL23 = 23,
+    RTP_HEVC_NAL_RSV_VCL24  = 24,
+    RTP_HEVC_NAL_RSV_VCL25  = 25,
+    RTP_HEVC_NAL_RSV_VCL26  = 26,
+    RTP_HEVC_NAL_RSV_VCL27  = 27,
+    RTP_HEVC_NAL_RSV_VCL28  = 28,
+    RTP_HEVC_NAL_RSV_VCL29  = 29,
+    RTP_HEVC_NAL_RSV_VCL30  = 30,
+    RTP_HEVC_NAL_RSV_VCL31  = 31,
+    RTP_HEVC_NAL_VPS        = 32,
+    RTP_HEVC_NAL_SPS        = 33,
+    RTP_HEVC_NAL_PPS        = 34,
+    RTP_HEVC_NAL_AUD        = 35,
+    RTP_HEVC_NAL_EOS_NUT    = 36,
+    RTP_HEVC_NAL_EOB_NUT    = 37,
+    RTP_HEVC_NAL_FD_NUT     = 38,
+    RTP_HEVC_NAL_SEI_PREFIX = 39,
+    RTP_HEVC_NAL_SEI_SUFFIX = 40,
+}RTP_HEVC_NALU_TYPE;
+
 typedef struct
 {
     //byte 0
     uint8_t TYPE:5;
     uint8_t NRI:2;
     uint8_t F:1;
-}RTP_H264_FU_INDICATOR; /**//* 1 BYTES */
+} H264_NALU_HEADER; /**//* 1 BYTES */
+
+typedef struct
+{
+    //byte 0
+    uint8_t LATERID0:1;
+    uint8_t TYPE:6;
+    uint8_t F:1;
+    //byte 1
+    uint8_t TID:3;
+    uint8_t LATERID1:5;
+} H265_NALU_HEADER; /**//* 2 BYTES */
+
+
+typedef struct
+{
+    //byte 0
+    uint8_t TYPE:5;
+    uint8_t NRI:2;
+    uint8_t F:1;
+} FU_INDICATOR; /**//* 1 BYTES */
+
+typedef struct
+{
+    //byte 0
+    uint8_t TYPE:5;
+    uint8_t R:1;
+    uint8_t E:1;
+    uint8_t S:1;
+} FU_HEADER; /**//* 1 BYTES */
 
 #define MAX_RTP_FRAME_CACHE_NUM     5
 #define MAX_RTP_SEQ                 65535
