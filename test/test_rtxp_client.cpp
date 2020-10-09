@@ -55,6 +55,7 @@ public:
         if(NULL != m_WriteFd) {
             fclose(m_WriteFd);
             m_WriteFd = NULL;
+            printf("close file handle.");
         }
 #endif
         return;
@@ -63,7 +64,7 @@ public:
     {
         if(type == MR_MEDIA_TYPE_H264) {
 #ifdef _DUMP_WRITE
-            fwrite(data,1,len,m_WriteFd);
+            fwrite(data,len,1,m_WriteFd);
 #endif
             NALU_HEADER* nalu = (NALU_HEADER*)&data[4];
             printf("H264 NALU:[%d]\n",nalu->TYPE);

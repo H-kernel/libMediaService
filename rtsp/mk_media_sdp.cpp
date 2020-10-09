@@ -96,7 +96,7 @@ void mk_media_sdp::getVideoInfo(MEDIA_INFO_LIST &infoList)
         MK_LOG(AS_LOG_DEBUG,"get video info: ucMediaType:[%d],ucPayloadType:[%d],usPort:[%d]"
                             "strRtpmap:[%s],strFmtp:[%s],strControl:[%s]", 
                             (*iter)->ucMediaType,(*iter)->ucPayloadType,(*iter)->usPort,
-                            (*iter)->strRtpmap,(*iter)->strFmtp,(*iter)->strControl);
+                            (*iter)->strRtpmap.c_str(),(*iter)->strFmtp.c_str(),(*iter)->strControl.c_str());
         infoList.push_back(*iter);
     }
 
@@ -174,7 +174,7 @@ void mk_media_sdp::getAudioInfo(MEDIA_INFO_LIST &infoList)
         MK_LOG(AS_LOG_DEBUG,"get audio info: ucMediaType:[%d],ucPayloadType:[%d],usPort:[%d]"
                             "strRtpmap:[%s],strFmtp:[%s],strControl:[%s]", 
                             (*iter)->ucMediaType,(*iter)->ucPayloadType,(*iter)->usPort,
-                            (*iter)->strRtpmap,(*iter)->strFmtp,(*iter)->strControl);
+                            (*iter)->strRtpmap.c_str(),(*iter)->strFmtp.c_str(),(*iter)->strControl.c_str());
         infoList.push_back(*iter);
     }
 
