@@ -10,7 +10,20 @@ typedef struct
     uint8_t NRI:2;
     uint8_t F:1;
 } NALU_HEADER; /**//* 1 BYTES */
-#define RECV_DATA_BUF_SIZE (1024*1024)
+
+typedef struct
+{
+    //byte 0
+    uint8_t LATERID0:1;
+    uint8_t TYPE:6;
+    uint8_t F:1;
+    //byte 1
+    uint8_t TID:3;
+    uint8_t LATERID1:5;
+} NALU_HEADER_S;
+
+
+#define RECV_DATA_BUF_SIZE (2*1024*1024)
 
 #define _DUMP_WRITE
 
@@ -38,7 +51,7 @@ public:
         }
         mk_create_rtsp_client_set_tcp(m_hanlde);
 #ifdef _DUMP_WRITE
-        m_WriteFd = fopen("./a.264","wb+");
+        m_WriteFd = fopen("./a.265","wb+");
         if(NULL == m_WriteFd) {
             return -1;
         }
@@ -68,6 +81,11 @@ public:
 #endif
             NALU_HEADER* nalu = (NALU_HEADER*)&data[4];
             printf("H264 NALU:[%d]\n",nalu->TYPE);
+        }
+        else if(type == MR_MEDIA_TYPE_H265){
+            fwrite(data,len,1,m_WriteFd);
+            NALU_HEADER_S* nalu = (NALU_HEADER_S*)&data[4];
+            printf("H265 NALU:[%d]\n",nalu->TYPE);
         }
         printf("data start:[0x%0x 0x%0x 0x%0x 0x%0x]\n",data[0],data[1],data[2],data[3]);
         return mk_recv_next_media_data(client,m_szBuf,RECV_DATA_BUF_SIZE);

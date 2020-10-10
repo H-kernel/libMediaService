@@ -748,7 +748,7 @@ int32_t mk_rtsp_connection::sendMsg(const char* pszData,uint32_t len)
 }
 void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
 {
-    MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet list:[%d].",rtpFrameList.size());
+    MK_LOG(AS_LOG_ERROR, "handleH264Frame rtp packet list:[%d].",rtpFrameList.size());
     mk_rtp_packet rtpPacket;
     uint32_t      rtpHeadLen;
     uint32_t      rtpPayloadLen;
@@ -772,7 +772,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
         DataLen = rtpFrameList[0].len;
         if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
         {
-            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            MK_LOG(AS_LOG_ERROR, "handleH264Frame rtp packet, parse rtp packet fail.");
             return ;
         }
         
@@ -792,7 +792,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
         DataLen = rtpFrameList[i].len;
         if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
         {
-            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            MK_LOG(AS_LOG_ERROR, "handleH264Frame rtp packet, parse rtp packet fail.");
             return ;
         }
         rtpHeadLen   = rtpPacket.GetHeadLen();
@@ -821,6 +821,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
 }
 void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
 {
+    MK_LOG(AS_LOG_ERROR, "handleH265Frame rtp packet list:[%d].",rtpFrameList.size());
     mk_rtp_packet rtpPacket;
     uint32_t      rtpHeadLen;
     uint32_t      rtpPayloadLen;
@@ -828,6 +829,7 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
     uint32_t      DataLen;
     uint32_t      TimeStam;
     uint32_t      fu_type;
+    H265_NALU_HEADER  *nalu_hdr = NULL;
     if(0 == rtpFrameList.size()) {
         return;
     }
@@ -842,13 +844,15 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
         DataLen = rtpFrameList[0].len;
         if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
         {
-            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            MK_LOG(AS_LOG_ERROR, "handleH265Frame rtp packet, parse rtp packet fail.");
             return ;
         }
         
         rtpHeadLen   = rtpPacket.GetHeadLen();
         TimeStam     = rtpPacket.GetTimeStamp();
         rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
+        nalu_hdr = (H265_NALU_HEADER*)&pData[rtpHeadLen];
+        MK_LOG(AS_LOG_ERROR, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
         memcpy(&m_recvBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
         handle_connection_media(MR_MEDIA_TYPE_H265,TimeStam);
@@ -859,19 +863,23 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
         DataLen = rtpFrameList[i].len;
         if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData,DataLen))
         {
-            MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
+            MK_LOG(AS_LOG_ERROR, "handleH265Frame rtp packet, parse rtp packet fail.");
             return ;
         }
-
+        rtpHeadLen   = rtpPacket.GetHeadLen();
         pData = &pData[rtpHeadLen];
-        rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
-        fu_type = pData[3] & 0x3f;        
+        rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();       
+
         if(0 == i) {
+            //fu_type = pData[2] & 0x3f;
             /* first packet */
-            m_recvBuf[m_ulRecvLen] = (pData[0] & 0x81) | (fu_type << 1);
+            u_int8_t nal_unit_type = pData[2]  & 0x3f;
+
+            m_recvBuf[m_ulRecvLen] = (pData[0] & 0x81) | (nal_unit_type << 1);
             m_ulRecvLen++;
             m_recvBuf[m_ulRecvLen] = pData[1];
             m_ulRecvLen++;
+
             TimeStam     = rtpPacket.GetTimeStamp();
         }
         pData += 3;
