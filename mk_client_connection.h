@@ -42,7 +42,7 @@ public:
     virtual int32_t recv_next() = 0;
     virtual void    check_client() = 0;
 protected:
-    void    handle_connection_media(MR_MEDIA_TYPE enType,uint32_t pts);
+    void    handle_connection_media(MR_MEDIA_TYPE enType,MR_MEDIA_CODE code,uint32_t pts);
     void    handle_connection_status(MR_CLIENT_STATUS enStatus);
 protected:
     char*                m_recvBuf;

@@ -90,7 +90,7 @@ void mk_rtmp_connection::handle_recv(void)
     char* data;
     uint32_t timestamp, pts;
     MR_MEDIA_TYPE enType = MR_MEDIA_TYPE_INVALID;
-
+    MR_MEDIA_CODE enCode = MR_MEDIA_CODE_MAX;
     if(NULL == m_rtmpHandle) {
         return;
     }
@@ -105,6 +105,8 @@ void mk_rtmp_connection::handle_recv(void)
     }
 
     if(m_ulRecvBufLen < size) {
+        enCode = MR_MEDIA_CODE_MEMORY_OOM;
+        handle_connection_media(enType,enCode,pts);
         return;
     }
     
@@ -152,7 +154,8 @@ void mk_rtmp_connection::handle_recv(void)
 	}
     memcpy(m_recvBuf,data,size);
     m_ulRecvLen = size;
-    handle_connection_media(enType,pts);
+    enCode = MR_MEDIA_CODE_OK;
+    handle_connection_media(enType,enCode,pts);
     free(data);
     m_ulLastRecv = time(NULL);
     return;

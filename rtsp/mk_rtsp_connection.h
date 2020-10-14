@@ -83,6 +83,8 @@ private:
     void    handleH264Frame(RTP_PACK_QUEUE &rtpFrameList);
     void    handleH265Frame(RTP_PACK_QUEUE &rtpFrameList);
     void    handleOtherFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rtpFrameList);
+    
+    int32_t checkFrameTotalDataLen(RTP_PACK_QUEUE &rtpFrameList);
 private:
     int32_t sendMsg(const char* pszData,uint32_t len);
     void    resetRtspConnect();

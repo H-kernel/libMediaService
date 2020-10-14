@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string>
 #include <list>
+#include "as.h"
 #include "../libMediaService.h"
 typedef struct
 {
@@ -51,7 +52,7 @@ public:
         }
         mk_create_rtsp_client_set_tcp(m_hanlde);
 #ifdef _DUMP_WRITE
-        m_WriteFd = fopen("./a.265","wb+");
+        m_WriteFd = fopen("./a.264","wb+");
         if(NULL == m_WriteFd) {
             return -1;
         }
@@ -73,7 +74,7 @@ public:
 #endif
         return;
     }
-    int32_t handle_lib_media_data(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len)
+    int32_t handle_lib_media_data(MR_CLIENT client,MR_MEDIA_TYPE type,MR_MEDIA_CODE code,uint32_t pts,char* data,uint32_t len)
     {
         if(type == MR_MEDIA_TYPE_H264) {
 #ifdef _DUMP_WRITE
@@ -115,7 +116,7 @@ public:
                 mk_stop_client_handle(m_hanlde);
             }
         }
-        return AS_ERROR_CODE_OK;
+        return 0;
     }
 public:
     static int32_t rtxp_client_handle_status(MR_CLIENT client,MR_CLIENT_STATUS status,void* ctx)
@@ -123,10 +124,10 @@ public:
         rtxp_client* pClient = (rtxp_client*)ctx;
         return pClient->hanlde_lib_status(client,status);
     }
-    static int32_t rtxp_client_handle_media(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len,void* ctx)
+    static int32_t rtxp_client_handle_media(MR_CLIENT client,MR_MEDIA_TYPE type,MR_MEDIA_CODE code,uint32_t pts,char* data,uint32_t len,void* ctx)
     {
          rtxp_client* pClient = (rtxp_client*)ctx;
-         return pClient->handle_lib_media_data(client,type,pts,data,len);
+         return pClient->handle_lib_media_data(client,type,code,pts,data,len);
     }
 private:
     std::string m_strUrl;
@@ -154,7 +155,7 @@ int main(int argc,char* argv[])
         return -1;
     }
 
-    if(AS_ERROR_CODE_OK != mk_lib_init(2,lib_mk_log)) {
+    if(0 != mk_lib_init(2,lib_mk_log)) {
         printf("init lib fail.\n");
         return -1;
     }

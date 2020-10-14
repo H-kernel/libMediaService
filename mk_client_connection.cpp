@@ -90,15 +90,15 @@ uint32_t mk_client_connection::get_index()
     return m_ulIndex;
 }
 
-void    mk_client_connection::handle_connection_media(MR_MEDIA_TYPE enType,uint32_t pts)
+void    mk_client_connection::handle_connection_media(MR_MEDIA_TYPE enType,MR_MEDIA_CODE enCode,uint32_t pts)
 {
     if(NULL == m_MediaCallBack) {
         return;
     }
-    if(0 == m_ulRecvLen) {
-        return;
-    }
-    m_MediaCallBack(this,enType,pts,m_recvBuf,m_ulRecvLen,m_pMediaCbData);
+    // if(0 == m_ulRecvLen) {
+    //     return;
+    // }
+    m_MediaCallBack(this,enType,enCode,pts,m_recvBuf,m_ulRecvLen,m_pMediaCbData);
 }
 void    mk_client_connection::handle_connection_status(MR_CLIENT_STATUS  enStatus)
 {

@@ -9,8 +9,9 @@
 #else
 #define MR_API
 #endif
-#include <as.h>
-
+//#include <as.h>
+#include <stdint.h>
+#include <stdarg.h>
 typedef  void* MR_SERVER;
 typedef  void* MR_CLIENT;
 
@@ -33,13 +34,20 @@ enum MR_CLIENT_STATUS
     MR_CLIENT_STATUS_MAX
 };
 
+enum MR_MEDIA_CODE
+{
+    MR_MEDIA_CODE_OK            = 0,
+    MR_MEDIA_CODE_MEMORY_OOM    = 0x1001,
+    MR_MEDIA_CODE_MAX
+};
+
 typedef void (*mk_log)(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,va_list argp);
 
 typedef int32_t (*rtsp_server_request)(MR_SERVER server,MR_CLIENT client);
 
 typedef int32_t (*handle_client_status)(MR_CLIENT client,MR_CLIENT_STATUS status,void* ctx);
 
-typedef int32_t (*handle_client_media)(MR_CLIENT client,MR_MEDIA_TYPE type,uint32_t pts,char* data,uint32_t len,void* ctx);
+typedef int32_t (*handle_client_media)(MR_CLIENT client,MR_MEDIA_TYPE type,MR_MEDIA_CODE code,uint32_t pts,char* data,uint32_t len,void* ctx);
 
 
 #ifdef __cplusplus

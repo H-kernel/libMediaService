@@ -1,6 +1,7 @@
 #ifndef __MK_CLIENT_MEDIA_COMMON_INCLUDE_H__
 #define __MK_CLIENT_MEDIA_COMMON_INCLUDE_H__
 
+#include "as.h"
 #include "libMediaService.h"
 
 extern mk_log g_log;
