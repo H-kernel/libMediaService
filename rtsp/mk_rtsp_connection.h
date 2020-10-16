@@ -53,6 +53,7 @@ public:
     virtual int32_t recv_next();
     virtual void    check_client();
     virtual void    set_rtp_over_tcp();
+    virtual void    get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo);
 public:
     /* override */
     virtual void handle_recv(void);

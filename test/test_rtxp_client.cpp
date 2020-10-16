@@ -74,6 +74,14 @@ public:
 #endif
         return;
     }
+    void get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &info)
+    {
+        if(NULL == m_hanlde) {
+            return;
+        }
+        mk_get_client_rtp_stat_info(m_hanlde,info);
+        return;
+    }
     int32_t handle_lib_media_data(MR_CLIENT client,MR_MEDIA_TYPE type,MR_MEDIA_CODE code,uint32_t pts,char* data,uint32_t len)
     {
         if(type == MR_MEDIA_TYPE_H264) {
@@ -180,10 +188,27 @@ int main(int argc,char* argv[])
             return -1;
         }
     }
-
+    uint32_t count = 0;
     while(true) {
-        sleep(30);
-        break;
+        count ++;
+        if(count < 32)
+        {
+            std::list<rtxp_client*>::iterator iter = clientList.begin();
+            for(;iter != clientList.end();++iter) {
+                pClient = *iter;
+               
+            RTP_PACKET_STAT_INFO info ={0};
+            pClient->get_client_rtp_stat_info(info);
+            printf("ulTotalPackNum:[%d] ,ulLostRtpPacketNum:[%d] ,ulLostFrameNum:[%d] ,ulDisorderSeqCounts:[%d] \n"
+                ,info.ulTotalPackNum
+                ,info.ulLostRtpPacketNum
+                ,info.ulLostFrameNum,info.ulDisorderSeqCounts);
+             }
+            sleep(1);
+        }
+        else{
+            break;
+        }
     }
 
     iter = clientList.begin();

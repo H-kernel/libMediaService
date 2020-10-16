@@ -41,6 +41,14 @@ enum MR_MEDIA_CODE
     MR_MEDIA_CODE_MAX
 };
 
+typedef struct _stRTP_PACKET_STAT_INFO
+{
+    uint32_t ulTotalPackNum;
+    uint32_t ulLostRtpPacketNum;
+    uint32_t ulLostFrameNum;
+    uint32_t ulDisorderSeqCounts;
+}RTP_PACKET_STAT_INFO;
+
 typedef void (*mk_log)(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,va_list argp);
 
 typedef int32_t (*rtsp_server_request)(MR_SERVER server,MR_CLIENT client);
@@ -80,6 +88,8 @@ extern "C"
     MR_API void      mk_create_rtsp_client_set_tcp(MR_CLIENT client);
     /* set a media rtsp client/server rtp/rtcp udp port */
     MR_API void      mk_set_rtsp_udp_ports(uint16_t udpstart,uint32_t count);
+    /* get a media rtsp client/server rtp packet stat info */
+    MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_INFO &statinfo);
 #ifdef __cplusplus
 #if __cplusplus
 }

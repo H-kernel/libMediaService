@@ -152,6 +152,11 @@ public:
     int32_t insertRtpPacket(char* pRtpBlock,uint32_t len);
 
     void release();
+
+    void getRtpPacketStatInfo(uint32_t &totalPackNum,uint32_t &lostRtpPacketNum,uint32_t &lostFrameNum,uint32_t &disorderSeqCounts);
+
+    void updateTotalRtpPacketNum();
+    void updateLastRtpSeq(uint32_t uSeq, bool bRelease);
 private:
     int32_t insert(RTP_FRAME_INFO_S *pFrameinfo,const RTP_PACK_INFO_S &info);
 
@@ -166,10 +171,17 @@ private:
     RTP_FRAME_INFO_S* GetSmallFrame();
 private:
     uint32_t                 m_unMaxCacheFrameNum;
-    mk_rtp_frame_handler*        m_pRtpFrameHandler;
+    mk_rtp_frame_handler*    m_pRtpFrameHandler;
 
     RTP_FRAME_MAP_S          m_RtpFrameMap;
     RTP_FRAME_LIST_S         m_RtpFrameFreeList;
+
+    bool                     m_bFirstRtpPacket;
+    uint32_t                 m_unTotalRtpPacketNum;
+    uint32_t                 m_unLostRtpPacketNum;      //丢包
+    uint32_t                 m_unLostFrameNum;          //丢帧
+    uint32_t                 m_unDisorderSeqCounts;     //乱序次数
+    uint32_t                 m_unLastRtpSeq;
 };
 
 #endif /* __MK_RTSP_RTP_FRAME_ORGANIZER_INCLUDE_H__ */

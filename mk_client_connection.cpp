@@ -89,6 +89,11 @@ uint32_t mk_client_connection::get_index()
 {
     return m_ulIndex;
 }
+void mk_client_connection::get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo)
+{
+    this->get_rtp_stat_info(statinfo);
+    return;
+}
 
 void    mk_client_connection::handle_connection_media(MR_MEDIA_TYPE enType,MR_MEDIA_CODE enCode,uint32_t pts)
 {

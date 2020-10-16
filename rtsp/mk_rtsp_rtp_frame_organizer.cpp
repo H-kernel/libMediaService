@@ -8,7 +8,12 @@ mk_rtp_frame_organizer::mk_rtp_frame_organizer()
 {
     m_unMaxCacheFrameNum    = 0;
     m_pRtpFrameHandler      = NULL;
-
+    m_bFirstRtpPacket       = true;
+    m_unTotalRtpPacketNum   = 0;
+    m_unLostRtpPacketNum    = 0;
+    m_unLostFrameNum        = 0;
+    m_unDisorderSeqCounts   = 0;
+    m_unLastRtpSeq          = 0;
 }
 
 mk_rtp_frame_organizer::~mk_rtp_frame_organizer()
@@ -85,15 +90,40 @@ int32_t mk_rtp_frame_organizer::insertRtpPacket(char* pRtpBlock,uint32_t len)
         pFrameInfo = iter->second;
     }
 
+    {
+        if(rtpInfo.usSeq == m_unLastRtpSeq + 1)
+        {
+            //normal
+            m_unLastRtpSeq = rtpInfo.usSeq;
+        }
+        else if(rtpInfo.usSeq > m_unLastRtpSeq + 1)
+        {
+            MK_LOG(AS_LOG_ERROR,"usSeq[%d] > m_unLastRtpSeq[%d]+1.",rtpInfo.usSeq,m_unLastRtpSeq);
+            m_unDisorderSeqCounts ++;
+            m_unLostRtpPacketNum += rtpInfo.usSeq - m_unLastRtpSeq -1;
+            m_unLastRtpSeq = rtpInfo.usSeq;
+        }
+        else
+        {
+             MK_LOG(AS_LOG_ERROR,"usSeq[%d] < m_unLastRtpSeq[%d]+1.",rtpInfo.usSeq,m_unLastRtpSeq)
+            m_unDisorderSeqCounts ++;
+            m_unLostRtpPacketNum -= m_unLastRtpSeq - rtpInfo.usSeq -1;
+            //m_unLastRtpSeq = rtpInfo.usSeq;
+        }
+    }
     
-
-
     if(NULL == pFrameInfo)
     {
-         MK_LOG(AS_LOG_ERROR,"Insert Frame fail,becaus there is no free frame info.");
-         RTP_FRAME_INFO_S *pFrameinfo = GetSmallFrame();
-         releaseRtpPacket(pFrameinfo);
-         return AS_ERROR_CODE_FAIL;
+        MK_LOG(AS_LOG_ERROR,"Insert Frame fail,becaus there is no free frame info.");
+        RTP_FRAME_INFO_S *pFrameinfo = GetSmallFrame();
+        
+        uint32_t ulCount =  pFrameinfo->PacketQueue.size();
+        m_unLostRtpPacketNum += ulCount;
+
+        m_unLostFrameNum ++;
+
+        releaseRtpPacket(pFrameinfo);
+        return AS_ERROR_CODE_FAIL;
     }
     if(false == pFrameInfo->bMarker)
     {
@@ -106,7 +136,6 @@ int32_t mk_rtp_frame_organizer::insertRtpPacket(char* pRtpBlock,uint32_t len)
     }
 
     checkFrame();
-
 
     return AS_ERROR_CODE_OK;
 }
@@ -144,6 +173,29 @@ void mk_rtp_frame_organizer::release()
     return;
 }
 
+void mk_rtp_frame_organizer::getRtpPacketStatInfo(uint32_t &totalPackNum,uint32_t &lostRtpPacketNum,uint32_t &lostFrameNum,uint32_t &disorderSeqCounts)
+{
+    totalPackNum      = m_unTotalRtpPacketNum;
+    lostRtpPacketNum  = m_unLostRtpPacketNum;
+    lostFrameNum      = m_unLostFrameNum;
+    disorderSeqCounts = m_unDisorderSeqCounts;
+    return;
+}
+
+void mk_rtp_frame_organizer::updateTotalRtpPacketNum()
+{
+    m_unTotalRtpPacketNum++;
+}
+
+void mk_rtp_frame_organizer::updateLastRtpSeq(uint32_t uSeq, bool bRelease)
+{
+    m_unLastRtpSeq = uSeq;
+    if(bRelease)
+    {
+        m_unLostRtpPacketNum ++;
+    }
+    return;
+}
 
 int32_t mk_rtp_frame_organizer::insert(RTP_FRAME_INFO_S *pFrameinfo,const RTP_PACK_INFO_S &info)
 {

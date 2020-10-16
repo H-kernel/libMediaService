@@ -165,3 +165,7 @@ void mk_rtmp_connection::handle_send(void)
     as_handle::setHandleSend(AS_FALSE);
     return;
 }
+void mk_rtmp_connection::get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo)
+{ 
+    return;
+}

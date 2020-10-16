@@ -36,11 +36,13 @@ public:
     int32_t  do_next_recv(char* buf,uint32_t len);
     void     set_index(uint32_t ulIdx);
     uint32_t get_index();
+    void     get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo);
 public:
     virtual int32_t start() = 0;
     virtual void    stop() = 0;
     virtual int32_t recv_next() = 0;
     virtual void    check_client() = 0;
+    virtual void    get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo) = 0;
 protected:
     void    handle_connection_media(MR_MEDIA_TYPE enType,MR_MEDIA_CODE code,uint32_t pts);
     void    handle_connection_status(MR_CLIENT_STATUS enStatus);
