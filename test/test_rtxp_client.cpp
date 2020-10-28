@@ -35,6 +35,7 @@ public:
     {
         m_hanlde = NULL;
         m_strUrl = strUrl;
+        printf("rtxp_client.url:[%s]\n",m_strUrl.c_str());
 #ifdef _DUMP_WRITE
         m_WriteFd = NULL;
 #endif
@@ -168,7 +169,7 @@ int main(int argc,char* argv[])
         return -1;
     }
     int nCount = argc - 1;
-
+    printf("create client nCount:[%d] \n",nCount);
     for(int i = 0;i < nCount;i++) {
         strUrl = argv[i+1];
         try {
@@ -178,9 +179,10 @@ int main(int argc,char* argv[])
             printf("create client:[%d] ,url:[%s] fail\n",i,strUrl.c_str());
             return -1;
         }
+        printf("create client:[%d] ,url:[%s]\n",i,strUrl.c_str());
         clientList.push_back(pClient);
     }
-    
+    printf("create client url:[%s]\n",strUrl.c_str());
     std::list<rtxp_client*>::iterator iter = clientList.begin();
     for(;iter != clientList.end();++iter) {
         pClient = *iter;
