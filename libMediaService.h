@@ -49,13 +49,21 @@ typedef struct _stRTP_PACKET_STAT_INFO
     uint32_t ulDisorderSeqCounts;
 }RTP_PACKET_STAT_INFO;
 
+typedef struct _stMEDIA_DATA_INFO
+{
+    MR_MEDIA_TYPE type;
+    MR_MEDIA_CODE code;
+    uint32_t isKeyFrame;
+    uint32_t pts;
+}MEDIA_DATA_INFO;
+
 typedef void (*mk_log)(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,va_list argp);
 
 typedef int32_t (*rtsp_server_request)(MR_SERVER server,MR_CLIENT client);
 
 typedef int32_t (*handle_client_status)(MR_CLIENT client,MR_CLIENT_STATUS status,void* ctx);
 
-typedef int32_t (*handle_client_media)(MR_CLIENT client,MR_MEDIA_TYPE type,MR_MEDIA_CODE code,uint32_t pts,char* data,uint32_t len,void* ctx);
+typedef int32_t (*handle_client_media)(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,char* data,uint32_t len,void* ctx);
 
 
 #ifdef __cplusplus

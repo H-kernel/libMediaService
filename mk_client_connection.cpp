@@ -103,7 +103,43 @@ void    mk_client_connection::handle_connection_media(MR_MEDIA_TYPE enType,MR_ME
     // if(0 == m_ulRecvLen) {
     //     return;
     // }
-    m_MediaCallBack(this,enType,enCode,pts,m_recvBuf,m_ulRecvLen,m_pMediaCbData);
+    MEDIA_DATA_INFO dataInfo;
+    memset(&dataInfo,0x0,sizeof(dataInfo));
+
+    uint32_t isKeyFrame = 0;
+    if(MR_MEDIA_CODE_OK == enCode)
+    {
+        if(m_ulRecvLen > 4)
+        {
+            char c = m_recvBuf[4];
+            if(MR_MEDIA_TYPE_H264 == enType)
+            {
+                int nalType = (c & 0x1f);
+                if(5 == nalType)
+                {
+                    isKeyFrame = 1;
+                }
+                pts = pts/90;
+            }
+            else if(MR_MEDIA_TYPE_H265 == enCode)
+            {
+                int nalType = (c & 0x7E)>>1;
+                if((nalType >= 16) && (nalType <=21))
+                {
+                    isKeyFrame = 1;
+                }
+                pts = pts/90;
+            }
+            else{
+                pts = (pts/8000)*1000; 
+            }
+        }
+    }
+    dataInfo.code = enCode;
+    dataInfo.type = enType;
+    dataInfo.isKeyFrame = isKeyFrame;
+    dataInfo.pts = pts;
+    m_MediaCallBack(this,dataInfo,m_recvBuf,m_ulRecvLen,m_pMediaCbData);
 }
 void    mk_client_connection::handle_connection_status(MR_CLIENT_STATUS  enStatus)
 {

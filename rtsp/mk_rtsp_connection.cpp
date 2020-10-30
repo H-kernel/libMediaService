@@ -30,7 +30,7 @@ int32_t mk_rtsp_connection::start()
         return AS_ERROR_CODE_FAIL;
     }
     MK_LOG(AS_LOG_INFO,"rtsp client connect url [%s] ",m_strurl.c_str());
-    
+
     if(AS_ERROR_CODE_OK != as_parse_url(m_strurl.c_str(),&m_url)) {
         return AS_ERROR_CODE_FAIL;
     }
@@ -67,6 +67,7 @@ void mk_rtsp_connection::stop()
 {
     resetRtspConnect();
     setHandleRecv(AS_FALSE);
+    handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
     MK_LOG(AS_LOG_INFO,"close rtsp client.");
     return;
 }
@@ -110,7 +111,9 @@ void mk_rtsp_connection::handle_recv(void)
     iRecvLen = this->recv((char*)&m_RecvTcpBuf[m_ulRecvSize],&peer,iRecvLen,enAsyncOp);
     if (iRecvLen <= 0)
     {
-        MK_LOG(AS_LOG_INFO,"rtsp connection recv data fail.");
+        stop();
+        handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
+        MK_LOG(AS_LOG_WARNING,"rtsp connection recv data fail.");
         return;
     }
 
@@ -254,7 +257,7 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
         }
 
         memcpy(m_recvBuf,&pData[ulRtpHeadLen],ulAudioLen);
-        m_ulRecvLen = ulAudioLen;
+        m_ulRecvLen += ulAudioLen;
         enCode = MR_MEDIA_CODE_OK;
         handle_connection_media(enType,enCode,rtpPacket.GetTimeStamp());
         mk_rtsp_service::instance().free_rtp_recv_buf(pData);
@@ -554,7 +557,7 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO* info)
         strTransport += strPort.str();
     }
 
-    MK_LOG(AS_LOG_ERROR,"rtsp connection client ,setup control:[%s].",info->strControl.c_str());
+    MK_LOG(AS_LOG_INFO,"rtsp connection client ,setup control:[%s].",info->strControl.c_str());
 
     std::string strUri =  STR_NULL;
     if("" != info->strControl) {
@@ -787,7 +790,7 @@ int32_t mk_rtsp_connection::sendMsg(const char* pszData,uint32_t len)
 }
 void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
 {
-    MK_LOG(AS_LOG_ERROR, "handleH264Frame rtp packet list:[%d].",rtpFrameList.size());
+    MK_LOG(AS_LOG_DEBUG, "handleH264Frame rtp packet list:[%d].",rtpFrameList.size());
     mk_rtp_packet rtpPacket;
     uint32_t      rtpHeadLen;
     uint32_t      rtpPayloadLen;
@@ -829,8 +832,15 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
         rtpHeadLen   = rtpPacket.GetHeadLen();
         TimeStam     = rtpPacket.GetTimeStamp();
         rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
+
+        if( (DataLen - 2) < (rtpHeadLen + rtpPacket.GetTailLen()))
+        {
+            MK_LOG(AS_LOG_ERROR, "handleH264Frame rtp packet, DataLen invalid.TailLen[%d]",rtpPacket.GetTailLen());
+            return;
+        }
+
         nalu_hdr = (H264_NALU_HEADER*)&pData[rtpHeadLen];
-        MK_LOG(AS_LOG_ERROR, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
+        MK_LOG(AS_LOG_DEBUG, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
         memcpy(&m_recvBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
         enCode = MR_MEDIA_CODE_OK;
@@ -850,6 +860,12 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
         TimeStam     = rtpPacket.GetTimeStamp();
         rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
 
+        if( (DataLen - 2) < (rtpHeadLen + rtpPacket.GetTailLen()))
+        {
+            MK_LOG(AS_LOG_ERROR, "handleH264Frame rtp packet, DataLen invalid.TailLen[%d]",rtpPacket.GetTailLen());
+            return;
+        }
+
         pData = &pData[rtpHeadLen];
 
         fu_ind = (FU_INDICATOR*)pData;    pData++;
@@ -863,7 +879,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
             nalu_hdr->NRI  = fu_ind->NRI;
             m_ulRecvLen++; /* 1 byte */
             TimeStam     = rtpPacket.GetTimeStamp();
-            MK_LOG(AS_LOG_ERROR, "##handle nalu:[%d],rtpHeadLen[%d] pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
+            MK_LOG(AS_LOG_DEBUG, "##handle nalu:[%d],rtpHeadLen[%d] pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
         }
         memcpy(&m_recvBuf[m_ulRecvLen],pData,rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
@@ -873,7 +889,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
 }
 void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
 {
-    MK_LOG(AS_LOG_ERROR, "handleH265Frame rtp packet list:[%d].",rtpFrameList.size());
+    MK_LOG(AS_LOG_DEBUG, "handleH265Frame rtp packet list:[%d].",rtpFrameList.size());
     mk_rtp_packet rtpPacket;
     uint32_t      rtpHeadLen;
     uint32_t      rtpPayloadLen;
@@ -915,8 +931,16 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
         rtpHeadLen   = rtpPacket.GetHeadLen();
         TimeStam     = rtpPacket.GetTimeStamp();
         rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();
+
+        if( (DataLen - 2) < (rtpHeadLen + rtpPacket.GetTailLen()))
+        {
+            MK_LOG(AS_LOG_ERROR, "handleH264Frame rtp packet, DataLen invalid.TailLen[%d]",rtpPacket.GetTailLen());
+            return;
+        }
+
+
         nalu_hdr = (H265_NALU_HEADER*)&pData[rtpHeadLen];
-        MK_LOG(AS_LOG_ERROR, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
+        MK_LOG(AS_LOG_DEBUG, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
         memcpy(&m_recvBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
         enCode = MR_MEDIA_CODE_OK;
@@ -934,6 +958,12 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
         rtpHeadLen   = rtpPacket.GetHeadLen();
         pData = &pData[rtpHeadLen];
         rtpPayloadLen = DataLen - rtpHeadLen - rtpPacket.GetTailLen();       
+
+        if( (DataLen - 2) < (rtpHeadLen + rtpPacket.GetTailLen()))
+        {
+            MK_LOG(AS_LOG_ERROR, "handleH264Frame rtp packet, DataLen invalid.TailLen[%d]",rtpPacket.GetTailLen());
+            return;
+        }
 
         if(0 == i) {
             //fu_type = pData[2] & 0x3f;

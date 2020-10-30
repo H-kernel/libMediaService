@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string>
 #include <list>
-#include "as.h"
+//#include "as.h"
 #include "../libMediaService.h"
 typedef struct
 {
@@ -83,16 +83,16 @@ public:
         mk_get_client_rtp_stat_info(m_hanlde,info);
         return;
     }
-    int32_t handle_lib_media_data(MR_CLIENT client,MR_MEDIA_TYPE type,MR_MEDIA_CODE code,uint32_t pts,char* data,uint32_t len)
+    int32_t handle_lib_media_data(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,char* data,uint32_t len)
     {
-        if(type == MR_MEDIA_TYPE_H264) {
+        if(dataInfo.type == MR_MEDIA_TYPE_H264) {
 #ifdef _DUMP_WRITE
             fwrite(data,len,1,m_WriteFd);
 #endif
             NALU_HEADER* nalu = (NALU_HEADER*)&data[4];
             printf("H264 NALU:[%d]\n",nalu->TYPE);
         }
-        else if(type == MR_MEDIA_TYPE_H265){
+        else if(dataInfo.type == MR_MEDIA_TYPE_H265){
             fwrite(data,len,1,m_WriteFd);
             NALU_HEADER_S* nalu = (NALU_HEADER_S*)&data[4];
             printf("H265 NALU:[%d]\n",nalu->TYPE);
@@ -133,10 +133,10 @@ public:
         rtxp_client* pClient = (rtxp_client*)ctx;
         return pClient->hanlde_lib_status(client,status);
     }
-    static int32_t rtxp_client_handle_media(MR_CLIENT client,MR_MEDIA_TYPE type,MR_MEDIA_CODE code,uint32_t pts,char* data,uint32_t len,void* ctx)
+    static int32_t rtxp_client_handle_media(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,char* data,uint32_t len,void* ctx)
     {
          rtxp_client* pClient = (rtxp_client*)ctx;
-         return pClient->handle_lib_media_data(client,type,code,pts,data,len);
+         return pClient->handle_lib_media_data(client,dataInfo,data,len);
     }
 private:
     std::string m_strUrl;
