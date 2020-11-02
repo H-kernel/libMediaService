@@ -104,12 +104,13 @@ void mk_rtmp_connection::handle_recv(void)
         return;
     }
 
-    if(m_ulRecvBufLen < size) {
-        enCode = MR_MEDIA_CODE_MEMORY_OOM;
-        handle_connection_media(enType,enCode,pts);
+    uint32_t bufflen;
+    char* recBuf = handle_connection_databuf((u_int32_t)size,bufflen);
+    if(NULL == recBuf)
+    {
+        MK_LOG(AS_LOG_ERROR, "fail to insert rtmp packet, alloc buffer short.");
         return;
     }
-    
 
     if (type == SRS_RTMP_TYPE_VIDEO) {      
 		/* SrsCodecVideoAVC                     = 7,*/
@@ -152,10 +153,14 @@ void mk_rtmp_connection::handle_recv(void)
             return;
         }
 	}
-    memcpy(m_recvBuf,data,size);
-    m_ulRecvLen = size;
+    memcpy(recBuf,data,size);
     enCode = MR_MEDIA_CODE_OK;
-    handle_connection_media(enType,enCode,pts);
+
+    MEDIA_DATA_INFO dataInfo;
+    memset(&dataInfo,0x0,sizeof(dataInfo));
+    parse_media_info(enType,pts,recBuf,dataInfo);
+
+    handle_connection_media(dataInfo,size);
     free(data);
     m_ulLastRecv = time(NULL);
     return;

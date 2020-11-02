@@ -63,8 +63,17 @@ typedef int32_t (*rtsp_server_request)(MR_SERVER server,MR_CLIENT client);
 
 typedef int32_t (*handle_client_status)(MR_CLIENT client,MR_CLIENT_STATUS status,void* ctx);
 
-typedef int32_t (*handle_client_media)(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,char* data,uint32_t len,void* ctx);
+typedef char* (*handle_client_get_buffer)(MR_CLIENT client,uint32_t len,uint32_t& ulBufLen,void* ctx);
 
+typedef int32_t (*handle_client_media)(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,uint32_t len,void* ctx);
+
+typedef struct
+{
+    handle_client_status        m_cb_status;
+    handle_client_get_buffer    m_cb_buffer;
+    handle_client_media         m_cb_data;
+    void*                       ctx;
+}MEDIA_CALL_BACK;
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -72,26 +81,26 @@ extern "C"
 {
 #endif
 #endif
-    /* init the media  libary */
+    /* init the media  library */
     MR_API int32_t   mk_lib_init(uint32_t EvnCount,mk_log log);
-    /* release the media  bibary */
+    /* release the media  library */
     MR_API void      mk_lib_release();
     /* create a media server handle */
     MR_API MR_SERVER mk_create_rtsp_server_handle(uint16_t port,rtsp_server_request cb,void* ctx);
     /* destory the media  server handle */
     MR_API void      mk_destory_rtsp_server_handle(MR_SERVER server);
     /* create a media client handle */
-    MR_API MR_CLIENT mk_create_client_handle(char* url,handle_client_status cb,void* ctx);
+    MR_API MR_CLIENT mk_create_client_handle(char* url,MEDIA_CALL_BACK* cb,void* ctx);
     /* destory the media client handle */
     MR_API void      mk_destory_client_handle(MR_CLIENT client);
     /* start the media client handle */
-    MR_API int32_t   mk_start_client_handle(MR_CLIENT client,char* buf,uint32_t len,handle_client_media cb,void* data);
+    MR_API int32_t   mk_start_client_handle(MR_CLIENT client);
     /* stop the media client handle */
     MR_API void      mk_stop_client_handle(MR_CLIENT client);
     /* set a media client callback */
-    MR_API void      mk_set_client_callback(MR_CLIENT client,handle_client_status cb,void* ctx);
+    MR_API void      mk_set_client_callback(MR_CLIENT client,MEDIA_CALL_BACK cb,void* ctx);
     /* recv media data from media client */
-    MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client,char* buf,uint32_t len);
+    MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client);
     /* set a media rtsp client media transport tcp*/
     MR_API void      mk_create_rtsp_client_set_tcp(MR_CLIENT client);
     /* set a media rtsp client/server rtp/rtcp udp port */

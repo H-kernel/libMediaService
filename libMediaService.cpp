@@ -28,7 +28,7 @@ MR_API void      mk_destory_rtsp_server_handle(MR_SERVER server)
     return;
 }
 /* create a media rtsp client handle */
-MR_API MR_CLIENT mk_create_client_handle(char* url,handle_client_status cb,void* ctx)
+MR_API MR_CLIENT mk_create_client_handle(char* url,MEDIA_CALL_BACK* cb,void* ctx)
 {
     return mk_media_service::instance().create_client(url,cb,ctx);
 }
@@ -40,10 +40,10 @@ MR_API void      mk_destory_client_handle(MR_CLIENT client)
     return;
 }
 /* start the media client handle */
-MR_API int32_t   mk_start_client_handle(MR_CLIENT client,char* buf,uint32_t len,handle_client_media cb,void* data)
+MR_API int32_t   mk_start_client_handle(MR_CLIENT client)
 {
     mk_client_connection* pClient = (mk_client_connection*)client;
-    return pClient->start_recv(buf,len,cb,data);
+    return pClient->start_recv();
 }
 /* stop the media client handle */
 MR_API void   mk_stop_client_handle(MR_CLIENT client)
@@ -53,17 +53,17 @@ MR_API void   mk_stop_client_handle(MR_CLIENT client)
     return;
 }
 /* set a media client callback */
-MR_API void      mk_set_client_callback(MR_CLIENT client,handle_client_status cb,void* ctx)
+MR_API void      mk_set_client_callback(MR_CLIENT client,MEDIA_CALL_BACK* cb,void* ctx)
 {
     mk_client_connection* pClient = (mk_client_connection*)client;
     pClient->set_status_callback(cb,ctx);
     return;
 }
 /* recv media data from media client */
-MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client,char* buf,uint32_t len)
+MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client)
 {
     mk_client_connection* pClient = (mk_client_connection*)client;
-    return pClient->do_next_recv(buf,len);
+    return pClient->do_next_recv();
 }
 /* set a media rtsp client media transport tcp */
 MR_API void      mk_create_rtsp_client_set_tcp(MR_CLIENT client)

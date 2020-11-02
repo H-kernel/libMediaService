@@ -68,7 +68,7 @@ public:
     void    release();
     mk_rtsp_server* create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx);
     void destory_rtsp_server(mk_rtsp_server* pServer);
-    mk_client_connection* create_client(char* url,handle_client_status cb,void* ctx);
+    mk_client_connection* create_client(char* url,MEDIA_CALL_BACK* cb,void* ctx);
     void destory_client(mk_client_connection* pClient);
 public:
     as_network_svr* get_client_network_svr(uint32_t ulIndex);

@@ -39,6 +39,10 @@ public:
 #ifdef _DUMP_WRITE
         m_WriteFd = NULL;
 #endif
+        m_media_cb.ctx = this;
+        m_media_cb.m_cb_status = rtxp_client_handle_status;
+        m_media_cb.m_cb_data = rtxp_client_handle_media;
+        m_media_cb.m_cb_buffer = rtxp_client_handle_buffer;
     }
     virtual ~rtxp_client()
     {
@@ -46,7 +50,7 @@ public:
     }
     int start()
     {
-        m_hanlde = mk_create_client_handle((char*)m_strUrl.c_str(),rtxp_client_handle_status,this);
+        m_hanlde = mk_create_client_handle((char*)m_strUrl.c_str(),&m_media_cb,this);
         if(NULL == m_hanlde) {
             printf("create client handle fail.url:[%s]\n",m_strUrl.c_str());
             return -1;
@@ -58,7 +62,7 @@ public:
             return -1;
         }
 #endif
-        return mk_start_client_handle(m_hanlde,m_szBuf,RECV_DATA_BUF_SIZE,rtxp_client_handle_media,this);
+        return mk_start_client_handle(m_hanlde);
     }
     void close()
     {
@@ -83,22 +87,22 @@ public:
         mk_get_client_rtp_stat_info(m_hanlde,info);
         return;
     }
-    int32_t handle_lib_media_data(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,char* data,uint32_t len)
+    int32_t handle_lib_media_data(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,uint32_t len)
     {
         if(dataInfo.type == MR_MEDIA_TYPE_H264) {
 #ifdef _DUMP_WRITE
-            fwrite(data,len,1,m_WriteFd);
+            fwrite(m_szBuf,len,1,m_WriteFd);
 #endif
-            NALU_HEADER* nalu = (NALU_HEADER*)&data[4];
+            NALU_HEADER* nalu = (NALU_HEADER*)&m_szBuf[4];
             printf("H264 NALU:[%d]\n",nalu->TYPE);
         }
         else if(dataInfo.type == MR_MEDIA_TYPE_H265){
-            fwrite(data,len,1,m_WriteFd);
-            NALU_HEADER_S* nalu = (NALU_HEADER_S*)&data[4];
+            fwrite(m_szBuf,len,1,m_WriteFd);
+            NALU_HEADER_S* nalu = (NALU_HEADER_S*)&m_szBuf[4];
             printf("H265 NALU:[%d]\n",nalu->TYPE);
         }
-        printf("data start:[0x%0x 0x%0x 0x%0x 0x%0x]\n",data[0],data[1],data[2],data[3]);
-        return mk_recv_next_media_data(client,m_szBuf,RECV_DATA_BUF_SIZE);
+        printf("data start:[0x%0x 0x%0x 0x%0x 0x%0x]\n",m_szBuf[0],m_szBuf[1],m_szBuf[2],m_szBuf[3]);
+        return mk_recv_next_media_data(client);
     }
     int32_t hanlde_lib_status(MR_CLIENT client,MR_CLIENT_STATUS status)
     {
@@ -116,7 +120,7 @@ public:
             if(NULL != m_hanlde) {
                 mk_destory_client_handle(m_hanlde);
                 m_hanlde = NULL;
-                delete this;
+                //delete this;
             }
         }
         else if(MR_CLIENT_STATUS_TIMEOUT == status) {
@@ -127,22 +131,36 @@ public:
         }
         return 0;
     }
+    char* handle_lib_buffer(MR_CLIENT client,uint32_t len,uint32_t& ulBufLen)
+    {
+        if(RECV_DATA_BUF_SIZE < len) {
+            return NULL;
+        }
+        ulBufLen = RECV_DATA_BUF_SIZE;
+        return &m_szBuf[0];
+    }
 public:
     static int32_t rtxp_client_handle_status(MR_CLIENT client,MR_CLIENT_STATUS status,void* ctx)
     {
         rtxp_client* pClient = (rtxp_client*)ctx;
         return pClient->hanlde_lib_status(client,status);
     }
-    static int32_t rtxp_client_handle_media(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,char* data,uint32_t len,void* ctx)
+    static int32_t rtxp_client_handle_media(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,uint32_t len,void* ctx)
     {
          rtxp_client* pClient = (rtxp_client*)ctx;
-         return pClient->handle_lib_media_data(client,dataInfo,data,len);
+         return pClient->handle_lib_media_data(client,dataInfo,len);
+    }
+    static char* rtxp_client_handle_buffer(MR_CLIENT client,uint32_t len,uint32_t& ulBufLen,void* ctx)
+    {
+        rtxp_client* pClient = (rtxp_client*)ctx;
+        return pClient->handle_lib_buffer(client,len,ulBufLen);
     }
 private:
     std::string m_strUrl;
     MR_CLIENT   m_hanlde;
     char        m_szBuf[RECV_DATA_BUF_SIZE];
     FILE*       m_WriteFd;
+    MEDIA_CALL_BACK m_media_cb;
 };
 
 static void lib_mk_log(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,va_list argp)

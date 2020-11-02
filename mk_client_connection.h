@@ -30,10 +30,10 @@ public:
     MK_CLIENT_TYPE client_type();
     MR_CLIENT_STATUS get_status();
     void     set_url(const char* pszUrl);
-    void     set_status_callback(handle_client_status cb,void* ctx);
-    int32_t  start_recv(char* buf,uint32_t len,handle_client_media cb,void* data);
+    void     set_status_callback(MEDIA_CALL_BACK* cb,void* ctx);
+    int32_t  start_recv();
     int32_t  stop_recv();
-    int32_t  do_next_recv(char* buf,uint32_t len);
+    int32_t  do_next_recv();
     void     set_index(uint32_t ulIdx);
     uint32_t get_index();
     void     get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo);
@@ -44,21 +44,19 @@ public:
     virtual void    check_client() = 0;
     virtual void    get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo) = 0;
 protected:
-    void    handle_connection_media(MR_MEDIA_TYPE enType,MR_MEDIA_CODE code,uint32_t pts);
+    void    handle_connection_media(MEDIA_DATA_INFO dataInfo,uint32_t len);
     void    handle_connection_status(MR_CLIENT_STATUS enStatus);
+    char*   handle_connection_databuf(uint32_t len,uint32_t& bufLen);
+    void    parse_media_info(MR_MEDIA_TYPE enType,uint32_t pts,char* buf,MEDIA_DATA_INFO &dataInfo);
 protected:
-    char*                m_recvBuf;
-    uint32_t             m_ulRecvBufLen;
-    uint32_t             m_ulRecvLen;
     std::string          m_strurl;
 private:
     uint32_t             m_ulIndex;
     MK_CLIENT_TYPE       m_enType;
     MR_CLIENT_STATUS     m_enStatus;
-    handle_client_media  m_MediaCallBack;
-    void*                m_pMediaCbData;
-    handle_client_status m_StatusCallBack;
-    void*                m_pStatusCbData;
+
+    MEDIA_CALL_BACK*     m_ClientCallBack;
+    void*                m_pClientCb;
 
     mk_client_timer      m_ClientCheckTimer;
 };

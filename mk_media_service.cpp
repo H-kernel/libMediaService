@@ -127,7 +127,7 @@ void mk_media_service::destory_rtsp_server(mk_rtsp_server* pServer)
     AS_DELETE(pServer);
     return;
 }
-mk_client_connection* mk_media_service::create_client(char* url,handle_client_status cb,void* ctx)
+mk_client_connection* mk_media_service::create_client(char* url,MEDIA_CALL_BACK* cb,void* ctx)
 {
     mk_client_connection* pClient   = NULL;
     mk_rtsp_connection* pRtspClient = NULL;
