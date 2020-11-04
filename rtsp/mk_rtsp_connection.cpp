@@ -248,7 +248,7 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
             return AS_ERROR_CODE_FAIL;
         }
 
-        m_rtpFrameOrganizer.updateLastRtpSeq(rtpPacket.GetSeqNum(),false);
+        //m_rtpFrameOrganizer.updateLastRtpSeq(rtpPacket.GetSeqNum(),false);
 
         MR_MEDIA_TYPE enType = MR_MEDIA_TYPE_INVALID;
         if(RTSP_PT_TYPE_PCMU == rtpPacket.GetPayloadType()) {
