@@ -112,7 +112,7 @@ void mk_rtsp_connection::handle_recv(void)
     if (iRecvLen <= 0)
     {
         stop();
-        handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
+        //handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
         MK_LOG(AS_LOG_WARNING,"rtsp connection recv data fail.");
         return;
     }

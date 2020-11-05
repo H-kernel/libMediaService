@@ -38,6 +38,7 @@ public:
         printf("rtxp_client.url:[%s]\n",m_strUrl.c_str());
 #ifdef _DUMP_WRITE
         m_WriteFd = NULL;
+        b_first   = true;
 #endif
         m_media_cb.ctx = this;
         m_media_cb.m_cb_status = rtxp_client_handle_status;
@@ -70,13 +71,6 @@ public:
             return;
         }
         mk_stop_client_handle(m_hanlde);
-#ifdef _DUMP_WRITE
-        if(NULL != m_WriteFd) {
-            fclose(m_WriteFd);
-            m_WriteFd = NULL;
-            printf("close file handle.");
-        }
-#endif
         return;
     }
     void get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &info)
@@ -90,11 +84,21 @@ public:
     int32_t handle_lib_media_data(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,uint32_t len)
     {
         if(dataInfo.type == MR_MEDIA_TYPE_H264) {
-#ifdef _DUMP_WRITE
-            fwrite(m_szBuf,len,1,m_WriteFd);
-#endif
             NALU_HEADER* nalu = (NALU_HEADER*)&m_szBuf[4];
             printf("H264 NALU:[%d]\n",nalu->TYPE);
+            if(b_first)
+            {
+                if(7 == nalu->TYPE)
+                {
+                    b_first =false;
+                }
+                else{
+                    return mk_recv_next_media_data(client);
+                }
+            }
+#ifdef _DUMP_WRITE
+            fwrite(m_szBuf,len,1,m_WriteFd);
+#endif              
         }
         else if(dataInfo.type == MR_MEDIA_TYPE_H265){
             fwrite(m_szBuf,len,1,m_WriteFd);
@@ -120,7 +124,13 @@ public:
             if(NULL != m_hanlde) {
                 mk_destory_client_handle(m_hanlde);
                 m_hanlde = NULL;
-                //delete this;
+#ifdef _DUMP_WRITE
+                if(NULL != m_WriteFd) {
+                    fclose(m_WriteFd);
+                    m_WriteFd = NULL;
+                    printf("close file handle.");
+                }
+#endif
             }
         }
         else if(MR_CLIENT_STATUS_TIMEOUT == status) {
@@ -161,6 +171,7 @@ private:
     char        m_szBuf[RECV_DATA_BUF_SIZE];
     FILE*       m_WriteFd;
     MEDIA_CALL_BACK m_media_cb;
+    bool   b_first;
 };
 
 static void lib_mk_log(const char* szFileName, int32_t lLine,int32_t lLevel, const char* format,va_list argp)
