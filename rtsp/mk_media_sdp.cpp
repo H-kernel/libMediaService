@@ -260,7 +260,7 @@ int32_t mk_media_sdp::decodeSdp(const std::string   &strSdp)
     bool bFirst = true;
     while (bRet && (AS_ERROR_CODE_OK == nRet))
     {
-        MK_LOG(AS_LOG_DEBUG,"parser line:%s", strBuff.c_str());
+        //MK_LOG(AS_LOG_DEBUG,"parser line:%s", strBuff.c_str());
         pszTmp = const_cast<char*> (strBuff.c_str());
         JUMP_SPACE(pszTmp);
 

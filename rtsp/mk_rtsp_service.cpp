@@ -88,6 +88,7 @@ void    mk_rtsp_service::free_rtp_rtcp_pair(mk_rtsp_udp_handle* pRtpHandle)
 char*   mk_rtsp_service::get_rtp_recv_buf()
 {
     if(m_RtpRecvBufList.empty()) {
+        MK_LOG(AS_LOG_ERROR,"get free recv buf fail,list is full");
         return NULL;
     }
 

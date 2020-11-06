@@ -14,7 +14,33 @@ mk_rtsp_connection::mk_rtsp_connection()
     m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]   = NULL;
     m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]    = NULL;
     m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]   = NULL;
-    resetRtspConnect();
+
+    as_init_url(&m_url);
+    m_url.port        = RTSP_DEFAULT_PORT;
+    m_ulRecvSize      = 0;
+    m_ulSeq           = 0;
+    m_Status          = RTSP_SESSION_STATUS_INIT;
+    m_bSetupTcp       = false;
+    if(NULL != m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]) {
+        mk_rtsp_service::instance().free_rtp_rtcp_pair(m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]);
+        m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]    = NULL;
+        m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]   = NULL;
+    }
+
+    if(NULL != m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]) {
+        mk_rtsp_service::instance().free_rtp_rtcp_pair(m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]);
+        m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]    = NULL;
+        m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]   = NULL;
+    }
+
+    m_rtpFrameOrganizer.init(this);
+
+    m_ucH264PayloadType = PT_TYPE_MAX;
+    m_ucH265PayloadType = PT_TYPE_MAX;
+
+    m_ulLastRecv = time(NULL);
+    m_ulAuthenTime = 0;
+    m_strAuthenticate = "";
 }
 
 mk_rtsp_connection::~mk_rtsp_connection()
@@ -65,7 +91,7 @@ int32_t mk_rtsp_connection::start()
 
 void mk_rtsp_connection::stop()
 {
-    resetRtspConnect();
+    //resetRtspConnect();
     setHandleRecv(AS_FALSE);
     /* unregister the network service */
     as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
@@ -293,6 +319,7 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
 }
 int32_t mk_rtsp_connection::handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len)
 {
+    mk_rtsp_service::instance().free_rtp_recv_buf(pData);
     return AS_ERROR_CODE_OK;
 }
 
@@ -814,7 +841,7 @@ int32_t mk_rtsp_connection::sendMsg(const char* pszData,uint32_t len)
 }
 void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
 {
-    MK_LOG(AS_LOG_DEBUG, "handleH264Frame rtp packet list:[%d].",rtpFrameList.size());
+    //MK_LOG(AS_LOG_DEBUG, "handleH264Frame rtp packet list:[%d].",rtpFrameList.size());
     mk_rtp_packet rtpPacket;
     uint32_t      rtpHeadLen;
     uint32_t      rtpPayloadLen;
@@ -867,7 +894,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
         }
 
         nalu_hdr = (H264_NALU_HEADER*)&pData[rtpHeadLen];
-        MK_LOG(AS_LOG_DEBUG, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
+        //MK_LOG(AS_LOG_DEBUG, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
         memcpy(&recBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
         enCode = MR_MEDIA_CODE_OK;
@@ -926,7 +953,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
 }
 void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
 {
-    MK_LOG(AS_LOG_DEBUG, "handleH265Frame rtp packet list:[%d].",rtpFrameList.size());
+    //MK_LOG(AS_LOG_DEBUG, "handleH265Frame rtp packet list:[%d].",rtpFrameList.size());
     mk_rtp_packet rtpPacket;
     uint32_t      rtpHeadLen;
     uint32_t      rtpPayloadLen;
@@ -979,7 +1006,7 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
 
 
         nalu_hdr = (H265_NALU_HEADER*)&pData[rtpHeadLen];
-        MK_LOG(AS_LOG_DEBUG, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
+        //MK_LOG(AS_LOG_DEBUG, "**handle nalu:[%d] rtpHeadLen[%d]pt:[%d].",nalu_hdr->TYPE,rtpHeadLen,rtpPacket.GetPayloadType());
         memcpy(&recBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
         m_ulRecvLen += rtpPayloadLen;
         enCode = MR_MEDIA_CODE_OK;
@@ -1120,32 +1147,7 @@ int32_t mk_rtsp_connection::checkFrameTotalDataLen(RTP_PACK_QUEUE &rtpFrameList)
 
 void mk_rtsp_connection::resetRtspConnect()
 {
-    as_init_url(&m_url);
-    m_url.port        = RTSP_DEFAULT_PORT;
-    m_ulRecvSize      = 0;
-    m_ulSeq           = 0;
-    m_Status          = RTSP_SESSION_STATUS_INIT;
-    m_bSetupTcp       = false;
-    if(NULL != m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]) {
-        mk_rtsp_service::instance().free_rtp_rtcp_pair(m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]);
-        m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]    = NULL;
-        m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]   = NULL;
-    }
-
-    if(NULL != m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]) {
-        mk_rtsp_service::instance().free_rtp_rtcp_pair(m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]);
-        m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]    = NULL;
-        m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]   = NULL;
-    }
-    m_rtpFrameOrganizer.release();
-    m_rtpFrameOrganizer.init(this);
-
-    m_ucH264PayloadType = PT_TYPE_MAX;
-    m_ucH265PayloadType = PT_TYPE_MAX;
-
-    m_ulLastRecv = time(NULL);
-    m_ulAuthenTime = 0;
-    m_strAuthenticate = "";
+    //m_rtpFrameOrganizer.release();
 }
 void mk_rtsp_connection::trimString(std::string& srcString) const
 {
