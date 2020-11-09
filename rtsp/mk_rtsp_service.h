@@ -48,6 +48,7 @@ private:
     int32_t create_rtp_recv_bufs();
     void    destory_rtp_recv_bufs();
 private:
+    as_mutex_t*               m_pMutex;
     uint16_t                  m_usUdpStartPort;
     uint32_t                  m_ulUdpPairCount;
     mk_rtsp_udp_handle**      m_pUdpRtpArray;

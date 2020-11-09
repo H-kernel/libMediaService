@@ -11,16 +11,29 @@ mk_rtsp_service::mk_rtsp_service()
     m_ulRtpBufCount       = RTP_RECV_BUF_COUNT;
     m_pUdpRtpArray        = NULL;
     m_pUdpRtcpArray       = NULL;
+    m_pMutex              = NULL;
 }
 
 mk_rtsp_service::~mk_rtsp_service()
 {
+    if(NULL != m_pMutex)
+    {
+        as_destroy_mutex(m_pMutex);
+        m_pMutex = NULL;
+    }
 }
 
 int32_t mk_rtsp_service::init()
 {
     int32_t nRet = AS_ERROR_CODE_OK;
     uint32_t i = 0;
+
+    m_pMutex = as_create_mutex();
+    if(NULL == m_pMutex)
+    {
+        MK_LOG(AS_LOG_WARNING,"create mutex fail.");
+        return AS_ERROR_CODE_FAIL;
+    }
 
     nRet = create_rtp_recv_bufs();
     if (AS_ERROR_CODE_OK != nRet)
@@ -87,21 +100,29 @@ void    mk_rtsp_service::free_rtp_rtcp_pair(mk_rtsp_udp_handle* pRtpHandle)
 }
 char*   mk_rtsp_service::get_rtp_recv_buf()
 {
+    as_mutex_lock(m_pMutex);
     if(m_RtpRecvBufList.empty()) {
         MK_LOG(AS_LOG_ERROR,"get free recv buf fail,list is full");
+        as_mutex_unlock(m_pMutex);
         return NULL;
     }
 
     char* buf = m_RtpRecvBufList.front();
     m_RtpRecvBufList.pop_front();
+
+    as_mutex_unlock(m_pMutex);
     return buf;
 }
 void    mk_rtsp_service::free_rtp_recv_buf(char* buf)
 {
+    as_mutex_lock(m_pMutex);
     if(NULL == buf) {
+        as_mutex_unlock(m_pMutex);
         return;
     }
     m_RtpRecvBufList.push_back(buf);
+
+    as_mutex_unlock(m_pMutex);
     return;
 }
 int32_t mk_rtsp_service::create_rtp_rtcp_udp_pairs()
@@ -178,9 +199,11 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
 
 int32_t mk_rtsp_service::create_rtp_recv_bufs()
 {
+    as_mutex_lock(m_pMutex);
     MK_LOG(AS_LOG_INFO,"create rtp recv buf begin.");
     if(0 == m_ulRtpBufCount) {
         MK_LOG(AS_LOG_ERROR,"there is no init rtp recv buf arguments,size:[%d] count:[%d].",RTP_RECV_BUF_SIZE,m_ulRtpBufCount);
+        as_mutex_unlock(m_pMutex);
         return AS_ERROR_CODE_FAIL;
     }
     char* pBuf = NULL;
@@ -188,15 +211,18 @@ int32_t mk_rtsp_service::create_rtp_recv_bufs()
         pBuf = AS_NEW(pBuf,RTP_RECV_BUF_SIZE);
         if(NULL == pBuf) {
             MK_LOG(AS_LOG_ERROR,"create the rtp recv buf fail,size:[%d] index:[%d].",RTP_RECV_BUF_SIZE,i);
+            as_mutex_unlock(m_pMutex);
             return AS_ERROR_CODE_FAIL;
         }
         m_RtpRecvBufList.push_back(pBuf);
     }
     MK_LOG(AS_LOG_INFO,"create rtp recv buf end.");
+    as_mutex_unlock(m_pMutex);
     return AS_ERROR_CODE_OK;
 }
 void    mk_rtsp_service::destory_rtp_recv_bufs()
 {
+    as_mutex_lock(m_pMutex);
     MK_LOG(AS_LOG_INFO,"destory rtp recv buf begin.");
     char* pBuf = NULL;
     while(0 <m_RtpRecvBufList.size()) {
@@ -208,5 +234,6 @@ void    mk_rtsp_service::destory_rtp_recv_bufs()
         AS_DELETE(pBuf,MULTI);
     }
     MK_LOG(AS_LOG_INFO,"destory rtp recv buf end.");
+    as_mutex_unlock(m_pMutex);
     return;
 }
