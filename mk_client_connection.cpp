@@ -112,7 +112,7 @@ void    mk_client_connection::parse_media_info(MR_MEDIA_TYPE enType,uint32_t pts
     if(MR_MEDIA_TYPE_H264 == enType)
     {
         int nalType = (c & 0x1f);
-        if(5 == nalType)
+        if((7 == nalType)||(8 == nalType)||(6 == nalType)||(5 == nalType))
         {
             isKeyFrame = 1;
         }
