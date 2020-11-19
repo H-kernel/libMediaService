@@ -29,7 +29,7 @@ public:
         return obj_mk_rtsp_service;
     }
     virtual ~mk_rtsp_service();  
-    int32_t init();
+    int32_t init(uint32_t MaxClient,uint32_t RtpBufCountPerClient);
     void    release();
 public:
     void    set_rtp_rtcp_udp_port(uint16_t udpPort,uint32_t count);
@@ -45,7 +45,7 @@ private:
     mk_rtsp_service();
     int32_t create_rtp_rtcp_udp_pairs();
     void    destory_rtp_rtcp_udp_pairs();
-    int32_t create_rtp_recv_bufs();
+    int32_t create_rtp_recv_bufs(uint32_t MaxClient,uint32_t RtpBufCountPerClient);
     void    destory_rtp_recv_bufs();
 private:
     as_mutex_t*               m_pMutex;

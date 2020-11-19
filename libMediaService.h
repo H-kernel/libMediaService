@@ -82,7 +82,7 @@ extern "C"
 #endif
 #endif
     /* init the media  library */
-    MR_API int32_t   mk_lib_init(uint32_t EvnCount,mk_log log);
+    MR_API int32_t   mk_lib_init(uint32_t EvnCount,mk_log log,uint32_t MaxClient,uint32_t RtpBufCountPerClient);
     /* release the media  library */
     MR_API void      mk_lib_release();
     /* create a media server handle */

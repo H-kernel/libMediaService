@@ -193,7 +193,7 @@ int main(int argc,char* argv[])
         return -1;
     }
 
-    if(0 != mk_lib_init(2,lib_mk_log)) {
+    if(0 != mk_lib_init(2,lib_mk_log,600,100)) {
         printf("init lib fail.\n");
         return -1;
     }

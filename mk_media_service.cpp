@@ -17,7 +17,7 @@ mk_media_service::~mk_media_service()
 {
 }
 
-int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
+int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient,uint32_t RtpBufCountPerClient)
 {
     int32_t nRet = AS_ERROR_CODE_OK;
     uint32_t i = 0;
@@ -59,12 +59,12 @@ int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
 
     MK_LOG(AS_LOG_INFO,"init the network module success.");
 
-    nRet = create_frame_recv_bufs();
-    if (AS_ERROR_CODE_OK != nRet)
-    {
-        MK_LOG(AS_LOG_WARNING,"create frame recv bufs fail.");
-        return AS_ERROR_CODE_FAIL;
-    }
+    // nRet = create_frame_recv_bufs();
+    // if (AS_ERROR_CODE_OK != nRet)
+    // {
+    //     MK_LOG(AS_LOG_WARNING,"create frame recv bufs fail.");
+    //     return AS_ERROR_CODE_FAIL;
+    // }
 
     MK_LOG(AS_LOG_INFO,"create frame recv bufs success.");
 
@@ -80,12 +80,12 @@ int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient)
 
     MK_LOG(AS_LOG_INFO,"run the timer success.");
     
-    return mk_rtsp_service::instance().init();
+    return mk_rtsp_service::instance().init(MaxClient,RtpBufCountPerClient);
 }
 
 void mk_media_service::release()
 {
-    destory_frame_recv_bufs();
+    //destory_frame_recv_bufs();
     as_network_svr* pNetWork = NULL;
     for(uint32_t i = 0;i < m_ulEvnCount;i++) {
         pNetWork = m_NetWorkArray[i];

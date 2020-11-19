@@ -64,7 +64,7 @@ public:
         return obj_mk_media_service;
     }
     virtual ~mk_media_service();  
-    int32_t init(uint32_t EvnCount,uint32_t MaxClient);
+    int32_t init(uint32_t EvnCount,uint32_t MaxClient,uint32_t RtpBufCountPerClient);
     void    release();
     mk_rtsp_server* create_rtsp_server(uint16_t port,rtsp_server_request cb,void* ctx);
     void destory_rtsp_server(mk_rtsp_server* pServer);

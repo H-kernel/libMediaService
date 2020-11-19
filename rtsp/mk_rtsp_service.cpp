@@ -8,7 +8,7 @@ mk_rtsp_service::mk_rtsp_service()
 {
     m_usUdpStartPort      = RTP_RTCP_START_PORT;
     m_ulUdpPairCount      = RTP_RTCP_PORT_COUNT;
-    m_ulRtpBufCount       = RTP_RECV_BUF_COUNT;
+    m_ulRtpBufCount       = 0;
     m_pUdpRtpArray        = NULL;
     m_pUdpRtcpArray       = NULL;
     m_pMutex              = NULL;
@@ -23,7 +23,7 @@ mk_rtsp_service::~mk_rtsp_service()
     }
 }
 
-int32_t mk_rtsp_service::init()
+int32_t mk_rtsp_service::init(uint32_t MaxClient,uint32_t RtpBufCountPerClient)
 {
     int32_t nRet = AS_ERROR_CODE_OK;
     uint32_t i = 0;
@@ -35,7 +35,7 @@ int32_t mk_rtsp_service::init()
         return AS_ERROR_CODE_FAIL;
     }
 
-    nRet = create_rtp_recv_bufs();
+    nRet = create_rtp_recv_bufs(MaxClient,RtpBufCountPerClient);
     if (AS_ERROR_CODE_OK != nRet)
     {
         MK_LOG(AS_LOG_WARNING,"create rtp recv bufs fail.");
@@ -197,10 +197,11 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
     return;
 }
 
-int32_t mk_rtsp_service::create_rtp_recv_bufs()
+int32_t mk_rtsp_service::create_rtp_recv_bufs(uint32_t MaxClient,uint32_t RtpBufCountPerClient)
 {
     as_mutex_lock(m_pMutex);
     MK_LOG(AS_LOG_INFO,"create rtp recv buf begin.");
+    m_ulRtpBufCount = MaxClient*RtpBufCountPerClient;
     if(0 == m_ulRtpBufCount) {
         MK_LOG(AS_LOG_ERROR,"there is no init rtp recv buf arguments,size:[%d] count:[%d].",RTP_RECV_BUF_SIZE,m_ulRtpBufCount);
         as_mutex_unlock(m_pMutex);
@@ -216,7 +217,7 @@ int32_t mk_rtsp_service::create_rtp_recv_bufs()
         }
         m_RtpRecvBufList.push_back(pBuf);
     }
-    MK_LOG(AS_LOG_INFO,"create rtp recv buf end.");
+    MK_LOG(AS_LOG_INFO,"create rtp recv buf end.total rtp buf count[%d]",m_ulRtpBufCount);
     as_mutex_unlock(m_pMutex);
     return AS_ERROR_CODE_OK;
 }
