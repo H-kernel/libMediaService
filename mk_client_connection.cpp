@@ -116,7 +116,7 @@ void    mk_client_connection::parse_media_info(MR_MEDIA_TYPE enType,uint32_t pts
         {
             isKeyFrame = 1;
         }
-        pts /= 90;
+        //pts /= 90;
     }
     else if(MR_MEDIA_TYPE_H265 == enType)
     {
@@ -125,12 +125,12 @@ void    mk_client_connection::parse_media_info(MR_MEDIA_TYPE enType,uint32_t pts
         {
             isKeyFrame = 1;
         }     
-        pts /= 90;   
+        //pts /= 90;   
     }    
-    else if((MR_MEDIA_TYPE_G711A == enType)||(MR_MEDIA_TYPE_G711U == enType))
-    {
-        pts /= 8;   
-    }
+    // else if((MR_MEDIA_TYPE_G711A == enType)||(MR_MEDIA_TYPE_G711U == enType))
+    // {
+    //     pts /= 8;   
+    // }
 
     dataInfo.type = enType;            
     dataInfo.isKeyFrame = isKeyFrame;
