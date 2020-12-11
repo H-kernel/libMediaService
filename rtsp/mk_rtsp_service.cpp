@@ -182,13 +182,13 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
 
         pRtpHandle = AS_NEW(pRtpHandle);
         if(NULL != pRtpHandle) {
-            pRtpHandle->close();
+			pRtpHandle->stop_handle();
             AS_DELETE(pRtpHandle);
             m_pUdpRtpArray[i] = NULL;
         }
         pRtcpHandle = AS_NEW(pRtcpHandle);
         if(NULL != pRtcpHandle) {
-            pRtcpHandle->close();
+			pRtcpHandle->stop_handle();
             AS_DELETE(pRtcpHandle);
              m_pUdpRtcpArray[i] = NULL;
         }

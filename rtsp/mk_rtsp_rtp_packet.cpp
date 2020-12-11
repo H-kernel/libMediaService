@@ -2,7 +2,11 @@
 #include "as.h"
 #include "mk_rtsp_rtp_packet.h"
 #include "mk_media_common.h"
+#if AS_APP_OS == AS_OS_LINUX
+#include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
 
 mk_rtp_packet::mk_rtp_packet()
 {

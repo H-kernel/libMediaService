@@ -9,6 +9,7 @@
 #define RTSPPACKET_H_
 
 #include <string>
+#include "as.h"
 
 #define RTSP_VERSION             string("RTSP/1.0")
 #define RTSP_END_LINE            string("\r\n")
@@ -316,6 +317,8 @@ private:
     std::string uint32ToStr(uint32_t num) const;
 
     std::string double2Str(double num) const;
+
+	int32_t strparse2time(std::string& time, uint32_t& ulTime) const;
 
 private:
     static std::string  m_strRtspMethods[];

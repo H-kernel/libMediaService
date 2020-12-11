@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+*.db
+
+build/win32/libMediaService/.vs/*
+*.ipch
+*.tlog
+*.log
+*.idb
+*.pdb
+*.sdf
+*.opensdf
+build/win32/ReadMe.txt

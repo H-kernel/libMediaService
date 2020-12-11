@@ -1,7 +1,7 @@
 #ifndef __LIB_MEDIA_RTSP_H__
 #define __LIB_MEDIA_RTSP_H__
 #ifdef WIN32
-#ifdef LIBMEDIARTSP_EXPORTS
+#ifdef LIBMEDIASERVICE_EXPORTS
 #define MR_API __declspec(dllexport)
 #else
 #define MR_API __declspec(dllimport)

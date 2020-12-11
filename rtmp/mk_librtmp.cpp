@@ -12057,7 +12057,7 @@ typedef void* srs_hijack_io_t;
     
     // for inet helpers.
     typedef int socklen_t;
-    const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+	const char *mk_inet_ntop(int af, const void *src, char *dst, socklen_t size);
     
     // for mkdir().
     #include<direct.h>
@@ -13027,7 +13027,11 @@ string srs_dns_resolve(string host)
     char ipv4[16];
     memset(ipv4, 0, sizeof(ipv4));
     for (int i = 0; i < answer->h_length; i++) {
-        inet_ntop(AF_INET, answer->h_addr_list[i], ipv4, sizeof(ipv4));
+#ifdef _WIN32
+        mk_inet_ntop(AF_INET, answer->h_addr_list[i], ipv4, sizeof(ipv4));
+#else
+		inet_ntop(AF_INET, answer->h_addr_list[i], ipv4, sizeof(ipv4));
+#endif
         break;
     }
     
@@ -33641,14 +33645,14 @@ struct Context
     static char *inet_ntop6(const u_char *src, char *dst, socklen_t size);
     
     /* char *
-     * inet_ntop(af, src, dst, size)
+     * mk_inet_ntop(af, src, dst, size)
      *    convert a network format address to presentation format.
      * return:
      *    pointer to presentation format address (`dst'), or NULL (see errno).
      * author:
      *    Paul Vixie, 1996.
      */
-    const char* inet_ntop(int af, const void *src, char *dst, socklen_t size)
+	const char* mk_inet_ntop(int af, const void *src, char *dst, socklen_t size)
     {
         switch (af) {
         case AF_INET:

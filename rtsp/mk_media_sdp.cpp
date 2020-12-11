@@ -4,11 +4,14 @@
  *  Created on: 2016-5-20
  *      Author:
  */
+#include <stdlib.h>
+#include <stdio.h>
 #include <sstream>
 #include <string.h>
 #include "mk_media_common.h"
 #include "mk_media_sdp.h"
 #include "mk_media_common.h"
+
 
 using namespace std;
 
@@ -708,7 +711,7 @@ bool mk_media_sdp::getNextLine(const std::string &strSdpMsg,
 
 int32_t mk_media_sdp::parseConnDesc(char *pszBuff)
 {
-    char *pszConnDesc = strsep(&pszBuff, " ");
+	char *pszConnDesc = as_strsep(&pszBuff, " ");
     if ((NULL == pszConnDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no Connect type.");
@@ -716,7 +719,7 @@ int32_t mk_media_sdp::parseConnDesc(char *pszBuff)
     }
 
     JUMP_SPACE(pszBuff);
-    pszConnDesc = strsep(&pszBuff, " ");
+    pszConnDesc = as_strsep(&pszBuff, " ");
     if ((NULL == pszConnDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no IP Type.");
@@ -752,7 +755,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
         return AS_ERROR_CODE_OK;
     }
 
-    char *pszMediaDesc = strsep(&pszBuff, " ");
+	char *pszMediaDesc = as_strsep(&pszBuff, " ");
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no media type.");
@@ -760,7 +763,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     }
 
     JUMP_SPACE(pszBuff);
-    pszMediaDesc = strsep(&pszBuff, " ");
+    pszMediaDesc = as_strsep(&pszBuff, " ");
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no port.");
@@ -768,7 +771,7 @@ int32_t mk_media_sdp::parseMediaDesc(char *pszBuff,SDP_MEDIA_INFO*& pMediaInfo)
     }
 
     JUMP_SPACE(pszBuff);
-    pszMediaDesc = strsep(&pszBuff, " ");
+    pszMediaDesc = as_strsep(&pszBuff, " ");
     if ((NULL == pszMediaDesc) || (NULL == pszBuff))
     {
         MK_LOG(AS_LOG_WARNING,"parse sdp media info fail, no RTP/AVP field.");
@@ -917,7 +920,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
     {
         if (0 == strncmp(pszBuff, STR_SDP_RTPMAP.c_str(), STR_SDP_RTPMAP.length()))
         {
-            char *pszProfile = strsep(&pszBuff, " ");
+            char *pszProfile = as_strsep(&pszBuff, " ");
             if ((NULL == pszProfile) || (NULL == pszBuff))
             {
                 MK_LOG(AS_LOG_WARNING,"parse sdp rtpmap info fail.");
@@ -936,7 +939,7 @@ int32_t mk_media_sdp::parseMediaAttributes(char *pszBuff,SDP_MEDIA_INFO* pMediaI
     {
         if (0 == strncmp(pszBuff, STR_SDP_FMTP.c_str(), STR_SDP_FMTP.length()))
         {
-            char *pszProfile = strsep(&pszBuff, " ");
+            char *pszProfile = as_strsep(&pszBuff, " ");
             if ((NULL == pszProfile) || (NULL == pszBuff))
             {
                 MK_LOG(AS_LOG_WARNING,"parse sdp fmtp info fail.");

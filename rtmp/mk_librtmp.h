@@ -68,7 +68,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     };
 #endif
 #ifndef _WIN32
+#ifndef SOCKET
     #define SOCKET int
+#endif
 #endif
 #define SRS_INVALID_FD -1
 #include <sys/types.h>
@@ -1075,8 +1077,10 @@ typedef void* srs_hijack_io_t;
     #define PRId64 "lld"
     
     // for inet helpers.
+#ifndef socklen_t
     typedef int socklen_t;
-    const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+#endif
+    const char *mk_inet_ntop(int af, const void *src, char *dst, socklen_t size);
     
     // for mkdir().
     #include<direct.h>

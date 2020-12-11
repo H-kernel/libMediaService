@@ -4,6 +4,8 @@
 #include <list>
 #include "as.h"
 
+#define MK_RTSP_UDP_DUMMY_SIZE 1500
+
 typedef enum _enMK_RTSP_UDP_HANDLE_TYPE
 {
     MK_RTSP_UDP_VIDEO_RTP_HANDLE    = 0,
@@ -22,9 +24,9 @@ public:
     virtual int32_t handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len) = 0;
 };
 
-#define MK_RTSP_UDP_DUMMY_SIZE 1500
 
-class mk_rtsp_udp_handle: public as_udp_sock_handle
+
+class mk_rtsp_udp_handle : public as_udp_sock_handle
 {
 public:
     mk_rtsp_udp_handle();
@@ -33,8 +35,8 @@ public:
     void     init(uint32_t idx,uint16_t port);
     uint32_t get_index();
     uint16_t get_port();
-    int32_t  open(MK_RTSP_HANDLE_TYPE type,mk_rtsp_rtp_udp_observer* pObserver);
-    void     close();
+	int32_t  start_handle(MK_RTSP_HANDLE_TYPE type, mk_rtsp_rtp_udp_observer* pObserver);
+    void     stop_handle();
 public:
     /* override as_udp_sock_handle */
     virtual void handle_recv(void);

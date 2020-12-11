@@ -5,11 +5,14 @@
  *      Author:
  */
 #include <string.h>
+#include <time.h>
+#include "mk_rtsp_packet.h"
+#include "mk_media_common.h"
+#if AS_APP_OS == AS_OS_LINUX
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "mk_rtsp_packet.h"
-#include "mk_media_common.h"
+#endif
 using namespace std;
 uint32_t mk_rtsp_packet::m_unRtspCseq = 1;
 
@@ -719,6 +722,53 @@ std::string mk_rtsp_packet::double2Str(double num) const
     return szData;
 }
 
+int32_t mk_rtsp_packet::strparse2time(std::string& time, uint32_t& ulTime) const
+{
+	struct tm rangeTm;
+	memset(&rangeTm, 0x0, sizeof(rangeTm));
+#if AS_APP_OS == AS_OS_LINUX
+	char* pRet = strptime(time.c_str(), "%Y%m%dT%H%M%S", &rangeTm);
+	if (NULL == pRet)
+	{
+		MK_LOG(AS_LOG_WARNING, "get range time fail, start time format invalid in [%s].",
+			m_strRange.c_str());
+		return AS_ERROR_CODE_FAIL;
+	}
+#elif AS_APP_OS == AS_OS_WIN32
+	const char *pch = time.c_str();
+	char tmpstr[8];
+	memcpy(tmpstr, pch, 4);
+	tmpstr[4] = '\0';
+	rangeTm.tm_year = atoi(tmpstr) - 1900;
+	pch += 4;
+
+	memcpy(tmpstr, pch, 2);
+	tmpstr[2] = '\0';
+	rangeTm.tm_mon = atoi(tmpstr) - 1;
+	pch += 2;
+
+	memcpy(tmpstr, pch, 2);
+	tmpstr[2] = '\0';
+	rangeTm.tm_mday = atoi(tmpstr);
+	pch += 2;
+
+	memcpy(tmpstr, pch, 2);
+	tmpstr[2] = '\0';
+	rangeTm.tm_hour = atoi(tmpstr);
+	pch += 2;
+
+	memcpy(tmpstr, pch, 2);
+	tmpstr[2] = '\0';
+	rangeTm.tm_min = atoi(tmpstr);
+	pch += 2;
+
+	memcpy(tmpstr, pch, 2);
+	tmpstr[2] = '\0';
+	rangeTm.tm_sec = atoi(tmpstr);
+#endif
+	ulTime = (uint32_t)mktime(&rangeTm);
+	return AS_ERROR_CODE_OK;
+}
 
 uint32_t mk_rtsp_packet::getCseq() const
 {
@@ -979,29 +1029,23 @@ int32_t mk_rtsp_packet::getRangeTime(uint32_t &unTimeType,
         trimString(strStartTime);
         trimString(strStopTime);
 
-        struct tm rangeTm;
-        memset(&rangeTm, 0x0, sizeof(rangeTm));
-        char* pRet = strptime(strStartTime.c_str(), "%Y%m%dT%H%M%S", &rangeTm);
-        if (NULL == pRet)
+		if (AS_ERROR_CODE_OK == strparse2time(strStartTime, unStartTime))
         {
             MK_LOG(AS_LOG_WARNING,"get range time fail, start time format invalid in [%s].",
                     m_strRange.c_str());
             return AS_ERROR_CODE_FAIL;
         }
-        unStartTime = (uint32_t) mktime(&rangeTm);
+
         unStopTime  = 0;
 
         if ("" != strStopTime)
         {
-            memset(&rangeTm, 0x0, sizeof(rangeTm));
-            pRet = strptime(strStopTime.c_str(), "%Y%m%dT%H%M%S", &rangeTm);
-            if (NULL == pRet)
+			if (AS_ERROR_CODE_OK == strparse2time(strStopTime, unStopTime))
             {
                 MK_LOG(AS_LOG_WARNING,"get range time fail, stop time format invalid in [%s].",
                         m_strRange.c_str());
                 return AS_ERROR_CODE_FAIL;
             }
-            unStopTime = (uint32_t) mktime(&rangeTm);
         }
 
         return AS_ERROR_CODE_OK;
@@ -1051,11 +1095,18 @@ void mk_rtsp_packet::setRangeTime(uint32_t unTimeType,
     if (ABSOLUTE_TIME == unTimeType)
     {
         time_t rangeTime = (time_t) unStartTime;
-        struct tm tmv;
-
-        (void) localtime_r(&rangeTime, &tmv);
-        (void) snprintf(strTime, 32, "%04d%02d%02dT%02d%02d%02dZ", tmv.tm_year + 1900,
-                tmv.tm_mon + 1, tmv.tm_mday, tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
+        
+#if AS_APP_OS == AS_OS_LINUX
+		struct tm tmv;
+		(void) localtime_r(&rangeTime, &tmv);
+		(void)snprintf(strTime, 32, "%04d%02d%02dT%02d%02d%02dZ", tmv.tm_year + 1900,
+			tmv.tm_mon + 1, tmv.tm_mday, tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
+#elif AS_APP_OS == AS_OS_WIN32
+		struct tm* tmv = localtime(&rangeTime);
+		(void)snprintf(strTime, 32, "%04d%02d%02dT%02d%02d%02dZ", tmv->tm_year + 1900,
+			tmv->tm_mon + 1, tmv->tm_mday, tmv->tm_hour, tmv->tm_min, tmv->tm_sec);
+#endif
+        
 
         m_strRange = "clock=";
         m_strRange += strTime;
@@ -1064,10 +1115,16 @@ void mk_rtsp_packet::setRangeTime(uint32_t unTimeType,
         if (0 != unStopTime)
         {
             rangeTime = (time_t) unStopTime;
-            (void) localtime_r(&rangeTime, &tmv);
-            (void) snprintf(strTime, 32, "%04d%02d%02dT%02d%02d%02dZ", tmv.tm_year + 1900,
-                    tmv.tm_mon + 1, tmv.tm_mday, tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
-
+#if AS_APP_OS == AS_OS_LINUX
+			struct tm tmv;
+			(void)localtime_r(&rangeTime, &tmv);
+			(void)snprintf(strTime, 32, "%04d%02d%02dT%02d%02d%02dZ", tmv.tm_year + 1900,
+				tmv.tm_mon + 1, tmv.tm_mday, tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
+#elif AS_APP_OS == AS_OS_WIN32
+			struct tm* tmv = localtime(&rangeTime);
+			(void)snprintf(strTime, 32, "%04d%02d%02dT%02d%02d%02dZ", tmv->tm_year + 1900,
+				tmv->tm_mon + 1, tmv->tm_mday, tmv->tm_hour, tmv->tm_min, tmv->tm_sec);
+#endif
             m_strRange += strTime;
         }
         return;

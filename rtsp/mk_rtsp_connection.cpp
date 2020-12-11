@@ -4,9 +4,13 @@
 #include "mk_rtsp_packet.h"
 #include "mk_media_service.h"
 #include "mk_rtsp_service.h"
-#include <arpa/inet.h>
 #include "mk_media_common.h"
 #include "mk_rtsp_rtp_packet.h"
+#if AS_APP_OS == AS_OS_LINUX
+#include <arpa/inet.h>
+#elif AS_APP_OS == AS_OS_WIN32
+#include <Ws2tcpip.h>
+#endif
 
 mk_rtsp_connection::mk_rtsp_connection()
 {
@@ -62,7 +66,13 @@ int32_t mk_rtsp_connection::start()
     }
     as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
     struct in_addr sin_addr;    /* AF_INET */
-    inet_aton((char*)&m_url.host[0],&sin_addr);
+#if AS_APP_OS == AS_OS_LINUX
+	inet_aton((char*)&m_url.host[0],&sin_addr);
+#elif AS_APP_OS == AS_OS_WIN32
+	inet_pton(AF_INET, (char*)&m_url.host[0], &sin_addr);
+#endif
+    
+	
 
     remote.m_ulIpAddr = sin_addr.s_addr;
     if(0 == m_url.port) {
@@ -592,10 +602,10 @@ int32_t mk_rtsp_connection::sendRtspSetupReq(SDP_MEDIA_INFO* info)
             return AS_ERROR_CODE_FAIL;
         }
 
-        if(AS_ERROR_CODE_OK != pRtpHandle->open(rtpType,this)) {
+		if (AS_ERROR_CODE_OK != pRtpHandle->start_handle(rtpType, this)) {
             return AS_ERROR_CODE_FAIL;
         }
-        if(AS_ERROR_CODE_OK != pRtcpHandle->open(rtpType,this)) {
+		if (AS_ERROR_CODE_OK != pRtcpHandle->start_handle(rtpType, this)) {
             return AS_ERROR_CODE_FAIL;
         }
 
@@ -1106,7 +1116,7 @@ void mk_rtsp_connection::handleOtherFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rt
             MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
             return ;
         }
-
+		rtpHeadLen = rtpPacket.GetHeadLen();
         pData = &pData[rtpHeadLen];
         rtpPayloadLen = DataLen - rtpHeadLen;
 

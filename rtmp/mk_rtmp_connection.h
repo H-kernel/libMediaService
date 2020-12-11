@@ -1,6 +1,6 @@
 #ifndef __MK_RTMP_CONNECTION_INCLUDE_H__
 #define __MK_RTMP_CONNECTION_INCLUDE_H__
-#include "as.h"
+#include "as_network_svr.h"
 #include "mk_librtmp.h"
 #include "mk_client_connection.h"
 

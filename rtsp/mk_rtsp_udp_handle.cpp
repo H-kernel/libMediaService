@@ -31,7 +31,7 @@ uint16_t mk_rtsp_udp_handle::get_port()
 {
     return m_usPort;
 }
-int32_t mk_rtsp_udp_handle::open(MK_RTSP_HANDLE_TYPE type,mk_rtsp_rtp_udp_observer* pObserver)
+int32_t mk_rtsp_udp_handle::start_handle(MK_RTSP_HANDLE_TYPE type, mk_rtsp_rtp_udp_observer* pObserver)
 {
     m_enType      = type;
     m_RtpObserver = pObserver;
@@ -46,7 +46,7 @@ int32_t mk_rtsp_udp_handle::open(MK_RTSP_HANDLE_TYPE type,mk_rtsp_rtp_udp_observ
     setHandleRecv(AS_TRUE);
     return AS_ERROR_CODE_OK;
 }
-void mk_rtsp_udp_handle::close()
+void mk_rtsp_udp_handle::stop_handle()
 {
     if(!m_bRunning) {
         return;
