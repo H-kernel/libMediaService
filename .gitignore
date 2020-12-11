@@ -41,3 +41,4 @@ build/win32/libMediaService/.vs/*
 *.sdf
 *.opensdf
 build/win32/ReadMe.txt
+*.exp
