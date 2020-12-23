@@ -150,8 +150,8 @@ void mk_rtsp_connection::handle_recv(void)
     iRecvLen = this->recv((char*)&m_RecvTcpBuf[m_ulRecvSize],&peer,iRecvLen,enAsyncOp);
     if (iRecvLen <= 0)
     {
-        stop_recv();
-        //handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
+        //stop_recv();
+        handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
         MK_LOG(AS_LOG_WARNING,"rtsp connection recv data fail.");
         return;
     }
@@ -167,7 +167,8 @@ void mk_rtsp_connection::handle_recv(void)
                                      m_ulRecvSize - processedSize);
         if (nSize < 0) {
             MK_LOG(AS_LOG_WARNING,"rtsp connection process recv data fail, close handle. ");
-            stop_recv();
+            handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
+            //stop_recv();
             return;
         }
 
