@@ -37,12 +37,14 @@ public:
     void     set_index(uint32_t ulIdx);
     uint32_t get_index();
     void     get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo);
+    void     get_client_rtsp_sdp_info(char* info);
 public:
     virtual int32_t start() = 0;
     virtual void    stop() = 0;
     virtual int32_t recv_next() = 0;
     virtual void    check_client() = 0;
     virtual void    get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo) = 0;
+    virtual void    get_rtsp_sdp_info(char* info) = 0;
 protected:
     void    handle_connection_media(MEDIA_DATA_INFO dataInfo,uint32_t len);
     void    handle_connection_status(MR_CLIENT_STATUS enStatus);

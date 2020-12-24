@@ -107,6 +107,8 @@ extern "C"
     MR_API void      mk_set_rtsp_udp_ports(uint16_t udpstart,uint32_t count);
     /* get a media rtsp client/server rtp packet stat info */
     MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_INFO &statinfo);
+    /* get a media rtsp client sdp info */
+    MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo);
 #ifdef __cplusplus
 #if __cplusplus
 }

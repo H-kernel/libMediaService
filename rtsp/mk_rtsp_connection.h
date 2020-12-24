@@ -54,6 +54,7 @@ public:
     virtual void    check_client();
     virtual void    set_rtp_over_tcp();
     virtual void    get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo);
+    virtual void    get_rtsp_sdp_info(char* info);
 public:
     /* override */
     virtual void handle_recv(void);
@@ -115,6 +116,7 @@ private:
     as_digest_t                  m_Authen;
     uint32_t                     m_ulAuthenTime;
     std::string                  m_strAuthenticate;
+    std::string                  m_strSdpInfo;
 };
 
 class mk_rtsp_server : public as_tcp_server_handle

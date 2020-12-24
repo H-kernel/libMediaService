@@ -84,3 +84,10 @@ MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_IN
     pClient->get_client_rtp_stat_info(statinfo);
     return;
 }
+/* get a media rtsp client sdp info */
+MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo)
+{
+    mk_client_connection* pClient = (mk_client_connection*)client;
+    pClient->get_client_rtsp_sdp_info(sdpInfo);
+    return;
+}

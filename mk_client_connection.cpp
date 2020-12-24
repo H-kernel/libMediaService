@@ -78,7 +78,11 @@ void mk_client_connection::get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &statin
     this->get_rtp_stat_info(statinfo);
     return;
 }
-
+void mk_client_connection::get_client_rtsp_sdp_info(char* info)
+{
+    this->get_rtsp_sdp_info(info);
+    return;
+}
 void    mk_client_connection::handle_connection_media(MEDIA_DATA_INFO dataInfo,uint32_t len)
 {
     if((NULL == m_ClientCallBack) ||(NULL == m_ClientCallBack->m_cb_status)) {

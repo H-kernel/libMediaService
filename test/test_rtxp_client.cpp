@@ -81,6 +81,14 @@ public:
         mk_get_client_rtp_stat_info(m_hanlde,info);
         return;
     }
+    void get_client_rtsp_sdp_info(char* info)
+    {
+        if(NULL == m_hanlde) {
+            return;
+        }
+        mk_get_client_rtsp_sdp_info(m_hanlde,info);
+        return;
+    }
     int32_t handle_lib_media_data(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,uint32_t len)
     {
         if(dataInfo.type == MR_MEDIA_TYPE_H264) {
@@ -115,6 +123,9 @@ public:
         }
         else if(MR_CLIENT_STATUS_HANDSHAKE == status) {
             printf("handshake,url:[%s]\n",m_strUrl.c_str());
+            std::string str = "";
+            this->get_client_rtsp_sdp_info((char*)str.c_str());
+            printf("handshake,sdp info:[%s]\n",str.c_str());
         }
         else if(MR_CLIENT_STATUS_RUNNING == status) {
             printf("running,url:[%s]\n",m_strUrl.c_str());
@@ -222,7 +233,7 @@ int main(int argc,char* argv[])
     uint32_t count = 0;
     while(true) {
         count ++;
-        if(count < 32)
+        if(count < 10)
         {
             std::list<rtxp_client*>::iterator iter = clientList.begin();
             for(;iter != clientList.end();++iter) {

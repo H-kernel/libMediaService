@@ -45,6 +45,7 @@ mk_rtsp_connection::mk_rtsp_connection()
     m_ulLastRecv = time(NULL);
     m_ulAuthenTime = 0;
     m_strAuthenticate = "";
+    m_strSdpInfo = "";
 }
 
 mk_rtsp_connection::~mk_rtsp_connection()
@@ -134,7 +135,14 @@ void  mk_rtsp_connection::get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo)
     m_rtpFrameOrganizer.getRtpPacketStatInfo(statinfo.ulTotalPackNum,statinfo.ulLostRtpPacketNum,statinfo.ulLostFrameNum,statinfo.ulDisorderSeqCounts);
     return;
 }
-
+void  mk_rtsp_connection::get_rtsp_sdp_info(char* info)
+{
+    if(m_strSdpInfo.length() > 0)
+    {
+        memcpy(info,m_strSdpInfo.c_str(),m_strSdpInfo.length());
+    }
+    return;
+}
 void mk_rtsp_connection::handle_recv(void)
 {
     as_network_addr peer;
@@ -783,6 +791,7 @@ int32_t mk_rtsp_connection::handleRtspDescribeResp(mk_rtsp_packet &rtspMessage)
 {
     std::string strSdp = "";
     rtspMessage.getContent(strSdp);
+    m_strSdpInfo = strSdp;
 
     MK_LOG(AS_LOG_INFO,"rtsp client connection handle describe response sdp:[%s].",strSdp.c_str());
 
