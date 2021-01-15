@@ -85,9 +85,9 @@ MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_IN
     return;
 }
 /* get a media rtsp client sdp info */
-MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo)
+MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo,uint32_t lens,uint32_t& copylen)
 {
     mk_client_connection* pClient = (mk_client_connection*)client;
-    pClient->get_client_rtsp_sdp_info(sdpInfo);
+    pClient->get_client_rtsp_sdp_info(sdpInfo,lens,copylen);
     return;
 }

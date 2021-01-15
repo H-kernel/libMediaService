@@ -78,9 +78,9 @@ void mk_client_connection::get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &statin
     this->get_rtp_stat_info(statinfo);
     return;
 }
-void mk_client_connection::get_client_rtsp_sdp_info(char* info)
+void mk_client_connection::get_client_rtsp_sdp_info(char* info,uint32_t lens,uint32_t& copylen)
 {
-    this->get_rtsp_sdp_info(info);
+    this->get_rtsp_sdp_info(info,lens,copylen);
     return;
 }
 void    mk_client_connection::handle_connection_media(MEDIA_DATA_INFO dataInfo,uint32_t len)

@@ -135,11 +135,15 @@ void  mk_rtsp_connection::get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo)
     m_rtpFrameOrganizer.getRtpPacketStatInfo(statinfo.ulTotalPackNum,statinfo.ulLostRtpPacketNum,statinfo.ulLostFrameNum,statinfo.ulDisorderSeqCounts);
     return;
 }
-void  mk_rtsp_connection::get_rtsp_sdp_info(char* info)
+void  mk_rtsp_connection::get_rtsp_sdp_info(char* info,uint32_t lens,uint32_t& copylen)
 {
-    if(m_strSdpInfo.length() > 0)
+    if(m_strSdpInfo.length() > lens)
     {
+        copylen = 0;
+    }
+    else{
         memcpy(info,m_strSdpInfo.c_str(),m_strSdpInfo.length());
+        copylen = m_strSdpInfo.length();
     }
     return;
 }

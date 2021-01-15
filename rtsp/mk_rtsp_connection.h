@@ -54,7 +54,7 @@ public:
     virtual void    check_client();
     virtual void    set_rtp_over_tcp();
     virtual void    get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo);
-    virtual void    get_rtsp_sdp_info(char* info);
+    virtual void    get_rtsp_sdp_info(char* info,uint32_t lens,uint32_t& copylen);
 public:
     /* override */
     virtual void handle_recv(void);

@@ -174,7 +174,7 @@ void mk_rtmp_connection::get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo)
 { 
     return;
 }
-void mk_rtmp_connection::get_rtsp_sdp_info(char* info)
+void mk_rtmp_connection::get_rtsp_sdp_info(char* info,uint32_t lens,uint32_t& copylen)
 {
     return;
 }
