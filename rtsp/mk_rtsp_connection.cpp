@@ -107,7 +107,10 @@ void mk_rtsp_connection::stop()
     /* unregister the network service */
     as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
     pNetWork->removeTcpClient(this);
-    handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
+
+    //don't send teardown
+    //handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
+
     MK_LOG(AS_LOG_INFO,"close rtsp client.");
     return;
 }

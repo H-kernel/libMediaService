@@ -81,12 +81,12 @@ public:
         mk_get_client_rtp_stat_info(m_hanlde,info);
         return;
     }
-    void get_client_rtsp_sdp_info(char* info)
+    void get_client_rtsp_sdp_info(char* info,uint32_t size,uint32_t& len)
     {
         if(NULL == m_hanlde) {
             return;
         }
-        mk_get_client_rtsp_sdp_info(m_hanlde,info);
+        mk_get_client_rtsp_sdp_info(m_hanlde,info,size,len);
         return;
     }
     int32_t handle_lib_media_data(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,uint32_t len)
@@ -123,9 +123,10 @@ public:
         }
         else if(MR_CLIENT_STATUS_HANDSHAKE == status) {
             printf("handshake,url:[%s]\n",m_strUrl.c_str());
-            std::string str = "";
-            this->get_client_rtsp_sdp_info((char*)str.c_str());
-            printf("handshake,sdp info:[%s]\n",str.c_str());
+            char sz[1024] = {0};
+            uint32_t len = 0;
+            this->get_client_rtsp_sdp_info(&sz[0],sizeof(sz),len);
+            printf("handshake,sdp info:[%s],length[%d]\n",&sz[0],len);
         }
         else if(MR_CLIENT_STATUS_RUNNING == status) {
             printf("running,url:[%s]\n",m_strUrl.c_str());
