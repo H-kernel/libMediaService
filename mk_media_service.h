@@ -14,6 +14,7 @@
 #include "mk_rtsp_connection.h"
 #include "mk_rtsp_udp_handle.h"
 #include "mk_rtmp_connection.h"
+#include "mk_mov_file_writer.h"
 #include "mk_media_common.h"
 
 #define RTP_RECV_BUF_SIZE       1500
@@ -70,6 +71,8 @@ public:
     void destory_rtsp_server(mk_rtsp_server* pServer);
     mk_client_connection* create_client(char* url,MEDIA_CALL_BACK* cb,void* ctx);
     void destory_client(mk_client_connection* pClient);
+    mk_mov_file_writer* create_writer(char* path);
+    void destory_writer(mk_mov_file_writer* pWriter);
 public:
     as_network_svr* get_client_network_svr(uint32_t ulIndex);
     as_timer& get_client_check_timer();

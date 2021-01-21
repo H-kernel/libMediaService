@@ -169,6 +169,30 @@ void mk_media_service::destory_client(mk_client_connection* pClient)
     m_ClientFreeList.push_back(ulIdx);
     return;
 }
+mk_mov_file_writer* mk_media_service::create_writer(char* path)
+{
+    mk_mov_file_writer* pWriter = NULL;
+    pWriter = AS_NEW(pWriter);
+    if(NULL == pWriter) {
+        return NULL;
+    }
+    if (AS_ERROR_CODE_OK != pWriter->open_writer(path))
+    {
+        AS_DELETE(pWriter);
+        pWriter = NULL;
+    }
+
+    return pWriter;    
+}
+void mk_media_service::destory_writer(mk_mov_file_writer* pWriter)
+{
+    if(NULL == pWriter) {
+        return;
+    }
+    pWriter->close_writer();
+    AS_DELETE(pWriter);
+    pWriter = NULL;
+}
 as_network_svr* mk_media_service::get_client_network_svr(uint32_t ulIndex)
 {
     uint32_t ulIdx = ulIndex%m_ulEvnCount;

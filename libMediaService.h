@@ -14,6 +14,7 @@
 #include <stdarg.h>
 typedef  void* MR_SERVER;
 typedef  void* MR_CLIENT;
+typedef  void* MR_WRITER;
 
 enum MR_MEDIA_TYPE {
     MR_MEDIA_TYPE_H264   = 0,
@@ -109,6 +110,13 @@ extern "C"
     MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_INFO &statinfo);
     /* get a media rtsp client sdp info */
     MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo,uint32_t lens,uint32_t& copylen);
+
+    /* create the mov/mp4 media writer */
+    MR_API MR_WRITER mk_create_writer_handle(char* path);
+    /* destory the mov/mp4 media writer */
+    MR_API void      mk_destory_writer_handle(MR_WRITER handle);
+    /* writer the media frame to file */
+    MR_API int32_t   mk_write_media_frame_handle(MR_WRITER handle,MEDIA_DATA_INFO* info,char* data,uint32_t lens);
 #ifdef __cplusplus
 #if __cplusplus
 }

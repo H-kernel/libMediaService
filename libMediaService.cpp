@@ -1,6 +1,7 @@
 #include "libMediaService.h"
 #include "mk_media_service.h"
 #include "mk_client_connection.h"
+#include "mk_mov_file_writer.h"
 
 mk_log g_log = NULL;
 /* init the media rtsp libary */
@@ -90,4 +91,26 @@ MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo,uint
     mk_client_connection* pClient = (mk_client_connection*)client;
     pClient->get_client_rtsp_sdp_info(sdpInfo,lens,copylen);
     return;
+}
+
+/* create the mov/mp4 media writer */
+MR_API MR_WRITER mk_create_writer_handle(char* path)
+{
+    return mk_media_service::instance().create_writer(path);
+}
+/* destory the mov/mp4 media writer */
+MR_API void      mk_destory_writer_handle(MR_WRITER handle)
+{
+    mk_mov_file_writer* pWriter = (mk_mov_file_writer*)handle;
+    mk_media_service::instance().destory_writer(pWriter);
+}
+/* writer the media frame to file */
+MR_API int32_t   mk_write_media_frame_handle(MR_WRITER handle,MEDIA_DATA_INFO* info,char* data,uint32_t lens)
+{
+    mk_mov_file_writer* pWriter = (mk_mov_file_writer*)handle;
+    if(NULL == pWriter) {
+        return AS_ERROR_CODE_FAIL;
+    }
+
+    return pWriter->write_media_frame(info,data,lens);
 }

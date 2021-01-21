@@ -12,12 +12,12 @@ TARGET_LIB      = ./libMediaService.a
 TARGET_DLL      = ./libMediaService.so
 SRC_DIR         = ./
 
-C++FLAGS  += -pipe -g -w -W -Wall -fPIC -O0 -DENV_LINUX -std=c++98
+C++FLAGS  += -pipe -g -w -W -Wall -fPIC -O0 -DENV_LINUX -std=c++98 -fpermissive
 ARFLAGS   += 
 
 LIBS      = -shared -fPIC -lm -lpthread 
 
-INCPATH   += -I./ -I$(COMMON_DIR) -I./rtmp -I./rtsp 
+INCPATH   += -I./ -I$(COMMON_DIR) -I./rtmp -I./rtsp -I./mov/include
 
 CPPFILES  += $(wildcard $(COMMON_DIR)*.cpp)
 CFILES    += $(wildcard $(COMMON_DIR)*.c)
@@ -30,6 +30,10 @@ HEADFILES += $(wildcard ./rtsp/*.h)
 CPPFILES  += $(wildcard ./rtmp/*.cpp)
 CFILES    += $(wildcard ./rtmp/*.c)
 HEADFILES += $(wildcard ./rtmp/*.h)
+
+CPPFILES  += $(wildcard ./mov/source/*.cpp)
+CFILES    += $(wildcard ./mov/source/*.c)
+HEADFILES += $(wildcard ./mov/include/*.h)
 
 CPPFILES  += $(wildcard ./*.cpp)
 CFILES    += $(wildcard ./*.c)
