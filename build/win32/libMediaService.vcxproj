@@ -47,7 +47,7 @@
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-32|Win32'">
-    <IncludePath>..\..\as_common;..\..\rtmp;..\..\rtsp;..\..\;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\as_common;..\..\rtmp;..\..\rtsp;..\..\mov\include;..\..\;$(IncludePath)</IncludePath>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -112,6 +112,30 @@
     <ClInclude Include="..\..\mk_client_connection.h" />
     <ClInclude Include="..\..\mk_media_common.h" />
     <ClInclude Include="..\..\mk_media_service.h" />
+    <ClInclude Include="..\..\mk_mov_file_writer.h" />
+    <ClInclude Include="..\..\mov\include\amf0.h" />
+    <ClInclude Include="..\..\mov\include\amf3.h" />
+    <ClInclude Include="..\..\mov\include\flv-demuxer.h" />
+    <ClInclude Include="..\..\mov\include\flv-muxer.h" />
+    <ClInclude Include="..\..\mov\include\flv-parser.h" />
+    <ClInclude Include="..\..\mov\include\flv-proto.h" />
+    <ClInclude Include="..\..\mov\include\flv-reader.h" />
+    <ClInclude Include="..\..\mov\include\flv-writer.h" />
+    <ClInclude Include="..\..\mov\include\fmp4-writer.h" />
+    <ClInclude Include="..\..\mov\include\mov-atom.h" />
+    <ClInclude Include="..\..\mov\include\mov-box.h" />
+    <ClInclude Include="..\..\mov\include\mov-buffer.h" />
+    <ClInclude Include="..\..\mov\include\mov-file-buffer.h" />
+    <ClInclude Include="..\..\mov\include\mov-format.h" />
+    <ClInclude Include="..\..\mov\include\mov-internal.h" />
+    <ClInclude Include="..\..\mov\include\mov-ioutil.h" />
+    <ClInclude Include="..\..\mov\include\mov-reader.h" />
+    <ClInclude Include="..\..\mov\include\mov-writer.h" />
+    <ClInclude Include="..\..\mov\include\mp3-header.h" />
+    <ClInclude Include="..\..\mov\include\mpeg4-aac.h" />
+    <ClInclude Include="..\..\mov\include\mpeg4-avc.h" />
+    <ClInclude Include="..\..\mov\include\mpeg4-bits.h" />
+    <ClInclude Include="..\..\mov\include\mpeg4-hevc.h" />
     <ClInclude Include="..\..\rtmp\mk_librtmp.h" />
     <ClInclude Include="..\..\rtmp\mk_rtmp_connection.h" />
     <ClInclude Include="..\..\rtsp\mk_media_sdp.h" />
@@ -179,6 +203,60 @@
     <ClCompile Include="..\..\mk_client_connection.cpp" />
     <ClCompile Include="..\..\mk_media_common.cpp" />
     <ClCompile Include="..\..\mk_media_service.cpp" />
+    <ClCompile Include="..\..\mk_mov_file_writer.cpp" />
+    <ClCompile Include="..\..\mov\source\amf0.c" />
+    <ClCompile Include="..\..\mov\source\amf3.c" />
+    <ClCompile Include="..\..\mov\source\flv-demuxer-script.c" />
+    <ClCompile Include="..\..\mov\source\flv-demuxer.c" />
+    <ClCompile Include="..\..\mov\source\flv-muxer.c" />
+    <ClCompile Include="..\..\mov\source\flv-parser.c" />
+    <ClCompile Include="..\..\mov\source\flv-reader.c" />
+    <ClCompile Include="..\..\mov\source\flv-writer.c" />
+    <ClCompile Include="..\..\mov\source\fmp4-writer.c" />
+    <ClCompile Include="..\..\mov\source\hevc-annexbtomp4.c" />
+    <ClCompile Include="..\..\mov\source\hevc-mp4toannexb.c" />
+    <ClCompile Include="..\..\mov\source\mov-av1.c" />
+    <ClCompile Include="..\..\mov\source\mov-avc1.c" />
+    <ClCompile Include="..\..\mov\source\mov-dinf.c" />
+    <ClCompile Include="..\..\mov\source\mov-elst.c" />
+    <ClCompile Include="..\..\mov\source\mov-esds.c" />
+    <ClCompile Include="..\..\mov\source\mov-file-buffer.c" />
+    <ClCompile Include="..\..\mov\source\mov-ftyp.c" />
+    <ClCompile Include="..\..\mov\source\mov-hdlr.c" />
+    <ClCompile Include="..\..\mov\source\mov-hvcc.c" />
+    <ClCompile Include="..\..\mov\source\mov-iods.c" />
+    <ClCompile Include="..\..\mov\source\mov-leva.c" />
+    <ClCompile Include="..\..\mov\source\mov-mdhd.c" />
+    <ClCompile Include="..\..\mov\source\mov-mehd.c" />
+    <ClCompile Include="..\..\mov\source\mov-mfhd.c" />
+    <ClCompile Include="..\..\mov\source\mov-minf.c" />
+    <ClCompile Include="..\..\mov\source\mov-mvhd.c" />
+    <ClCompile Include="..\..\mov\source\mov-opus.c" />
+    <ClCompile Include="..\..\mov\source\mov-reader.c" />
+    <ClCompile Include="..\..\mov\source\mov-sidx.c" />
+    <ClCompile Include="..\..\mov\source\mov-stco.c" />
+    <ClCompile Include="..\..\mov\source\mov-stsc.c" />
+    <ClCompile Include="..\..\mov\source\mov-stsd.c" />
+    <ClCompile Include="..\..\mov\source\mov-stss.c" />
+    <ClCompile Include="..\..\mov\source\mov-stsz.c" />
+    <ClCompile Include="..\..\mov\source\mov-stts.c" />
+    <ClCompile Include="..\..\mov\source\mov-tag.c" />
+    <ClCompile Include="..\..\mov\source\mov-tfdt.c" />
+    <ClCompile Include="..\..\mov\source\mov-tfhd.c" />
+    <ClCompile Include="..\..\mov\source\mov-tfra.c" />
+    <ClCompile Include="..\..\mov\source\mov-tkhd.c" />
+    <ClCompile Include="..\..\mov\source\mov-track.c" />
+    <ClCompile Include="..\..\mov\source\mov-trex.c" />
+    <ClCompile Include="..\..\mov\source\mov-trun.c" />
+    <ClCompile Include="..\..\mov\source\mov-tx3g.c" />
+    <ClCompile Include="..\..\mov\source\mov-writer.c" />
+    <ClCompile Include="..\..\mov\source\mp3-header.c" />
+    <ClCompile Include="..\..\mov\source\mpeg4-aac-asc.c" />
+    <ClCompile Include="..\..\mov\source\mpeg4-aac.c" />
+    <ClCompile Include="..\..\mov\source\mpeg4-annexbtomp4.c" />
+    <ClCompile Include="..\..\mov\source\mpeg4-avc.c" />
+    <ClCompile Include="..\..\mov\source\mpeg4-hevc.c" />
+    <ClCompile Include="..\..\mov\source\mpeg4-mp4toannexb.c" />
     <ClCompile Include="..\..\rtmp\mk_librtmp.cpp" />
     <ClCompile Include="..\..\rtmp\mk_rtmp_connection.cpp" />
     <ClCompile Include="..\..\rtsp\mk_media_sdp.cpp" />

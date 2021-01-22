@@ -25,6 +25,9 @@
     <Filter Include="mediaservice">
       <UniqueIdentifier>{c359099f-9e7c-4618-80e3-d8d65423c9bc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="mov">
+      <UniqueIdentifier>{488833ad-d836-4f78-8885-a119c3ad1ccf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -174,6 +177,78 @@
     <ClInclude Include="..\..\as_common\as_string.h">
       <Filter>as_common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\mov\include\amf0.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\amf3.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\flv-demuxer.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\flv-muxer.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\flv-parser.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\flv-proto.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\flv-reader.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\flv-writer.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\fmp4-writer.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-atom.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-box.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-buffer.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-file-buffer.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-format.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-internal.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-ioutil.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-reader.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mov-writer.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mp3-header.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mpeg4-aac.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mpeg4-avc.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mpeg4-bits.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mov\include\mpeg4-hevc.h">
+      <Filter>mov</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mk_mov_file_writer.h">
+      <Filter>mediaservice</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -291,6 +366,168 @@
       <Filter>as_common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\mk_media_common.cpp">
+      <Filter>mediaservice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\amf0.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\amf3.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\flv-demuxer.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\flv-demuxer-script.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\flv-muxer.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\flv-parser.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\flv-reader.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\flv-writer.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\fmp4-writer.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\hevc-annexbtomp4.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\hevc-mp4toannexb.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-av1.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-avc1.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-dinf.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-elst.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-esds.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-file-buffer.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-ftyp.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-hdlr.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-hvcc.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-iods.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-leva.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-mdhd.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-mehd.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-mfhd.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-minf.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-mvhd.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-opus.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-reader.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-sidx.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-stco.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-stsc.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-stsd.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-stss.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-stsz.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-stts.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-tag.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-tfdt.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-tfhd.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-tfra.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-tkhd.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-track.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-trex.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-trun.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-tx3g.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mov-writer.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mp3-header.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mpeg4-aac.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mpeg4-aac-asc.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mpeg4-annexbtomp4.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mpeg4-avc.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mpeg4-hevc.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mov\source\mpeg4-mp4toannexb.c">
+      <Filter>mov</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mk_mov_file_writer.cpp">
       <Filter>mediaservice</Filter>
     </ClCompile>
   </ItemGroup>
