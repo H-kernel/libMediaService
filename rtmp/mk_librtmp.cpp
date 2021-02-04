@@ -145,16 +145,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define RTMP_SIG_SRS_ROLE "cluster"
 #define RTMP_SIG_SRS_NAME RTMP_SIG_SRS_KEY"(Simple RTMP Server)"
 #define RTMP_SIG_SRS_URL_SHORT "github.com/ossrs/srs"
-#define RTMP_SIG_SRS_URL "https://"RTMP_SIG_SRS_URL_SHORT
+#define RTMP_SIG_SRS_URL "https://" RTMP_SIG_SRS_URL_SHORT
 #define RTMP_SIG_SRS_LICENSE "The MIT License (MIT)"
 #define RTMP_SIG_SRS_COPYRIGHT "Copyright (c) 2013-2015 SRS(ossrs)"
-#define RTMP_SIG_SRS_PRIMARY RTMP_SIG_SRS_KEY"/"VERSION_STABLE_BRANCH
+#define RTMP_SIG_SRS_PRIMARY RTMP_SIG_SRS_KEY"/" VERSION_STABLE_BRANCH
 #define RTMP_SIG_SRS_CONTRIBUTORS_URL RTMP_SIG_SRS_URL"/blob/master/AUTHORS.txt"
-#define RTMP_SIG_SRS_HANDSHAKE RTMP_SIG_SRS_KEY"("RTMP_SIG_SRS_VERSION")"
-#define RTMP_SIG_SRS_RELEASE RTMP_SIG_SRS_URL"/tree/"VERSION_STABLE_BRANCH".0release"
+#define RTMP_SIG_SRS_HANDSHAKE RTMP_SIG_SRS_KEY"(" RTMP_SIG_SRS_VERSION")"
+#define RTMP_SIG_SRS_RELEASE RTMP_SIG_SRS_URL"/tree/" VERSION_STABLE_BRANCH".0release"
 #define RTMP_SIG_SRS_ISSUES(id) RTMP_SIG_SRS_URL"/issues/"#id
-#define RTMP_SIG_SRS_VERSION SRS_XSTR(VERSION_MAJOR)"."SRS_XSTR(VERSION_MINOR)"."SRS_XSTR(VERSION_REVISION)
-#define RTMP_SIG_SRS_SERVER RTMP_SIG_SRS_KEY"/"RTMP_SIG_SRS_VERSION"("RTMP_SIG_SRS_CODE")"
+#define RTMP_SIG_SRS_VERSION SRS_XSTR(VERSION_MAJOR)"." SRS_XSTR(VERSION_MINOR)"." SRS_XSTR(VERSION_REVISION)
+#define RTMP_SIG_SRS_SERVER RTMP_SIG_SRS_KEY"/" RTMP_SIG_SRS_VERSION"(" RTMP_SIG_SRS_CODE")"
 
 // stable major version
 #define VERSION_STABLE 2
@@ -6534,7 +6534,7 @@ public:
             
             T* pkt = dynamic_cast<T*>(packet);
             if (!pkt) {
-                srs_info("drop message(type=%d, size=%d, time=%"PRId64", sid=%d).", 
+                srs_info("drop message(type=%d, size=%d, time=%" PRId64 ", sid=%d).", 
                     msg->header.message_type, msg->header.payload_length,
                     msg->header.timestamp, msg->header.stream_id);
                 srs_freep(msg);
@@ -13000,14 +13000,14 @@ int64_t srs_update_system_time_ms()
     int64_t diff = now_us - _srs_system_time_us_cache;
     diff = srs_max(0, diff);
     if (diff < 0 || diff > 1000 * SYS_TIME_RESOLUTION_US) {
-        srs_warn("system time jump, history=%"PRId64"us, now=%"PRId64"us, diff=%"PRId64"us", 
+        srs_warn("system time jump, history=%" PRId64 "us, now=%" PRId64 "us, diff=%" PRId64 "us", 
             _srs_system_time_us_cache, now_us, diff);
         // @see: https://github.com/ossrs/srs/issues/109
         _srs_system_time_startup_time += diff;
     }
     
     _srs_system_time_us_cache = now_us;
-    srs_info("system time updated, startup=%"PRId64"us, now=%"PRId64"us", 
+    srs_info("system time updated, startup=%" PRId64 "us, now=%" PRId64 "us", 
         _srs_system_time_startup_time, _srs_system_time_us_cache);
     
     return _srs_system_time_us_cache / 1000;
@@ -14761,7 +14761,7 @@ int SrsFlvVodStreamDecoder::lseek(int64_t offset)
     if (offset >= reader->filesize()) {
         ret = ERROR_SYSTEM_FILE_EOF;
         srs_warn("flv fast decoder seek overflow file, "
-            "size=%"PRId64", offset=%"PRId64", ret=%d", 
+            "size=%" PRId64 ", offset=%" PRId64 ", ret=%d", 
             reader->filesize(), offset, ret);
         return ret;
     }
@@ -14769,7 +14769,7 @@ int SrsFlvVodStreamDecoder::lseek(int64_t offset)
     if (reader->lseek(offset) < 0) {
         ret = ERROR_SYSTEM_FILE_SEEK;
         srs_warn("flv fast decoder seek error, "
-            "size=%"PRId64", offset=%"PRId64", ret=%d", 
+            "size=%" PRId64 ", offset=%" PRId64 ", ret=%d", 
             reader->filesize(), offset, ret);
         return ret;
     }
@@ -17828,7 +17828,7 @@ int SrsTsAdaptationField::decode(SrsStream* stream)
     nb_af_reserved = adaption_field_length - (stream->pos() - pos_af);
     stream->skip(nb_af_reserved);
     
-    srs_info("ts: af parsed, discontinuity=%d random=%d priority=%d PCR=%d OPCR=%d slicing=%d private=%d extension=%d/%d pcr=%"PRId64"/%d opcr=%"PRId64"/%d",
+    srs_info("ts: af parsed, discontinuity=%d random=%d priority=%d PCR=%d OPCR=%d slicing=%d private=%d extension=%d/%d pcr=%" PRId64 "/%d opcr=%" PRId64 "/%d",
         discontinuity_indicator, random_access_indicator, elementary_stream_priority_indicator, PCR_flag, OPCR_flag, splicing_point_flag,
         transport_private_data_flag, adaptation_field_extension_flag, adaptation_field_extension_length, program_clock_reference_base, 
         program_clock_reference_extension, original_program_clock_reference_base, original_program_clock_reference_extension);
@@ -18009,7 +18009,7 @@ int SrsTsAdaptationField::encode(SrsStream* stream)
         stream->skip(nb_af_reserved);
     }
     
-    srs_info("ts: af parsed, discontinuity=%d random=%d priority=%d PCR=%d OPCR=%d slicing=%d private=%d extension=%d/%d pcr=%"PRId64"/%d opcr=%"PRId64"/%d",
+    srs_info("ts: af parsed, discontinuity=%d random=%d priority=%d PCR=%d OPCR=%d slicing=%d private=%d extension=%d/%d pcr=%" PRId64 "/%d opcr=%" PRId64 "/%d",
         discontinuity_indicator, random_access_indicator, elementary_stream_priority_indicator, PCR_flag, OPCR_flag, splicing_point_flag,
         transport_private_data_flag, adaptation_field_extension_flag, adaptation_field_extension_length, program_clock_reference_base, 
         program_clock_reference_extension, original_program_clock_reference_base, original_program_clock_reference_extension);
@@ -18249,7 +18249,7 @@ int SrsTsPayloadPES::decode(SrsStream* stream, SrsTsMessage** ppmsg)
 
                 // check sync, the diff of dts and pts should never greater than 1s.
                 if (dts - pts > 90000 || pts - dts > 90000) {
-                    srs_warn("ts: sync dts=%"PRId64", pts=%"PRId64, dts, pts);
+                    srs_warn("ts: sync dts=%" PRId64 ", pts=%"PRId64, dts, pts);
                 }
 
                 // update the dts and pts of message.
@@ -18609,7 +18609,7 @@ int SrsTsPayloadPES::encode(SrsStream* stream)
 
         // check sync, the diff of dts and pts should never greater than 1s.
         if (dts - pts > 90000 || pts - dts > 90000) {
-            srs_warn("ts: sync dts=%"PRId64", pts=%"PRId64, dts, pts);
+            srs_warn("ts: sync dts=%" PRId64 ", pts=%"PRId64, dts, pts);
         }
     }
 
@@ -19445,7 +19445,7 @@ int SrsTSMuxer::write_audio(SrsTsMessage* audio)
 {
     int ret = ERROR_SUCCESS;
 
-    srs_info("hls: write audio pts=%"PRId64", dts=%"PRId64", size=%d", 
+    srs_info("hls: write audio pts=%" PRId64 ", dts=%" PRId64 ", size=%d", 
         audio->pts, audio->dts, audio->PES_packet_length);
     
     if ((ret = context->encode(writer, audio, vcodec, acodec)) != ERROR_SUCCESS) {
@@ -19461,7 +19461,7 @@ int SrsTSMuxer::write_video(SrsTsMessage* video)
 {
     int ret = ERROR_SUCCESS;
 
-    srs_info("hls: write video pts=%"PRId64", dts=%"PRId64", size=%d", 
+    srs_info("hls: write video pts=%" PRId64 ", dts=%" PRId64 ", size=%d", 
         video->pts, video->dts, video->PES_packet_length);
     
     if ((ret = context->encode(writer, video, vcodec, acodec)) != ERROR_SUCCESS) {
@@ -22378,7 +22378,7 @@ int SrsProtocol::recv_message(SrsCommonMessage** pmsg)
         }
         
         if (msg->size <= 0 || msg->header.payload_length <= 0) {
-            srs_trace("ignore empty message(type=%d, size=%d, time=%"PRId64", sid=%d).",
+            srs_trace("ignore empty message(type=%d, size=%d, time=%" PRId64 ", sid=%d).",
                 msg->header.message_type, msg->header.payload_length,
                 msg->header.timestamp, msg->header.stream_id);
             srs_freep(msg);
@@ -22946,7 +22946,7 @@ int SrsProtocol::recv_interlaced_message(SrsCommonMessage** pmsg)
         srs_verbose("cs-cache hit, cid=%d", cid);
         // already init, use it direclty
         chunk = cs_cache[cid];
-        srs_verbose("cached chunk stream: fmt=%d, cid=%d, size=%d, message(type=%d, size=%d, time=%"PRId64", sid=%d)",
+        srs_verbose("cached chunk stream: fmt=%d, cid=%d, size=%d, message(type=%d, size=%d, time=%" PRId64 ", sid=%d)",
             chunk->fmt, chunk->cid, (chunk->msg? chunk->msg->size : 0), chunk->header.message_type, chunk->header.payload_length,
             chunk->header.timestamp, chunk->header.stream_id);
     } else {
@@ -22959,7 +22959,7 @@ int SrsProtocol::recv_interlaced_message(SrsCommonMessage** pmsg)
             srs_verbose("cache new chunk stream: fmt=%d, cid=%d", fmt, cid);
         } else {
             chunk = chunk_streams[cid];
-            srs_verbose("cached chunk stream: fmt=%d, cid=%d, size=%d, message(type=%d, size=%d, time=%"PRId64", sid=%d)",
+            srs_verbose("cached chunk stream: fmt=%d, cid=%d, size=%d, message(type=%d, size=%d, time=%" PRId64 ", sid=%d)",
                 chunk->fmt, chunk->cid, (chunk->msg? chunk->msg->size : 0), chunk->header.message_type, chunk->header.payload_length,
                 chunk->header.timestamp, chunk->header.stream_id);
         }
@@ -22973,7 +22973,7 @@ int SrsProtocol::recv_interlaced_message(SrsCommonMessage** pmsg)
         return ret;
     }
     srs_verbose("read message header success. "
-            "fmt=%d, ext_time=%d, size=%d, message(type=%d, size=%d, time=%"PRId64", sid=%d)", 
+            "fmt=%d, ext_time=%d, size=%d, message(type=%d, size=%d, time=%" PRId64 ", sid=%d)", 
             fmt, chunk->extended_timestamp, (chunk->msg? chunk->msg->size : 0), chunk->header.message_type, 
             chunk->header.payload_length, chunk->header.timestamp, chunk->header.stream_id);
     
@@ -22988,14 +22988,14 @@ int SrsProtocol::recv_interlaced_message(SrsCommonMessage** pmsg)
     
     // not got an entire RTMP message, try next chunk.
     if (!msg) {
-        srs_verbose("get partial message success. size=%d, message(type=%d, size=%d, time=%"PRId64", sid=%d)",
+        srs_verbose("get partial message success. size=%d, message(type=%d, size=%d, time=%" PRId64 ", sid=%d)",
                 (msg? msg->size : (chunk->msg? chunk->msg->size : 0)), chunk->header.message_type, chunk->header.payload_length,
                 chunk->header.timestamp, chunk->header.stream_id);
         return ret;
     }
     
     *pmsg = msg;
-    srs_info("get entire message success. size=%d, message(type=%d, size=%d, time=%"PRId64", sid=%d)",
+    srs_info("get entire message success. size=%d, message(type=%d, size=%d, time=%" PRId64 ", sid=%d)",
             (msg? msg->size : (chunk->msg? chunk->msg->size : 0)), chunk->header.message_type, chunk->header.payload_length,
             chunk->header.timestamp, chunk->header.stream_id);
             
@@ -23278,16 +23278,16 @@ int SrsProtocol::read_message_header(SrsChunkStream* chunk, char fmt)
                 pp[1] = *p++;
                 pp[2] = *p++;
                 pp[3] = *p++;
-                srs_verbose("header read completed. fmt=%d, mh_size=%d, ext_time=%d, time=%"PRId64", payload=%d, type=%d, sid=%d", 
+                srs_verbose("header read completed. fmt=%d, mh_size=%d, ext_time=%d, time=%" PRId64 ", payload=%d, type=%d, sid=%d", 
                     fmt, mh_size, chunk->extended_timestamp, chunk->header.timestamp, chunk->header.payload_length, 
                     chunk->header.message_type, chunk->header.stream_id);
             } else {
-                srs_verbose("header read completed. fmt=%d, mh_size=%d, ext_time=%d, time=%"PRId64", payload=%d, type=%d", 
+                srs_verbose("header read completed. fmt=%d, mh_size=%d, ext_time=%d, time=%" PRId64 ", payload=%d, type=%d", 
                     fmt, mh_size, chunk->extended_timestamp, chunk->header.timestamp, chunk->header.payload_length, 
                     chunk->header.message_type);
             }
         } else {
-            srs_verbose("header read completed. fmt=%d, mh_size=%d, ext_time=%d, time=%"PRId64"", 
+            srs_verbose("header read completed. fmt=%d, mh_size=%d, ext_time=%d, time=%" PRId64 "", 
                 fmt, mh_size, chunk->extended_timestamp, chunk->header.timestamp);
         }
     } else {
@@ -23358,7 +23358,7 @@ int SrsProtocol::read_message_header(SrsChunkStream* chunk, char fmt)
         } else {
             chunk->header.timestamp = timestamp;
         }
-        srs_verbose("header read ext_time completed. time=%"PRId64"", chunk->header.timestamp);
+        srs_verbose("header read ext_time completed. time=%" PRId64 "", chunk->header.timestamp);
     }
     
     // the extended-timestamp must be unsigned-int,
@@ -23403,7 +23403,7 @@ int SrsProtocol::read_message_payload(SrsChunkStream* chunk, SrsCommonMessage** 
     // empty message
     if (chunk->header.payload_length <= 0) {
         srs_trace("get an empty RTMP "
-                "message(type=%d, size=%d, time=%"PRId64", sid=%d)", chunk->header.message_type, 
+                "message(type=%d, size=%d, time=%" PRId64 ", sid=%d)", chunk->header.message_type, 
                 chunk->header.payload_length, chunk->header.timestamp, chunk->header.stream_id);
         
         *pmsg = chunk->msg;
@@ -23440,13 +23440,13 @@ int SrsProtocol::read_message_payload(SrsChunkStream* chunk, SrsCommonMessage** 
     if (chunk->header.payload_length == chunk->msg->size) {
         *pmsg = chunk->msg;
         chunk->msg = NULL;
-        srs_verbose("get entire RTMP message(type=%d, size=%d, time=%"PRId64", sid=%d)", 
+        srs_verbose("get entire RTMP message(type=%d, size=%d, time=%" PRId64 ", sid=%d)", 
                 chunk->header.message_type, chunk->header.payload_length, 
                 chunk->header.timestamp, chunk->header.stream_id);
         return ret;
     }
     
-    srs_verbose("get partial RTMP message(type=%d, size=%d, time=%"PRId64", sid=%d), partial size=%d", 
+    srs_verbose("get partial RTMP message(type=%d, size=%d, time=%" PRId64 ", sid=%d), partial size=%d", 
             chunk->header.message_type, chunk->header.payload_length, 
             chunk->header.timestamp, chunk->header.stream_id,
             chunk->msg->size);
@@ -35774,21 +35774,21 @@ int srs_human_print_rtmp_packet4(char type, u_int32_t timestamp, char* data, int
     
     u_int32_t pts;
     if (srs_utils_parse_timestamp(timestamp, type, data, size, &pts) != 0) {
-        srs_human_trace("Rtmp packet id=%"PRId64"/%.1f/%.1f, type=%s, dts=%d, ndiff=%d, diff=%d, size=%d, DecodeError",
+        srs_human_trace("Rtmp packet id=%" PRId64 "/%.1f/%.1f, type=%s, dts=%d, ndiff=%d, diff=%d, size=%d, DecodeError",
             nb_packets, pi, gfps, srs_human_flv_tag_type2string(type), timestamp, ndiff, diff, size
         );
         return ret;
     }
     
     if (type == SRS_RTMP_TYPE_VIDEO) {
-        srs_human_trace("Video packet id=%"PRId64"/%.1f/%.1f, type=%s, dts=%d, pts=%d, ndiff=%d, diff=%d, size=%d, %s(%s,%s)",
+        srs_human_trace("Video packet id=%" PRId64 "/%.1f/%.1f, type=%s, dts=%d, pts=%d, ndiff=%d, diff=%d, size=%d, %s(%s,%s)",
             nb_packets, pi, gfps, srs_human_flv_tag_type2string(type), timestamp, pts, ndiff, diff, size,
             srs_human_flv_video_codec_id2string(srs_utils_flv_video_codec_id(data, size)),
             srs_human_flv_video_avc_packet_type2string(srs_utils_flv_video_avc_packet_type(data, size)),
             srs_human_flv_video_frame_type2string(srs_utils_flv_video_frame_type(data, size))
         );
     } else if (type == SRS_RTMP_TYPE_AUDIO) {
-        srs_human_trace("Audio packet id=%"PRId64"/%.1f/%.1f, type=%s, dts=%d, pts=%d, ndiff=%d, diff=%d, size=%d, %s(%s,%s,%s,%s)",
+        srs_human_trace("Audio packet id=%" PRId64 "/%.1f/%.1f, type=%s, dts=%d, pts=%d, ndiff=%d, diff=%d, size=%d, %s(%s,%s,%s,%s)",
             nb_packets, pi, gfps, srs_human_flv_tag_type2string(type), timestamp, pts, ndiff, diff, size,
             srs_human_flv_audio_sound_format2string(srs_utils_flv_audio_sound_format(data, size)),
             srs_human_flv_audio_sound_rate2string(srs_utils_flv_audio_sound_rate(data, size)),
@@ -35797,7 +35797,7 @@ int srs_human_print_rtmp_packet4(char type, u_int32_t timestamp, char* data, int
             srs_human_flv_audio_aac_packet_type2string(srs_utils_flv_audio_aac_packet_type(data, size))
         );
     } else if (type == SRS_RTMP_TYPE_SCRIPT) {
-        srs_human_verbose("Data packet id=%"PRId64"/%.1f/%.1f, type=%s, time=%d, ndiff=%d, diff=%d, size=%d",
+        srs_human_verbose("Data packet id=%" PRId64 "/%.1f/%.1f, type=%s, time=%d, ndiff=%d, diff=%d, size=%d",
             nb_packets, pi, gfps, srs_human_flv_tag_type2string(type), timestamp, ndiff, diff, size);
         int nparsed = 0;
         while (nparsed < size) {
@@ -35814,7 +35814,7 @@ int srs_human_print_rtmp_packet4(char type, u_int32_t timestamp, char* data, int
             srs_freepa(amf0_str);
         }
     } else {
-        srs_human_trace("Rtmp packet id=%"PRId64"/%.1f/%.1f, type=%#x, dts=%d, pts=%d, ndiff=%d, diff=%d, size=%d",
+        srs_human_trace("Rtmp packet id=%" PRId64 "/%.1f/%.1f, type=%#x, dts=%d, pts=%d, ndiff=%d, diff=%d, size=%d",
             nb_packets, pi, gfps, type, timestamp, pts, ndiff, diff, size);
     }
     
