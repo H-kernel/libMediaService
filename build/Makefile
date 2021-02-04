@@ -5,7 +5,7 @@ PREFIX          = /usr/local
 CC              = gcc
 C++             = g++  
 AR              = ar 
-COMMON_DIR      = ./as_common/
+COMMON_DIR      = ../as_common/
 COMMON_LIB      = $(PREFIX)/lib
 LICENSE_DIR     = ../extend/
 TARGET_LIB      = ./libMediaService.a
@@ -17,27 +17,27 @@ ARFLAGS   +=
 
 LIBS      = -shared -fPIC -lm -lpthread 
 
-INCPATH   += -I./ -I$(COMMON_DIR) -I./rtmp -I./rtsp -I./mov/include
+INCPATH   += -I../ -I$(COMMON_DIR)inc/ -I../rtmp -I../rtsp -I../mov/include
 
-CPPFILES  += $(wildcard $(COMMON_DIR)*.cpp)
-CFILES    += $(wildcard $(COMMON_DIR)*.c)
-HEADFILES += $(wildcard $(COMMON_DIR)*.h)
+CPPFILES  += $(wildcard $(COMMON_DIR)src/*.cpp)
+CFILES    += $(wildcard $(COMMON_DIR)src/*.c)
+HEADFILES += $(wildcard $(COMMON_DIR)inc/*.h)
 
-CPPFILES  += $(wildcard ./rtsp/*.cpp)
-CFILES    += $(wildcard ./rtsp/*.c)
-HEADFILES += $(wildcard ./rtsp/*.h)
+CPPFILES  += $(wildcard ../rtsp/*.cpp)
+CFILES    += $(wildcard ../rtsp/*.c)
+HEADFILES += $(wildcard ../rtsp/*.h)
 
-CPPFILES  += $(wildcard ./rtmp/*.cpp)
-CFILES    += $(wildcard ./rtmp/*.c)
-HEADFILES += $(wildcard ./rtmp/*.h)
+CPPFILES  += $(wildcard ../rtmp/*.cpp)
+CFILES    += $(wildcard ../rtmp/*.c)
+HEADFILES += $(wildcard ../rtmp/*.h)
 
-CPPFILES  += $(wildcard ./mov/source/*.cpp)
-CFILES    += $(wildcard ./mov/source/*.c)
-HEADFILES += $(wildcard ./mov/include/*.h)
+CPPFILES  += $(wildcard ../mov/source/*.cpp)
+CFILES    += $(wildcard ../mov/source/*.c)
+HEADFILES += $(wildcard ../mov/include/*.h)
 
-CPPFILES  += $(wildcard ./*.cpp)
-CFILES    += $(wildcard ./*.c)
-HEADFILES += $(wildcard ./*.h)
+CPPFILES  += $(wildcard ../*.cpp)
+CFILES    += $(wildcard ../*.c)
+HEADFILES += $(wildcard ../*.h)
    
 COBJS=$(CFILES:.c=.o)
 CPPOBJS=$(CPPFILES:.cpp=.O)
