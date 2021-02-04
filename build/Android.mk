@@ -13,7 +13,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../rtsp
 
 LOCAL_SRC_FILES := $(wildcard ../*.c)
 LOCAL_SRC_FILES += $(wildcard ../*.cpp)
-LOCAL_SRC_FILES := $(wildcard ../as_common/src/*.c)
+LOCAL_SRC_FILES += $(wildcard ../as_common/src/*.c)
 LOCAL_SRC_FILES += $(wildcard ../as_common/src/*.cpp)
 LOCAL_SRC_FILES += $(wildcard ../mov/source/*.c)
 LOCAL_SRC_FILES += $(wildcard ../mov/source/*.cpp)
