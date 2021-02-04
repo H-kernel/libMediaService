@@ -18249,7 +18249,7 @@ int SrsTsPayloadPES::decode(SrsStream* stream, SrsTsMessage** ppmsg)
 
                 // check sync, the diff of dts and pts should never greater than 1s.
                 if (dts - pts > 90000 || pts - dts > 90000) {
-                    srs_warn("ts: sync dts=%" PRId64 ", pts=%"PRId64, dts, pts);
+                    srs_warn("ts: sync dts=%" PRId64 ", pts=%" PRId64, dts, pts);
                 }
 
                 // update the dts and pts of message.
@@ -18609,7 +18609,7 @@ int SrsTsPayloadPES::encode(SrsStream* stream)
 
         // check sync, the diff of dts and pts should never greater than 1s.
         if (dts - pts > 90000 || pts - dts > 90000) {
-            srs_warn("ts: sync dts=%" PRId64 ", pts=%"PRId64, dts, pts);
+            srs_warn("ts: sync dts=%" PRId64 ", pts=%" PRId64, dts, pts);
         }
     }
 
@@ -21386,7 +21386,7 @@ int SrsAmf0Date::read(SrsStream* stream)
     }
     
     _date_value = stream->read_8bytes();
-    srs_verbose("amf0 read date success. date=%"PRId64, _date_value);
+    srs_verbose("amf0 read date success. date=%" PRId64, _date_value);
     
     // time zone
     // While the design of this type reserves room for time zone offset 
@@ -21426,7 +21426,7 @@ int SrsAmf0Date::write(SrsStream* stream)
     }
     
     stream->write_8bytes(_date_value);
-    srs_verbose("amf0 write date success. date=%"PRId64, _date_value);
+    srs_verbose("amf0 write date success. date=%" PRId64, _date_value);
 
     // time zone
     if (!stream->require(2)) {
@@ -22391,7 +22391,7 @@ int SrsProtocol::recv_message(SrsCommonMessage** pmsg)
             return ret;
         }
         
-        srs_verbose("got a msg, cid=%d, type=%d, size=%d, time=%"PRId64, 
+        srs_verbose("got a msg, cid=%d, type=%d, size=%d, time=%" PRId64, 
             msg->header.perfer_cid, msg->header.message_type, msg->header.payload_length, 
             msg->header.timestamp);
         *pmsg = msg;
@@ -31494,7 +31494,7 @@ int64_t SrsHttpHeader::content_length()
 void SrsHttpHeader::set_content_length(int64_t size)
 {
     char buf[64];
-    snprintf(buf, sizeof(buf), "%"PRId64, size);
+    snprintf(buf, sizeof(buf), "%" PRId64, size);
     set("Content-Length", buf);
 }
 
