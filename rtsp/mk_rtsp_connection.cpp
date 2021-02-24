@@ -87,7 +87,7 @@ int32_t mk_rtsp_connection::start()
         (char*)&m_url.host[0],m_url.port,(char*)&m_url.uri[0],AS_URL_MAX_LEN,(char*)&m_url.args[0]);
     MK_LOG(AS_LOG_INFO,"rtsp client usrname:[%s] password:[%s].",(char*)&m_url.username[0],(char*)&m_url.password[0]);
     
-    if(AS_ERROR_CODE_OK != pNetWork->regTcpClient(&local,&remote,this,enSyncOp,5)) {
+    if(AS_ERROR_CODE_OK != pNetWork->regTcpClient(&local,&remote,this,enSyncOp,0)) {
         return AS_ERROR_CODE_FAIL;
     }
     handle_connection_status(MR_CLIENT_STATUS_CONNECTED);
