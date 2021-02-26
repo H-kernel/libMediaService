@@ -160,7 +160,7 @@ void mk_rtmp_connection::handle_recv(void)
     memset(&dataInfo,0x0,sizeof(dataInfo));
     parse_media_info(enType,pts,recBuf,dataInfo);
 
-    handle_connection_media(dataInfo,size);
+    handle_connection_media(&dataInfo,size);
     free(data);
     m_ulLastRecv = time(NULL);
     return;
@@ -170,7 +170,7 @@ void mk_rtmp_connection::handle_send(void)
     as_handle::setHandleSend(AS_FALSE);
     return;
 }
-void mk_rtmp_connection::get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo)
+void mk_rtmp_connection::get_rtp_stat_info(RTP_PACKET_STAT_INFO* statinfo)
 { 
     return;
 }

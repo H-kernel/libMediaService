@@ -79,7 +79,7 @@ MR_API void      mk_set_rtsp_udp_ports(uint16_t udpstart,uint32_t count)
     return;
 }
 /* get a media rtsp client/server rtp packet stat info */
-MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_INFO &statinfo)
+MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_INFO* statinfo)
 {
     mk_client_connection* pClient = (mk_client_connection*)client;
     pClient->get_client_rtp_stat_info(statinfo);

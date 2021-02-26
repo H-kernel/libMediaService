@@ -133,9 +133,12 @@ void  mk_rtsp_connection::set_rtp_over_tcp()
     m_bSetupTcp = true;
     return;
 }
-void  mk_rtsp_connection::get_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo)
+void  mk_rtsp_connection::get_rtp_stat_info(RTP_PACKET_STAT_INFO* statinfo)
 {
-    m_rtpFrameOrganizer.getRtpPacketStatInfo(statinfo.ulTotalPackNum,statinfo.ulLostRtpPacketNum,statinfo.ulLostFrameNum,statinfo.ulDisorderSeqCounts);
+    m_rtpFrameOrganizer.getRtpPacketStatInfo(statinfo->ulTotalPackNum,
+                                             statinfo->ulLostRtpPacketNum,
+                                             statinfo->ulLostFrameNum,
+                                             statinfo->ulDisorderSeqCounts);
     return;
 }
 void  mk_rtsp_connection::get_rtsp_sdp_info(char* info,uint32_t lens,uint32_t& copylen)
@@ -252,7 +255,7 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
                 memset(&dataInfo,0x0,sizeof(dataInfo));
                 parse_media_info(MR_MEDIA_TYPE_H264,TimeStam,recBuf,dataInfo);
 
-                handle_connection_media(dataInfo,m_ulRecvLen);
+                handle_connection_media(&dataInfo,m_ulRecvLen);
                 mk_rtsp_service::instance().free_rtp_recv_buf(pData);
                 return AS_ERROR_CODE_OK;
             }
@@ -287,7 +290,7 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
                 memset(&dataInfo,0x0,sizeof(dataInfo));
                 parse_media_info(MR_MEDIA_TYPE_H265,TimeStam,recBuf,dataInfo);
 
-                handle_connection_media(dataInfo,m_ulRecvLen);
+                handle_connection_media(&dataInfo,m_ulRecvLen);
                 mk_rtsp_service::instance().free_rtp_recv_buf(pData);
                 return AS_ERROR_CODE_OK;
             }
@@ -335,7 +338,7 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
 
         parse_media_info(enType,rtpPacket.GetTimeStamp(),recBuf,dataInfo);
 
-        handle_connection_media(dataInfo,ulAudioLen);
+        handle_connection_media(&dataInfo,ulAudioLen);
         mk_rtsp_service::instance().free_rtp_recv_buf(pData);
     }
     else {
@@ -930,7 +933,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
         memset(&dataInfo,0x0,sizeof(dataInfo));
         parse_media_info(MR_MEDIA_TYPE_H264,TimeStam,recBuf,dataInfo);
 
-        handle_connection_media(dataInfo,m_ulRecvLen);
+        handle_connection_media(&dataInfo,m_ulRecvLen);
         return;
     }
     
@@ -976,7 +979,7 @@ void mk_rtsp_connection::handleH264Frame(RTP_PACK_QUEUE &rtpFrameList)
     memset(&dataInfo,0x0,sizeof(dataInfo));
     parse_media_info(MR_MEDIA_TYPE_H264,TimeStam,recBuf,dataInfo);
 
-    handle_connection_media(dataInfo,m_ulRecvLen);
+    handle_connection_media(&dataInfo,m_ulRecvLen);
 }
 void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
 {
@@ -1042,7 +1045,7 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
         memset(&dataInfo,0x0,sizeof(dataInfo));
         parse_media_info(MR_MEDIA_TYPE_H265,TimeStam,recBuf,dataInfo);
 
-        handle_connection_media(dataInfo,m_ulRecvLen);
+        handle_connection_media(&dataInfo,m_ulRecvLen);
         return;
     }
     for(uint32_t i = 0; i < rtpFrameList.size();i++) {
@@ -1086,7 +1089,7 @@ void mk_rtsp_connection::handleH265Frame(RTP_PACK_QUEUE &rtpFrameList)
     memset(&dataInfo,0x0,sizeof(dataInfo));
     parse_media_info(MR_MEDIA_TYPE_H265,TimeStam,recBuf,dataInfo);
 
-    handle_connection_media(dataInfo,m_ulRecvLen);
+    handle_connection_media(&dataInfo,m_ulRecvLen);
 }
 void mk_rtsp_connection::handleOtherFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rtpFrameList)
 {
@@ -1147,7 +1150,7 @@ void mk_rtsp_connection::handleOtherFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rt
     memset(&dataInfo,0x0,sizeof(dataInfo));
     parse_media_info(type,TimeStam,recBuf,dataInfo);
 
-    handle_connection_media(dataInfo,m_ulRecvLen);
+    handle_connection_media(&dataInfo,m_ulRecvLen);
 }
 
 int32_t mk_rtsp_connection::checkFrameTotalDataLen(RTP_PACK_QUEUE &rtpFrameList)

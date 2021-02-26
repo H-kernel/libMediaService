@@ -73,7 +73,7 @@ uint32_t mk_client_connection::get_index()
 {
     return m_ulIndex;
 }
-void mk_client_connection::get_client_rtp_stat_info(RTP_PACKET_STAT_INFO &statinfo)
+void mk_client_connection::get_client_rtp_stat_info(RTP_PACKET_STAT_INFO* statinfo)
 {
     this->get_rtp_stat_info(statinfo);
     return;
@@ -83,7 +83,7 @@ void mk_client_connection::get_client_rtsp_sdp_info(char* info,uint32_t lens,uin
     this->get_rtsp_sdp_info(info,lens,copylen);
     return;
 }
-void    mk_client_connection::handle_connection_media(MEDIA_DATA_INFO dataInfo,uint32_t len)
+void    mk_client_connection::handle_connection_media(MEDIA_DATA_INFO* dataInfo,uint32_t len)
 {
     if((NULL == m_ClientCallBack) ||(NULL == m_ClientCallBack->m_cb_status)) {
         return;

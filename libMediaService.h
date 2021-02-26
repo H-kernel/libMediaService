@@ -66,7 +66,7 @@ typedef int32_t (*handle_client_status)(MR_CLIENT client,MR_CLIENT_STATUS status
 
 typedef char* (*handle_client_get_buffer)(MR_CLIENT client,uint32_t len,uint32_t& ulBufLen,void* ctx);
 
-typedef int32_t (*handle_client_media)(MR_CLIENT client,MEDIA_DATA_INFO dataInfo,uint32_t len,void* ctx);
+typedef int32_t (*handle_client_media)(MR_CLIENT client,MEDIA_DATA_INFO* dataInfo,uint32_t len,void* ctx);
 
 typedef struct
 {
@@ -99,7 +99,7 @@ extern "C"
     /* stop the media client handle */
     MR_API void      mk_stop_client_handle(MR_CLIENT client);
     /* set a media client callback */
-    MR_API void      mk_set_client_callback(MR_CLIENT client,MEDIA_CALL_BACK cb,void* ctx);
+    MR_API void      mk_set_client_callback(MR_CLIENT client,MEDIA_CALL_BACK* cb,void* ctx);
     /* recv media data from media client */
     MR_API int32_t   mk_recv_next_media_data(MR_CLIENT client);
     /* set a media rtsp client media transport tcp*/
@@ -107,7 +107,7 @@ extern "C"
     /* set a media rtsp client/server rtp/rtcp udp port */
     MR_API void      mk_set_rtsp_udp_ports(uint16_t udpstart,uint32_t count);
     /* get a media rtsp client/server rtp packet stat info */
-    MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_INFO &statinfo);
+    MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_INFO* statinfo);
     /* get a media rtsp client sdp info */
     MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo,uint32_t lens,uint32_t& copylen);
 
