@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <assert.h>
+#include "mov-internal.h"
 #if defined(WIN32) && !defined(__cplusplus)
 #define inline __inline
 #endif

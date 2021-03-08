@@ -61,6 +61,8 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "xmemory0": "cpp"
+        "xmemory0": "cpp",
+        "amf0.h": "c",
+        "mov-internal.h": "c"
     }
 }

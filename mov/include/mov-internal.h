@@ -7,6 +7,10 @@
 #include "mov-buffer.h"
 #include "mov-ioutil.h"
 
+#ifndef UINT32_MAX
+# define UINT32_MAX		(4294967295U)
+#endif
+
 #define MOV_TAG(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
 #define MOV_MOOV MOV_TAG('m', 'o', 'o', 'v')
@@ -33,7 +37,7 @@
 #define MOV_ALIS	MOV_TAG('a', 'l', 'i', 's') // Apple QuickTime Macintosh alias
 
 // https://developer.apple.com/library/content/documentation/General/Reference/HLSAuthoringSpec/Requirements.html#//apple_ref/doc/uid/TP40016596-CH2-SW1
-// Video encoding requirements 1.10: Use ¡®avc1¡¯, ¡®hvc1¡¯, or ¡®dvh1¡¯ rather than ¡®avc3¡¯, ¡®hev1¡¯, or ¡®dvhe¡¯
+// Video encoding requirements 1.10: Use ï¿½ï¿½avc1ï¿½ï¿½, ï¿½ï¿½hvc1ï¿½ï¿½, or ï¿½ï¿½dvh1ï¿½ï¿½ rather than ï¿½ï¿½avc3ï¿½ï¿½, ï¿½ï¿½hev1ï¿½ï¿½, or ï¿½ï¿½dvheï¿½ï¿½
 #define MOV_H264 MOV_TAG('a', 'v', 'c', '1') // H.264 ISO/IEC 14496-15:2010(E) 5.3.4 AVC Video Stream Definition (18)
 #define MOV_HEVC MOV_TAG('h', 'v', 'c', '1') // H.265
 #define MOV_MP4V MOV_TAG('m', 'p', '4', 'v') // MPEG-4 Video
