@@ -24,7 +24,7 @@
 #endif
 
 #ifndef INT64_MIN
-# define INT64_MIN		(-__INT64_C(9223372036854775807)-1)
+# define INT64_MIN		(-9223372036854775808LL)
 #endif
 
 /* Maximum of signed integral types.  */
@@ -41,7 +41,7 @@
 #endif
 
 #ifndef INT64_MAX
-# define INT64_MAX		(__INT64_C(9223372036854775807))
+# define INT64_MAX		(9223372036854775807LL)
 #endif
 
 /* Maximum of unsigned integral types.  */
