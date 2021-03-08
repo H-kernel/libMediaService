@@ -9,6 +9,24 @@
 #include <stdint.h>
 
 /* Limits of integral types.  */
+# if __WORDSIZE == 64
+#ifndef __INT64_C
+#  define __INT64_C(c)	c ## L
+#endif
+
+#ifndef __UINT64_C
+#  define __UINT64_C(c)	c ## UL
+#endif
+# else
+#ifndef __INT64_C
+#  define __INT64_C(c)	c ## LL
+#endif
+
+#ifndef __UINT64_C
+#  define __UINT64_C(c)	c ## ULL
+#endif
+
+# endif
 
 /* Minimum of signed integral types.  */
 #ifndef INT8_MIN
@@ -24,7 +42,7 @@
 #endif
 
 #ifndef INT64_MIN
-# define INT64_MIN		(-9223372036854775808LL)
+# define INT64_MIN		(-__INT64_C(9223372036854775807)-1)
 #endif
 
 /* Maximum of signed integral types.  */
@@ -41,7 +59,7 @@
 #endif
 
 #ifndef INT64_MAX
-# define INT64_MAX		(9223372036854775807LL)
+# define INT64_MAX		(__INT64_C(9223372036854775807))
 #endif
 
 /* Maximum of unsigned integral types.  */
