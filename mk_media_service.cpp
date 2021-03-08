@@ -11,10 +11,16 @@ mk_media_service::mk_media_service()
     m_ulEvnCount          = 0;
     m_ulFrameBufSize      = FRAME_RECV_BUF_SIZE;
     m_ulFramebufCount     = FRAME_RECV_BUF_COUNT;
+    m_pMutex              = NULL;
 }
 
 mk_media_service::~mk_media_service()
 {
+    if(NULL != m_pMutex)
+    {
+        as_destroy_mutex(m_pMutex);
+        m_pMutex = NULL;
+    }
 }
 
 int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient,uint32_t RtpBufCountPerClient)
@@ -24,6 +30,13 @@ int32_t mk_media_service::init(uint32_t EvnCount,uint32_t MaxClient,uint32_t Rtp
 
     m_ulEvnCount = EvnCount;
     as_network_svr* pNetWork = NULL;
+
+    m_pMutex = as_create_mutex();
+    if(NULL == m_pMutex)
+    {
+        MK_LOG(AS_LOG_WARNING,"create mutex fail.");
+        return AS_ERROR_CODE_FAIL;
+    }
 
     /* create the network service array */
     m_NetWorkArray = AS_NEW(m_NetWorkArray,m_ulEvnCount);
@@ -135,7 +148,9 @@ mk_client_connection* mk_media_service::create_client(char* url,MEDIA_CALL_BACK*
     as_network_addr  local;
     as_network_addr  peer;
 
+    as_mutex_lock(m_pMutex);
     if(m_ClientFreeList.empty()) {
+        as_mutex_unlock(m_pMutex);
         return NULL;
     }
     
@@ -148,6 +163,7 @@ mk_client_connection* mk_media_service::create_client(char* url,MEDIA_CALL_BACK*
     }
 
     if(NULL == pClient) {
+        as_mutex_unlock(m_pMutex);
         return NULL;
     }
 
@@ -157,6 +173,8 @@ mk_client_connection* mk_media_service::create_client(char* url,MEDIA_CALL_BACK*
     pClient->set_index(ulIdx);
     pClient->set_status_callback(cb,ctx);
     pClient->set_url(url);
+    
+    as_mutex_unlock(m_pMutex);
     return pClient;
 }
 void mk_media_service::destory_client(mk_client_connection* pClient)
@@ -164,9 +182,13 @@ void mk_media_service::destory_client(mk_client_connection* pClient)
     if(NULL == pClient) {
         return;
     }
+    as_mutex_lock(m_pMutex);
+
     uint32_t ulIdx = pClient->get_index();    
     AS_DELETE(pClient);
     m_ClientFreeList.push_back(ulIdx);
+
+    as_mutex_unlock(m_pMutex);
     return;
 }
 mk_mov_file_writer* mk_media_service::create_writer(char* path)

@@ -81,7 +81,9 @@ void    mk_rtsp_service::get_rtp_recv_buf_info(uint32_t& maxCount)
 
 int32_t mk_rtsp_service::get_rtp_rtcp_pair(mk_rtsp_udp_handle*&  pRtpHandle,mk_rtsp_udp_handle*&  pRtcpHandle)
 {
+    as_mutex_lock(m_pMutex);
     if(0 == m_RtpRtcpfreeList.size()) {
+        as_mutex_unlock(m_pMutex);
         return AS_ERROR_CODE_FAIL;
     }
 
@@ -90,12 +92,17 @@ int32_t mk_rtsp_service::get_rtp_rtcp_pair(mk_rtsp_udp_handle*&  pRtpHandle,mk_r
     pRtpHandle  = m_pUdpRtpArray[index];
     pRtcpHandle = m_pUdpRtcpArray[index];
 
+    as_mutex_unlock(m_pMutex);
     return AS_ERROR_CODE_OK;
 }
 void    mk_rtsp_service::free_rtp_rtcp_pair(mk_rtsp_udp_handle* pRtpHandle)
 {
+    as_mutex_lock(m_pMutex);
+
     uint32_t index = pRtpHandle->get_index();
     m_RtpRtcpfreeList.push_back(index);
+    
+    as_mutex_unlock(m_pMutex);
     return;
 }
 char*   mk_rtsp_service::get_rtp_recv_buf()
@@ -176,6 +183,7 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
     mk_rtsp_udp_handle*  pRtpHandle  = NULL;
     mk_rtsp_udp_handle* pRtcpHandle = NULL;
 
+    as_mutex_lock(m_pMutex);
     for(uint32_t i = 0;i < m_ulUdpPairCount;i++) {
         pRtpHandle  = m_pUdpRtpArray[i];
         pRtcpHandle = m_pUdpRtcpArray[i];
@@ -193,6 +201,7 @@ void    mk_rtsp_service::destory_rtp_rtcp_udp_pairs()
              m_pUdpRtcpArray[i] = NULL;
         }
     }
+    as_mutex_unlock(m_pMutex);
     MK_LOG(AS_LOG_INFO,"destory udp rtp and rtcp pairs success.");
     return;
 }

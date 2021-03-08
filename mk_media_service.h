@@ -90,6 +90,7 @@ private:
     int32_t create_frame_recv_bufs();
     void    destory_frame_recv_bufs();
 private:
+    as_mutex_t*               m_pMutex;
     as_network_svr**          m_NetWorkArray;
     uint32_t                  m_ulEvnCount;
     mk_conn_log               m_connLog;
