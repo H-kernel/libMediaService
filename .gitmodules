@@ -1,0 +1,3 @@
+[submodule "as_common"]
+	path = as_common
+	url = https://gitee.com/H-kernel/as_common.git
