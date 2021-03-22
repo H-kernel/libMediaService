@@ -259,6 +259,9 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
                 mk_rtsp_service::instance().free_rtp_recv_buf(pData);
                 return AS_ERROR_CODE_OK;
             }
+            else{
+                return m_rtpFrameOrganizer.insertRtpPacket(pData,len);
+            }
         }
         else if(m_ucH265PayloadType == rtpPacket.GetPayloadType()) {
             H265_NALU_HEADER* pNalu_hdr = (H265_NALU_HEADER*)&pData[rtpPacket.GetHeadLen()];
@@ -294,8 +297,10 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
                 mk_rtsp_service::instance().free_rtp_recv_buf(pData);
                 return AS_ERROR_CODE_OK;
             }
-        }
-        return m_rtpFrameOrganizer.insertRtpPacket(pData,len);
+            else{
+                return m_rtpFrameOrganizer.insertRtpPacket(pData,len);
+            }
+        }  
     }
     else if(MK_RTSP_UDP_AUDIO_RTP_HANDLE == type) {
         mk_rtp_packet rtpPacket;
