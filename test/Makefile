@@ -9,7 +9,7 @@ TARGET     = ./test_rtxp_client
 INCPATH   += -I../ -I$(COMMON_DIR)
 
 
-LIBS      += -L../ -lMediaService -lpthread
+LIBS      += -L../build/ -lMediaService -lpthread
 LIBS      += -lm -ldl
 
 
