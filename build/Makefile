@@ -51,7 +51,7 @@ $(TARGET_LIB): $(CPPOBJS) $(COBJS)
 	$(AR) rcs $@ $(CPPOBJS) $(COBJS) 
 
 %.o : %.c $(HEADFILES)
-	$(C++) -c  $(C++FLAGS) $(INCPATH) $< -o $@
+	$(CC) -c  $(C++FLAGS) $(INCPATH) $< -o $@
 
 %.O : %.cpp $(HEADFILES)
 	$(C++) -c  $(C++FLAGS) $(INCPATH) $< -o $@	
