@@ -297,11 +297,10 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
                 mk_rtsp_service::instance().free_rtp_recv_buf(pData);
                 return AS_ERROR_CODE_OK;
             }
-            else{
+ 			else{
                 return m_rtpFrameOrganizer.insertRtpPacket(pData,len);
             }
-        }  
-    }
+        }    }
     else if(MK_RTSP_UDP_AUDIO_RTP_HANDLE == type) {
         mk_rtp_packet rtpPacket;
         if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData, len))
