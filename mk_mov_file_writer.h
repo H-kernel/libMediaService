@@ -3,12 +3,22 @@
 
 #include "mk_media_common.h"
 #include "libMediaService.h"
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cpluscplus */
+#endif /* __cpluscplus */
 #include "mov-writer.h"
 #include "mov-format.h"
 #include "mpeg4-avc.h"
 #include "mpeg4-hevc.h"
 #include "mpeg4-aac.h"
 #include "mov-file-buffer.h"
+#ifdef __cplusplus
+#if __cplusplus
+}
+#endif /* __cpluscplus */
+#endif /* __cpluscplus */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
