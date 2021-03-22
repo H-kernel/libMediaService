@@ -300,7 +300,8 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
  			else{
                 return m_rtpFrameOrganizer.insertRtpPacket(pData,len);
             }
-        }    }
+        }    
+    }
     else if(MK_RTSP_UDP_AUDIO_RTP_HANDLE == type) {
         mk_rtp_packet rtpPacket;
         if (AS_ERROR_CODE_OK != rtpPacket.ParsePacket(pData, len))
