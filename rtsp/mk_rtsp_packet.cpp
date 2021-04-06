@@ -8,7 +8,7 @@
 #include <time.h>
 #include "mk_rtsp_packet.h"
 #include "mk_media_common.h"
-#if AS_APP_OS == AS_OS_LINUX
+#if (AS_APP_OS & AS_OS_UNIX) == AS_OS_UNIX
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -726,7 +726,7 @@ int32_t mk_rtsp_packet::strparse2time(std::string& time, uint32_t& ulTime) const
 {
 	struct tm rangeTm;
 	memset(&rangeTm, 0x0, sizeof(rangeTm));
-#if AS_APP_OS == AS_OS_LINUX
+#if (AS_APP_OS & AS_OS_UNIX) == AS_OS_UNIX
 	char* pRet = strptime(time.c_str(), "%Y%m%dT%H%M%S", &rangeTm);
 	if (NULL == pRet)
 	{
@@ -1096,7 +1096,7 @@ void mk_rtsp_packet::setRangeTime(uint32_t unTimeType,
     {
         time_t rangeTime = (time_t) unStartTime;
         
-#if AS_APP_OS == AS_OS_LINUX
+#if (AS_APP_OS & AS_OS_UNIX) == AS_OS_UNIX
 		struct tm tmv;
 		(void) localtime_r(&rangeTime, &tmv);
 		(void)snprintf(strTime, 32, "%04d%02d%02dT%02d%02d%02dZ", tmv.tm_year + 1900,
@@ -1115,7 +1115,7 @@ void mk_rtsp_packet::setRangeTime(uint32_t unTimeType,
         if (0 != unStopTime)
         {
             rangeTime = (time_t) unStopTime;
-#if AS_APP_OS == AS_OS_LINUX
+#if (AS_APP_OS & AS_OS_UNIX) == AS_OS_UNIX
 			struct tm tmv;
 			(void)localtime_r(&rangeTime, &tmv);
 			(void)snprintf(strTime, 32, "%04d%02d%02dT%02d%02d%02dZ", tmv.tm_year + 1900,

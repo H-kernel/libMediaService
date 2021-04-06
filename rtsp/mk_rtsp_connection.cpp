@@ -6,7 +6,7 @@
 #include "mk_rtsp_service.h"
 #include "mk_media_common.h"
 #include "mk_rtsp_rtp_packet.h"
-#if AS_APP_OS == AS_OS_LINUX
+#if (AS_APP_OS & AS_OS_UNIX) == AS_OS_UNIX
 #include <arpa/inet.h>
 #elif AS_APP_OS == AS_OS_WIN32
 #include <Ws2tcpip.h>
@@ -67,7 +67,8 @@ int32_t mk_rtsp_connection::start()
     }
     as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
     struct in_addr sin_addr;    /* AF_INET */
-#if AS_APP_OS == AS_OS_LINUX
+
+#if (AS_APP_OS & AS_OS_UNIX) == AS_OS_UNIX
 	inet_aton((char*)&m_url.host[0],&sin_addr);
 #elif AS_APP_OS == AS_OS_WIN32
 	inet_pton(AF_INET, (char*)&m_url.host[0], &sin_addr);

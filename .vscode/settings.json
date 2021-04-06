@@ -64,5 +64,6 @@
         "xmemory0": "cpp",
         "amf0.h": "c",
         "mov-internal.h": "c"
-    }
+    },
+    "window.zoomLevel": 0.5
 }
