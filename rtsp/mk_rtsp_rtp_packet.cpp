@@ -49,10 +49,10 @@ int32_t mk_rtp_packet::ParsePacket(const char* pRtpData,uint32_t ulLen)
         const char* pTail = pRtpData + ulLen -1;
 
          m_ulTailLen = (uint32_t)(*(uint8_t*)pTail);
-        if(AS_ERROR_CODE_OK != SetPadding(0))
-        {
-            MK_LOG(AS_LOG_ERROR,"mk_rtp_packet::Parse fail, SetPadding fail.");
-        }
+        // if(AS_ERROR_CODE_OK != SetPadding(0))
+        // {
+        //     MK_LOG(AS_LOG_ERROR,"mk_rtp_packet::Parse fail, SetPadding fail.");
+        // }
     }
     uint32_t ulHeadLen = sizeof(RTP_FIXED_HEADER) + m_pFixedHead->csrc_len * RTP_CSRC_LEN;
     if (ulLen < ulHeadLen)
