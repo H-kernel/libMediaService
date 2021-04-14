@@ -346,11 +346,12 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
 
         handle_connection_media(&dataInfo,ulAudioLen);
         mk_rtsp_service::instance().free_rtp_recv_buf(pData);
+        return AS_ERROR_CODE_OK;
     }
     else {
         return AS_ERROR_CODE_FAIL;
     }
-    return AS_ERROR_CODE_OK;
+    return AS_ERROR_CODE_FAIL;
 }
 int32_t mk_rtsp_connection::handle_rtcp_packet(MK_RTSP_HANDLE_TYPE type,char* pData,uint32_t len)
 {
