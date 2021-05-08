@@ -250,7 +250,6 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
                 memcpy(&recBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
                 m_ulRecvLen += rtpPayloadLen;
                 enCode = MR_MEDIA_CODE_OK;
-                m_rtpFrameOrganizer.updateLastRtpSeq(rtpPacket.GetSeqNum(),false);
 
                 MEDIA_DATA_INFO dataInfo;
                 memset(&dataInfo,0x0,sizeof(dataInfo));
@@ -288,7 +287,6 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
                 memcpy(&recBuf[m_ulRecvLen],&pData[rtpHeadLen],rtpPayloadLen);
                 m_ulRecvLen += rtpPayloadLen;
                 enCode = MR_MEDIA_CODE_OK;
-                m_rtpFrameOrganizer.updateLastRtpSeq(rtpPacket.GetSeqNum(),false);
 
                 MEDIA_DATA_INFO dataInfo;
                 memset(&dataInfo,0x0,sizeof(dataInfo));
@@ -310,8 +308,6 @@ int32_t mk_rtsp_connection::handle_rtp_packet(MK_RTSP_HANDLE_TYPE type,char* pDa
             MK_LOG(AS_LOG_ERROR, "fail to send auido rtp packet, parse rtp packet fail.");
             return AS_ERROR_CODE_FAIL;
         }
-
-        //m_rtpFrameOrganizer.updateLastRtpSeq(rtpPacket.GetSeqNum(),false);
 
         MR_MEDIA_TYPE enType = MR_MEDIA_TYPE_INVALID;
         if(RTSP_PT_TYPE_PCMU == rtpPacket.GetPayloadType()) {

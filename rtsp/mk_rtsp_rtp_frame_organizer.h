@@ -107,7 +107,8 @@ typedef struct
 } FU_HEADER; /**//* 1 BYTES */
 
 #define MAX_RTP_FRAME_CACHE_NUM     5
-#define MAX_RTP_SEQ                 65535
+#define MAX_RTP_SEQ                 0xFFFF
+#define TURN_OVER_RTP_SEQ           0xFFF
 
 typedef struct _stRTP_PACK_INFO_S
 {
@@ -156,7 +157,7 @@ public:
     void getRtpPacketStatInfo(uint32_t &totalPackNum,uint32_t &lostRtpPacketNum,uint32_t &lostFrameNum,uint32_t &disorderSeqCounts);
 
     void updateTotalRtpPacketNum();
-    void updateLastRtpSeq(uint32_t uSeq, bool bRelease);
+
 private:
     int32_t insert(RTP_FRAME_INFO_S *pFrameinfo,const RTP_PACK_INFO_S &info);
 
@@ -167,7 +168,9 @@ private:
     void handleFinishedFrame(RTP_FRAME_INFO_S *pFrameinfo);
 
     void releaseRtpPacket(RTP_FRAME_INFO_S *pFrameinfo);
+
     RTP_FRAME_INFO_S* InsertFrame(uint8_t PayloadType,uint32_t  unTimestamp);
+
     RTP_FRAME_INFO_S* GetSmallFrame();
 private:
     uint32_t                 m_unMaxCacheFrameNum;
@@ -181,7 +184,6 @@ private:
     uint32_t                 m_unLostRtpPacketNum;      //丢包
     uint32_t                 m_unLostFrameNum;          //丢帧
     uint32_t                 m_unDisorderSeqCounts;     //乱序次数
-    uint32_t                 m_unLastRtpSeq;
 };
 
 #endif /* __MK_RTSP_RTP_FRAME_ORGANIZER_INCLUDE_H__ */
