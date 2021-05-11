@@ -127,9 +127,14 @@ int32_t mk_mov_file_writer::write_h264_frame(MEDIA_DATA_INFO* info,char* data,ui
     if(m_ulVideo_pts < info->pts) {
         pts = m_ulVideo_pts_last + info->pts - m_ulVideo_pts;
     }
+    else {
+        pts = m_ulVideo_pts_last + 40;
+    }
 
     m_ulVideo_pts_last = pts;
     m_ulVideo_pts = info->pts;
+
+    MK_LOG(AS_LOG_INFO,"mk_mov_file_writer::write_h264_frame,pts:[%d].",pts);
 
     int n = h264_annexbtomp4(&m_avc, data , lens, s_buffer, sizeof(s_buffer), &vcl,&update);
 
@@ -175,12 +180,17 @@ int32_t mk_mov_file_writer::write_h265_frame(MEDIA_DATA_INFO* info,char* data,ui
         m_ulVideo_pts = info->pts;
     }
 
-    if(m_ulVideo_pts < info->pts) {
+    if(m_ulVideo_pts <= info->pts) {
         pts = m_ulVideo_pts_last + info->pts - m_ulVideo_pts;
+    }
+    else {
+        pts = m_ulVideo_pts_last + 40;
     }
 
     m_ulVideo_pts_last = pts;
     m_ulVideo_pts = info->pts;
+
+    MK_LOG(AS_LOG_INFO,"mk_mov_file_writer::write_h265_frame,pts:[%d].",pts);
 
     int vcl = 0;
 	int update = 0;
@@ -246,7 +256,7 @@ int32_t mk_mov_file_writer::write_g711_frame(MEDIA_DATA_INFO* info,char* data,ui
 	{
 		int n = 320 < need ? 320 : need;
 		mov_writer_write(m_mov, m_lAudioTrack, ptr, n, pts, pts, 0);
-		pts  += n / 8;
+		//pts  += n / 8;
 		need -= n;
         ptr  += n;
 	}
