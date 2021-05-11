@@ -232,6 +232,7 @@ int32_t mk_mov_file_writer::write_g711_frame(MEDIA_DATA_INFO* info,char* data,ui
 
     uint32_t pts = 0;
     uint32_t need = lens;
+    char* ptr = data;
 
     if(0 == m_ulAudio_pts) {
         m_ulAudio_pts = info->pts;
@@ -244,9 +245,10 @@ int32_t mk_mov_file_writer::write_g711_frame(MEDIA_DATA_INFO* info,char* data,ui
     while (0 < need)
 	{
 		int n = 320 < need ? 320 : need;
-		mov_writer_write(m_mov, m_lAudioTrack, data, n, pts, pts, 0);
+		mov_writer_write(m_mov, m_lAudioTrack, ptr, n, pts, pts, 0);
 		pts  += n / 8;
 		need -= n;
+        ptr  += n;
 	}
 
     m_ulAudio_pts_last = pts;
