@@ -134,7 +134,7 @@ int32_t mk_mov_file_writer::write_h264_frame(MEDIA_DATA_INFO* info,char* data,ui
     m_ulVideo_pts_last = pts;
     m_ulVideo_pts = info->pts;
 
-    MK_LOG(AS_LOG_INFO,"mk_mov_file_writer::write_h264_frame,pts:[%d].",pts);
+    //MK_LOG(AS_LOG_INFO,"mk_mov_file_writer::write_h264_frame,pts:[%d].",pts);
 
     int n = h264_annexbtomp4(&m_avc, data , lens, s_buffer, sizeof(s_buffer), &vcl,&update);
 
@@ -190,7 +190,7 @@ int32_t mk_mov_file_writer::write_h265_frame(MEDIA_DATA_INFO* info,char* data,ui
     m_ulVideo_pts_last = pts;
     m_ulVideo_pts = info->pts;
 
-    MK_LOG(AS_LOG_INFO,"mk_mov_file_writer::write_h265_frame,pts:[%d].",pts);
+    //MK_LOG(AS_LOG_INFO,"mk_mov_file_writer::write_h265_frame,pts:[%d].",pts);
 
     int vcl = 0;
 	int update = 0;
@@ -232,6 +232,10 @@ int32_t mk_mov_file_writer::write_g711_frame(MEDIA_DATA_INFO* info,char* data,ui
         }
         else if(MR_MEDIA_TYPE_G711U == info->code) {
             m_lAudioTrack = mov_writer_add_audio(m_mov, MOV_OBJECT_G711u, m_ulAudioChannels, m_ulAudioBitsPerSample, MOV_WRITER_G711_SAMPLE, NULL, 0);
+        }
+        else {
+            MK_LOG(AS_LOG_ERROR,"write_g711_frame mp4 track error");
+            return AS_ERROR_CODE_OK;
         }
 
         if(m_lAudioTrack < 0) {
