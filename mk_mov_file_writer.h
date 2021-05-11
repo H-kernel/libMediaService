@@ -10,9 +10,6 @@ extern "C" {
 #endif /* __cpluscplus */
 #include "mov-writer.h"
 #include "mov-format.h"
-#include "mpeg4-avc.h"
-#include "mpeg4-hevc.h"
-#include "mpeg4-aac.h"
 #include "mov-file-buffer.h"
 #ifdef __cplusplus
 #if __cplusplus
