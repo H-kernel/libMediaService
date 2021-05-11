@@ -57,7 +57,7 @@ private:
 	int32_t              m_lWidth;
     int32_t              m_lHeight;
 	uint32_t             m_ulVideo_pts;
-	uint32_t             m_ulVideo_dts;
+	uint32_t             m_ulVideo_pts_last;
 
 	struct mpeg4_avc_t   m_avc;    // for H264
 	struct mpeg4_hevc_t  m_hevc;   // for HEVC
@@ -67,7 +67,7 @@ private:
 	uint32_t             m_ulAudioChannels;
 	uint32_t             m_ulAudioBitsPerSample;
 	uint32_t             m_ulAudio_pts;
-	uint32_t             m_ulAudio_dts;
+	uint32_t             m_ulAudio_pts_last;
 
     uint8_t              s_buffer[2 * 1024 * 1024];
     uint8_t              s_extra_data[64 * 1024];

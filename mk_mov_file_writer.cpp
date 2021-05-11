@@ -10,7 +10,7 @@ mk_mov_file_writer::mk_mov_file_writer()
 	m_lWidth               = 0;
     m_lHeight              = 0;
 	m_ulVideo_pts          = 0;
-	m_ulVideo_dts          = 0;
+    m_ulVideo_pts_last     = 0;
 
     memset(&m_avc,0,sizeof(struct mpeg4_avc_t));
     memset(&m_hevc,0,sizeof(struct mpeg4_hevc_t));
@@ -19,7 +19,7 @@ mk_mov_file_writer::mk_mov_file_writer()
 	m_ulAudioChannels      = MOV_WRITER_G711_CHANNEL;
 	m_ulAudioBitsPerSample = MOV_WRITER_G711_BITS;
 	m_ulAudio_pts          = 0;
-	m_ulAudio_dts          = 0;
+    m_ulAudio_pts_last     = 0;
 }
 
 mk_mov_file_writer::~mk_mov_file_writer()
@@ -118,8 +118,17 @@ int32_t mk_mov_file_writer::write_h264_frame(MEDIA_DATA_INFO* info,char* data,ui
 		return AS_ERROR_CODE_FAIL;
 	}
 	int vcl = 0, update = 0;
+    uint32_t pts = 0;
 
-    m_ulVideo_dts = info->pts;
+    if(0 == m_ulVideo_pts) {
+        m_ulVideo_pts = info->pts;
+    }
+
+    if(m_ulVideo_pts < info->pts) {
+        pts = m_ulVideo_pts_last + info->pts - m_ulVideo_pts;
+    }
+
+    m_ulVideo_pts_last = pts;
     m_ulVideo_pts = info->pts;
 
     int n = h264_annexbtomp4(&m_avc, data , lens, s_buffer, sizeof(s_buffer), &vcl,&update);
@@ -149,7 +158,7 @@ int32_t mk_mov_file_writer::write_h264_frame(MEDIA_DATA_INFO* info,char* data,ui
         }		
     }
 
-    return mov_writer_write(m_mov, m_lVideoTrack, s_buffer, n, m_ulVideo_dts, m_ulVideo_pts, 1 == vcl ? MOV_AV_FLAG_KEYFREAME : 0);
+    return mov_writer_write(m_mov, m_lVideoTrack, s_buffer, n, pts, pts, 1 == vcl ? MOV_AV_FLAG_KEYFREAME : 0);
 }
 
 int32_t mk_mov_file_writer::write_h265_frame(MEDIA_DATA_INFO* info,char* data,uint32_t lens)
@@ -160,7 +169,17 @@ int32_t mk_mov_file_writer::write_h265_frame(MEDIA_DATA_INFO* info,char* data,ui
 		return AS_ERROR_CODE_FAIL;
 	}
 
-    m_ulVideo_dts = info->pts;
+    uint32_t pts = 0;
+
+    if(0 == m_ulVideo_pts) {
+        m_ulVideo_pts = info->pts;
+    }
+
+    if(m_ulVideo_pts < info->pts) {
+        pts = m_ulVideo_pts_last + info->pts - m_ulVideo_pts;
+    }
+
+    m_ulVideo_pts_last = pts;
     m_ulVideo_pts = info->pts;
 
     int vcl = 0;
@@ -192,7 +211,7 @@ int32_t mk_mov_file_writer::write_h265_frame(MEDIA_DATA_INFO* info,char* data,ui
         }
 	}
 	
-    return mov_writer_write(m_mov, m_lVideoTrack, s_buffer, n, m_ulVideo_dts, m_ulVideo_pts, 1 == vcl ? MOV_AV_FLAG_KEYFREAME : 0);
+    return mov_writer_write(m_mov, m_lVideoTrack, s_buffer, n, pts, pts, 1 == vcl ? MOV_AV_FLAG_KEYFREAME : 0);
 }
 
 int32_t mk_mov_file_writer::write_g711_frame(MEDIA_DATA_INFO* info,char* data,uint32_t lens)
@@ -211,9 +230,27 @@ int32_t mk_mov_file_writer::write_g711_frame(MEDIA_DATA_INFO* info,char* data,ui
         }
     }
 
-    int n = 320 < lens ? lens : 320;
-	int32_t nRet = mov_writer_write(m_mov, m_lAudioTrack, data, n, m_ulAudio_pts, m_ulAudio_dts, 0);
-	m_ulAudio_pts += n / 8;
-	m_ulAudio_dts += n;
-    return nRet;
+    uint32_t pts = 0;
+    uint32_t need = lens;
+
+    if(0 == m_ulAudio_pts) {
+        m_ulAudio_pts = info->pts;
+    }
+
+    if(m_ulAudio_pts < info->pts) {
+        pts = m_ulAudio_pts_last + info->pts - m_ulAudio_pts;
+    }
+
+    while (0 < need)
+	{
+		int n = 320 < need ? 320 : need;
+		mov_writer_write(m_mov, m_lAudioTrack, data, n, pts, pts, 0);
+		pts  += n / 8;
+		need -= n;
+	}
+
+    m_ulAudio_pts_last = pts;
+    m_ulAudio_pts = info->pts;
+
+    return AS_ERROR_CODE_OK;
 }
