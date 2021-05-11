@@ -10,7 +10,7 @@ extern "C" {
 #endif /* __cpluscplus */
 #include "mov-writer.h"
 #include "mov-format.h"
-#include "mov-file-buffer.h"
+#include "mk_mov_file_buffer.h"
 #ifdef __cplusplus
 #if __cplusplus
 }
