@@ -72,19 +72,19 @@ int mov_read_cslg(struct mov_t* mov, const struct mov_box_t* box)
 
 	if (0 == version)
 	{
-		(int32_t)mov_buffer_r32(&mov->io); /* compositionToDTSShift */
-		(int32_t)mov_buffer_r32(&mov->io); /* leastDecodeToDisplayDelta */
-		(int32_t)mov_buffer_r32(&mov->io); /* greatestDecodeToDisplayDelta */
-		(int32_t)mov_buffer_r32(&mov->io); /* compositionStartTime */
-		(int32_t)mov_buffer_r32(&mov->io); /* compositionEndTime */
+		mov_buffer_r32(&mov->io); /* compositionToDTSShift */
+		mov_buffer_r32(&mov->io); /* leastDecodeToDisplayDelta */
+		mov_buffer_r32(&mov->io); /* greatestDecodeToDisplayDelta */
+		mov_buffer_r32(&mov->io); /* compositionStartTime */
+		mov_buffer_r32(&mov->io); /* compositionEndTime */
 	}
 	else
 	{
-		(int64_t)mov_buffer_r64(&mov->io);
-		(int64_t)mov_buffer_r64(&mov->io);
-		(int64_t)mov_buffer_r64(&mov->io);
-		(int64_t)mov_buffer_r64(&mov->io);
-		(int64_t)mov_buffer_r64(&mov->io);
+		mov_buffer_r64(&mov->io);
+		mov_buffer_r64(&mov->io);
+		mov_buffer_r64(&mov->io);
+		mov_buffer_r64(&mov->io);
+		mov_buffer_r64(&mov->io);
 	}
 
 	(void)box;
@@ -93,7 +93,7 @@ int mov_read_cslg(struct mov_t* mov, const struct mov_box_t* box)
 
 size_t mov_write_stts(const struct mov_t* mov, uint32_t count)
 {
-	size_t size, i;
+	uint32_t size, i;
 	const struct mov_sample_t* sample;
 	const struct mov_track_t* track = mov->track;
 
@@ -118,7 +118,7 @@ size_t mov_write_stts(const struct mov_t* mov, uint32_t count)
 
 size_t mov_write_ctts(const struct mov_t* mov, uint32_t count)
 {
-	size_t size, i;
+	uint32_t size, i;
 	const struct mov_sample_t* sample;
 	const struct mov_track_t* track = mov->track;
 

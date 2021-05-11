@@ -22,13 +22,12 @@ int mov_read_trun(struct mov_t* mov, const struct mov_box_t* box)
 	sample_count = mov_buffer_r32(&mov->io); /* sample_count */
 
 	track = mov->track;
-	if (track->sample_count + sample_count + 1 > track->sample_offset)
+	if (sample_count > 0)
 	{
-		void* p = realloc(track->samples, sizeof(struct mov_sample_t) * (track->sample_count + 2*sample_count + 1));
+		void* p = realloc(track->samples, sizeof(struct mov_sample_t) * (track->sample_count + sample_count + 1));
 		if (NULL == p) return ENOMEM;
 		track->samples = (struct mov_sample_t*)p;
-		track->sample_offset = track->sample_count + 2 * sample_count + 1;
-		memset(track->samples + track->sample_count,  0, sizeof(struct mov_sample_t) * (2 * sample_count + 1));
+		memset(track->samples + track->sample_count, 0, sizeof(struct mov_sample_t) * (sample_count + 1));
 	}
 
 	data_offset = track->tfhd.base_data_offset;
@@ -84,12 +83,12 @@ int mov_read_trun(struct mov_t* mov, const struct mov_box_t* box)
 	return mov_buffer_error(&mov->io);
 }
 
-size_t mov_write_trun(const struct mov_t* mov, size_t from, size_t count, uint32_t moof)
+size_t mov_write_trun(const struct mov_t* mov, uint32_t from, uint32_t count, uint32_t moof)
 {
     uint32_t flags;
 	uint32_t delta;
 	uint64_t offset;
-	size_t size, i;
+	uint32_t size, i;
 	const struct mov_sample_t* sample;
 	const struct mov_track_t* track = mov->track;
 
@@ -104,7 +103,7 @@ size_t mov_write_trun(const struct mov_t* mov, size_t from, size_t count, uint32
         sample = track->samples + i;
         if (sample->bytes != track->tfhd.default_sample_size)
             flags |= MOV_TRUN_FLAG_SAMPLE_SIZE_PRESENT;
-        if ((uint32_t)(i + 1 < track->sample_count ? track->samples[i + 1].dts - track->samples[i].dts : (i > 0 ? track->samples[i].dts - track->samples[i - 1].dts : 0)) != track->tfhd.default_sample_duration)
+        if ((uint32_t)(i + 1 < track->sample_count ? track->samples[i + 1].dts - track->samples[i].dts : track->turn_last_duration) != track->tfhd.default_sample_duration)
             flags |= MOV_TRUN_FLAG_SAMPLE_DURATION_PRESENT;
         if (sample->pts != sample->dts)
             flags |= MOV_TRUN_FLAG_SAMPLE_COMPOSITION_TIME_OFFSET_PRESENT;
@@ -138,7 +137,7 @@ size_t mov_write_trun(const struct mov_t* mov, size_t from, size_t count, uint32
 		sample = track->samples + i;
 		if (flags & MOV_TRUN_FLAG_SAMPLE_DURATION_PRESENT)
 		{
-            delta = (uint32_t)(i + 1 < track->sample_count ? track->samples[i + 1].dts - track->samples[i].dts : (i > 0 ? track->samples[i].dts - track->samples[i-1].dts : 0));
+            delta = (uint32_t)(i + 1 < track->sample_count ? track->samples[i + 1].dts - track->samples[i].dts : track->turn_last_duration);
 			mov_buffer_w32(&mov->io, delta); /* sample_duration */
 			size += 4;
 		}

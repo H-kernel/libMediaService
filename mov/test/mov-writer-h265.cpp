@@ -13,7 +13,7 @@ extern "C" const struct mov_buffer_t* mov_file_buffer(void);
 static uint8_t s_buffer[2 * 1024 * 1024];
 static uint8_t s_extra_data[64 * 1024];
 
-struct mov_h265_write_t
+struct mov_h265_test_t
 {
 	mov_writer_t* mov;
 	struct mpeg4_hevc_t hevc;
@@ -46,7 +46,7 @@ static uint8_t* file_read(const char* file, long* size)
 	return NULL;
 }
 
-static int h265_write(struct mov_h265_write_t* ctx, const void* data, int bytes)
+static int h265_write(struct mov_h265_test_t* ctx, const void* data, int bytes)
 {
 	int vcl = 0;
 	int update = 0;
@@ -82,7 +82,7 @@ static int h265_write(struct mov_h265_write_t* ctx, const void* data, int bytes)
 
 static void h265_handler(void* param, const uint8_t* nalu, int bytes)
 {
-	struct mov_h265_write_t* ctx = (struct mov_h265_write_t*)param;
+	struct mov_h265_test_t* ctx = (struct mov_h265_test_t*)param;
 	assert(ctx->ptr < nalu);
 
 	const uint8_t* ptr = nalu - 3;
@@ -104,7 +104,7 @@ static void h265_handler(void* param, const uint8_t* nalu, int bytes)
 
 void mov_writer_h265(const char* h265, int width, int height, const char* mp4)
 {
-	struct mov_h265_write_t ctx;
+	struct mov_h265_test_t ctx;
 	memset(&ctx, 0, sizeof(ctx));
 	ctx.track = -1;
 	ctx.width = width;
