@@ -50,6 +50,17 @@ mk_rtsp_connection::mk_rtsp_connection()
 
 mk_rtsp_connection::~mk_rtsp_connection()
 {
+    if(NULL != m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]) {
+        mk_rtsp_service::instance().free_rtp_rtcp_pair(m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]);
+        m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]    = NULL;
+        m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]   = NULL;
+    }
+
+    if(NULL != m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]) {
+        mk_rtsp_service::instance().free_rtp_rtcp_pair(m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]);
+        m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]    = NULL;
+        m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]   = NULL;
+    }
 }
 
 
@@ -108,10 +119,20 @@ void mk_rtsp_connection::stop()
     /* unregister the network service */
     as_network_svr* pNetWork = mk_media_service::instance().get_client_network_svr(this->get_index());
     pNetWork->removeTcpClient(this);
+    
+    if(NULL != m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]) {
+        m_udpHandles[MK_RTSP_UDP_VIDEO_RTP_HANDLE]->stop_handle();
+    }
+    if(NULL != m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]) {
+        m_udpHandles[MK_RTSP_UDP_VIDEO_RTCP_HANDLE]->stop_handle();
+    }
 
-    //don't send teardown
-    //handle_connection_status(MR_CLIENT_STATUS_TEARDOWN);
-
+    if(NULL != m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]) {
+        m_udpHandles[MK_RTSP_UDP_AUDIO_RTP_HANDLE]->stop_handle();
+    }
+    if(NULL != m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]) {
+        m_udpHandles[MK_RTSP_UDP_AUDIO_RTCP_HANDLE]->stop_handle();
+    }
     MK_LOG(AS_LOG_INFO,"close rtsp client.");
     return;
 }
