@@ -5,7 +5,7 @@
 
 mk_client_timer::mk_client_timer()
 {
-
+    m_bRegister = false;
 }
 mk_client_timer::~mk_client_timer()
 {
@@ -14,7 +14,7 @@ mk_client_timer::~mk_client_timer()
 void mk_client_timer::onTrigger(void *pArg, ULONGLONG ullScales, TriggerStyle enStyle)
 {
     mk_client_connection* pConnect = (mk_client_connection*)pArg;
-    pConnect->check_client();
+    pConnect->handle_timeout();
 }
 
 mk_client_connection::mk_client_connection()
@@ -52,12 +52,21 @@ int32_t  mk_client_connection::start_recv()
     }
 
     as_timer& pTimerMgr = mk_media_service::instance().get_client_check_timer();
-    return pTimerMgr.registerTimer(&m_ClientCheckTimer,this,MK_CLIENT_TIMER_INTERVAL,enRepeated);
+    int32_t nRet = pTimerMgr.registerTimer(&m_ClientCheckTimer,this,MK_CLIENT_TIMER_INTERVAL,enRepeated);
+    if(AS_ERROR_CODE_OK != nRet) {
+        m_ClientCheckTimer.m_bRegister = false;
+        return AS_ERROR_CODE_FAIL;
+    }
+    m_ClientCheckTimer.m_bRegister = true;
+    return AS_ERROR_CODE_OK;
 }
 int32_t  mk_client_connection::stop_recv()
 {
-    as_timer& pTimerMgr = mk_media_service::instance().get_client_check_timer();
-    pTimerMgr.cancelTimer(&m_ClientCheckTimer);
+    if(m_ClientCheckTimer.m_bRegister) {
+        as_timer& pTimerMgr = mk_media_service::instance().get_client_check_timer();
+        pTimerMgr.cancelTimer(&m_ClientCheckTimer);
+        m_ClientCheckTimer.m_bRegister = false;
+    }
     this->stop();
     return AS_ERROR_CODE_OK;
 }
@@ -72,6 +81,17 @@ void     mk_client_connection::set_index(uint32_t ulIdx)
 uint32_t mk_client_connection::get_index()
 {
     return m_ulIndex;
+}
+void mk_client_connection::handle_timeout()
+{
+    if(AS_ERROR_CODE_OK != check_client()) {
+        /* cancel the timer */
+        if(m_ClientCheckTimer.m_bRegister) {
+            as_timer& pTimerMgr = mk_media_service::instance().get_client_check_timer();
+            pTimerMgr.cancelTimer(&m_ClientCheckTimer);
+            m_ClientCheckTimer.m_bRegister = false;
+        }
+    }
 }
 void mk_client_connection::get_client_rtp_stat_info(RTP_PACKET_STAT_INFO* statinfo)
 {

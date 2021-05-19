@@ -13,7 +13,7 @@ public:
     virtual int32_t start();
     virtual void    stop();
     virtual int32_t recv_next();
-    virtual void    check_client();
+    virtual int32_t check_client();
 public:
     virtual void handle_recv(void);
     virtual void handle_send(void);

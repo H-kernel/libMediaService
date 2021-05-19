@@ -141,13 +141,14 @@ int32_t mk_rtsp_connection::recv_next()
     m_bDoNextRecv = AS_TRUE;
     return AS_ERROR_CODE_OK;
 }
-void  mk_rtsp_connection::check_client()
+int32_t  mk_rtsp_connection::check_client()
 {
     time_t cur = time(NULL);
     if(MK_CLIENT_RECV_TIMEOUT < (cur - m_ulLastRecv)) {
         handle_connection_status(MR_CLIENT_STATUS_TIMEOUT);
+        return AS_ERROR_CODE_TIMEOUT;
     }
-    return;
+    return  AS_ERROR_CODE_OK;
 }
 
 void  mk_rtsp_connection::set_rtp_over_tcp()

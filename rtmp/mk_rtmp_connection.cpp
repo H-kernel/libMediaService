@@ -75,13 +75,14 @@ int32_t mk_rtmp_connection::recv_next()
     as_handle::setHandleRecv(AS_TRUE);
     return AS_ERROR_CODE_OK;
 }
-void mk_rtmp_connection::check_client()
+int32_t mk_rtmp_connection::check_client()
 {
     time_t cur = time(NULL);
     if(MK_CLIENT_RECV_TIMEOUT < (cur - m_ulLastRecv)) {
         handle_connection_status(MR_CLIENT_STATUS_TIMEOUT);
+        return AS_ERROR_CODE_TIMEOUT;
     }
-    return;
+    return AS_ERROR_CODE_OK;
 }
 void mk_rtmp_connection::handle_recv(void)
 {
