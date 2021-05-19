@@ -51,7 +51,7 @@ public:
     virtual int32_t start();
     virtual void    stop();
     virtual int32_t recv_next();
-    virtual void    check_client();
+    virtual int32_t check_client();
     virtual void    set_rtp_over_tcp();
     virtual void    get_rtp_stat_info(RTP_PACKET_STAT_INFO* statinfo);
     virtual void    get_rtsp_sdp_info(char* info,uint32_t lens,uint32_t& copylen);
