@@ -92,6 +92,13 @@ MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo,uint
     pClient->get_client_rtsp_sdp_info(sdpInfo,lens,copylen);
     return;
 }
+/* whether send rtcp packet when recv stream */
+MR_API void      mk_set_client_send_rtcp(MR_CLIENT client,bool bsend)
+{
+    mk_client_connection* pClient = (mk_client_connection*)client;
+    pClient->set_client_send_rtcp(bsend);
+    return;
+}
 
 /* create the mov/mp4 media writer */
 MR_API MR_WRITER mk_create_writer_handle(char* path)

@@ -12,7 +12,8 @@ enum MK_CLIENT_TYPE
 };
 
 #define MK_CLIENT_TIMER_INTERVAL 100
-#define MK_CLIENT_RECV_TIMEOUT   5
+#define MK_CLIENT_RECV_TIMEOUT   20
+#define MK_CLIENT_SEND_RTCP_INTERVAL 3
 
 class mk_client_timer:public ITrigger
 {
@@ -41,6 +42,7 @@ public:
     void     handle_timeout();
     void     get_client_rtp_stat_info(RTP_PACKET_STAT_INFO* statinfo);
     void     get_client_rtsp_sdp_info(char* info,uint32_t lens,uint32_t& copylen);
+    void     set_client_send_rtcp(bool bsend);
 public:
     virtual int32_t start() = 0;
     virtual void    stop() = 0;
@@ -55,6 +57,7 @@ protected:
     void    parse_media_info(MR_MEDIA_TYPE enType,uint32_t pts,char* buf,MEDIA_DATA_INFO &dataInfo);
 protected:
     std::string          m_strurl;
+    bool                 m_bSendRtcp;
 private:
     uint32_t             m_ulIndex;
     MK_CLIENT_TYPE       m_enType;
