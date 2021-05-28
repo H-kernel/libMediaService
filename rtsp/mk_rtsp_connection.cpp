@@ -510,7 +510,7 @@ int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unData
 int32_t mk_rtsp_connection::sendRtcpMessage()
 {
     char buf[KILO] = { 0 };
-    char* pRtcpBuff = buf + GB_RTP_INTERLEAVE;
+    char* pRtcpBuff = buf + RTP_INTERLEAVE_LENGTH;
     uint32_t unRtcpLen = 0;
 
     TRANS_DIRECTION emDirect = m_sdpInfo.getTransDirect();
@@ -518,20 +518,20 @@ int32_t mk_rtsp_connection::sendRtcpMessage()
     if(TRANS_DIRECTION_SENDONLY == emDirect)
     {
         (void)m_rtcpPacket.createSenderReport(pRtcpBuff,
-                                                KILO - GB_RTP_INTERLEAVE,
+                                                KILO - RTP_INTERLEAVE_LENGTH,
                                                 unRtcpLen);
     }
     else{
         (void)m_rtcpPacket.createReceiverReport(pRtcpBuff,
-                                              KILO - GB_RTP_INTERLEAVE,
+                                              KILO - RTP_INTERLEAVE_LENGTH,
                                               unRtcpLen);
     }
 
     buf[0] = RTP_INTERLEAVE_FLAG;
-    buf[1] = (char)RTSP_INTERLEAVE_NUM_AUDIO_RTCP;
+    buf[1] = (char)RTSP_INTERLEAVE_NUM_VIDEO_RTCP;
     *(uint16_t*) &buf[2] = htons((uint16_t)unRtcpLen );
 
-    return sendMsg(buf, unRtcpLen + GB_RTP_INTERLEAVE);
+    return sendMsg(buf, unRtcpLen + RTP_INTERLEAVE_LENGTH);
 }
 int32_t mk_rtsp_connection::sendRtspReq(enRtspMethods enMethod,std::string& strUri,std::string& strTransport,uint64_t ullSessionId)
 {

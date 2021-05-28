@@ -66,5 +66,5 @@
         "mov-internal.h": "c",
         "mov-buffer.h": "c"
     },
-    "window.zoomLevel": 0.5
+    "window.zoomLevel": 1
 }

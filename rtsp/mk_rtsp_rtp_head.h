@@ -36,7 +36,7 @@ typedef struct
 
 #define RTP_INTERLEAVE_FLAG    '$'
 #define KILO                  1024 
-#define GB_RTP_INTERLEAVE     2
+
 
 
 const uint32_t RTP_RTCP_DUMMY   = 0xFEEDFACE;
