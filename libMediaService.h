@@ -110,6 +110,8 @@ extern "C"
     MR_API void      mk_get_client_rtp_stat_info(MR_CLIENT client,RTP_PACKET_STAT_INFO* statinfo);
     /* get a media rtsp client sdp info */
     MR_API void      mk_get_client_rtsp_sdp_info(MR_CLIENT client,char* sdpInfo,uint32_t lens,uint32_t& copylen);
+    /* whether send rtcp packet when recv stream */
+    MR_API void      mk_set_client_send_rtcp(MR_CLIENT client,bool bsend);
 
     /* create the mov/mp4 media writer */
     MR_API MR_WRITER mk_create_writer_handle(char* path);
