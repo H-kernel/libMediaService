@@ -514,7 +514,7 @@ int32_t mk_rtsp_connection::sendRtcpMessage()
     uint32_t unRtcpLen = 0;
 
     TRANS_DIRECTION emDirect = m_sdpInfo.getTransDirect();
-    MK_LOG(AS_LOG_INFO,"TransDirect[%d].",emDirect);
+    //MK_LOG(AS_LOG_INFO,"TransDirect[%d].",emDirect);
     if(TRANS_DIRECTION_SENDONLY == emDirect)
     {
         (void)m_rtcpPacket.createSenderReport(pRtcpBuff,
