@@ -247,7 +247,7 @@ typedef  int INT32;
 class NALBitstream   
 {   
     public:   
-    NALBitstream() : m_data(nullptr), m_len(0), m_idx(0), m_bits(0), m_byte(0), m_zeros(0) {};   
+    NALBitstream() : m_data(NULL), m_len(0), m_idx(0), m_bits(0), m_byte(0), m_zeros(0) {};   
     NALBitstream(void * data, int len) { Init(data, len); };   
     void Init(void * data, int len) { m_data = (LPBYTE)data; m_len = len; m_idx = 0; m_bits = 0; m_byte = 0; m_zeros = 0; };   
         
