@@ -43,6 +43,7 @@ mk_rtsp_connection::mk_rtsp_connection()
     m_ucH265PayloadType = PT_TYPE_MAX;
 
     m_ulLastRecv = time(NULL);
+    m_ulLastRtcpSend = time(NULL);
     m_ulAuthenTime = 0;
     m_strAuthenticate = "";
     m_strSdpInfo = "";
@@ -398,6 +399,14 @@ int32_t mk_rtsp_connection::processRecvedMessage(const char* pData, uint32_t unD
 
     if (RTSP_INTERLEAVE_FLAG == pData[0])
     {
+        if(m_bSendRtcp)
+        {
+            time_t cur = time(NULL);
+            if(MK_CLIENT_SEND_RTCP_INTERVAL <= (cur - m_ulLastRtcpSend)) {
+                sendRtcpMessage();
+                m_ulLastRtcpSend = cur;
+            }
+        }
         return handleRTPRTCPData(pData, unDataSize);
     }
     /* rtsp message */
@@ -496,6 +505,33 @@ int32_t mk_rtsp_connection::handleRTPRTCPData(const char* pData, uint32_t unData
     }
 
     return (int32_t)(unMediaSize + RTSP_INTERLEAVE_HEADER_LEN);
+}
+
+int32_t mk_rtsp_connection::sendRtcpMessage()
+{
+    char buf[KILO] = { 0 };
+    char* pRtcpBuff = buf + RTP_INTERLEAVE_LENGTH;
+    uint32_t unRtcpLen = 0;
+
+    TRANS_DIRECTION emDirect = m_sdpInfo.getTransDirect();
+    //MK_LOG(AS_LOG_INFO,"TransDirect[%d].",emDirect);
+    if(TRANS_DIRECTION_SENDONLY == emDirect)
+    {
+        (void)m_rtcpPacket.createSenderReport(pRtcpBuff,
+                                                KILO - RTP_INTERLEAVE_LENGTH,
+                                                unRtcpLen);
+    }
+    else{
+        (void)m_rtcpPacket.createReceiverReport(pRtcpBuff,
+                                              KILO - RTP_INTERLEAVE_LENGTH,
+                                              unRtcpLen);
+    }
+
+    buf[0] = RTP_INTERLEAVE_FLAG;
+    buf[1] = (char)RTSP_INTERLEAVE_NUM_VIDEO_RTCP;
+    *(uint16_t*) &buf[2] = htons((uint16_t)unRtcpLen );
+
+    return sendMsg(buf, unRtcpLen + RTP_INTERLEAVE_LENGTH);
 }
 int32_t mk_rtsp_connection::sendRtspReq(enRtspMethods enMethod,std::string& strUri,std::string& strTransport,uint64_t ullSessionId)
 {

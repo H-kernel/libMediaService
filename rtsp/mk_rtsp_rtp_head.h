@@ -21,6 +21,24 @@ typedef struct
     uint32_t ssrc;             /**//* stream number is used here. */
 } RTP_FIXED_HEADER;
 
+typedef struct
+{
+    /**//* byte 0 */
+    uint8_t   Count:5;
+    uint8_t   Padding:1;
+    uint8_t   Version:2;
+    /**//* byte 1 */
+    uint8_t   PacketType;
+
+    /**//* bytes 2, 3 */
+    uint16_t  Length;
+} RTCP_FIXED_HEADER;
+
+#define RTP_INTERLEAVE_FLAG    '$'
+#define KILO                  1024 
+
+
+
 const uint32_t RTP_RTCP_DUMMY   = 0xFEEDFACE;
 #define DUMMYSIZE    sizeof(uint32_t)
 

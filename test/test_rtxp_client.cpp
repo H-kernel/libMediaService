@@ -4,6 +4,7 @@
 #include <string.h>
 #include <list>
 #include <unistd.h>
+#include <fstream>
 //#include "as.h"
 #include "../libMediaService.h"
 typedef struct
@@ -71,6 +72,7 @@ public:
             return -1;
         }
         mk_create_rtsp_client_set_tcp(m_hanlde);
+        mk_set_client_send_rtcp(m_hanlde,true);
         if(0 != as_parse_url(m_strUrl.c_str(),&m_url)) {
             printf("parse url:[%s] fail.\n",m_strUrl.c_str());
             return -1;
@@ -106,7 +108,7 @@ public:
     {
         if(dataInfo->type == MR_MEDIA_TYPE_H264) {
             NALU_HEADER* nalu = (NALU_HEADER*)&m_szBuf[4];
-            printf("H264 NALU:[%d]\n",nalu->TYPE);
+            // printf("H264 NALU:[%d]\n",nalu->TYPE);
             if(b_first)
             {
                 if(7 == nalu->TYPE)
@@ -136,7 +138,7 @@ public:
         else if(dataInfo->type == MR_MEDIA_TYPE_H265){
             //fwrite(m_szBuf,len,1,m_WriteFd);
             NALU_HEADER_S* nalu = (NALU_HEADER_S*)&m_szBuf[4];
-            printf("H265 NALU:[%d]\n",nalu->TYPE);
+            // printf("H265 NALU:[%d]\n",nalu->TYPE);
             if(b_first)
             {
                 if(32 == nalu->TYPE)
@@ -159,11 +161,11 @@ public:
 #ifdef _DUMP_WRITE
             if(NULL != m_WriteFd)
             {
-                fwrite(m_szBuf,len,1,m_WriteFd);
+                // fwrite(m_szBuf,len,1,m_WriteFd);
             }
 #endif              
         }
-        printf("data start:[0x%0x 0x%0x 0x%0x 0x%0x]\n",m_szBuf[0],m_szBuf[1],m_szBuf[2],m_szBuf[3]);
+        // printf("data start:[0x%0x 0x%0x 0x%0x 0x%0x]\n",m_szBuf[0],m_szBuf[1],m_szBuf[2],m_szBuf[3]);
         return mk_recv_next_media_data(client);
     }
     int32_t hanlde_lib_status(MR_CLIENT client,MR_CLIENT_STATUS status)
@@ -370,18 +372,40 @@ int main(int argc,char* argv[])
     int nCount = argc - 1;
     printf("create client nCount:[%d] \n",nCount);
     for(int i = 0;i < nCount;i++) {
-        strUrl = argv[i+1];
-        try {
-            pClient = new rtxp_client(strUrl);
-        }
-        catch(...) {
-            printf("create client:[%d] ,url:[%s] fail\n",i,strUrl.c_str());
+        //strUrl = argv[i+1];
+        std::string DirPath = argv[i+1];
+        std::ifstream in(DirPath.c_str());
+        if (in.fail())
+        {
+            printf("read url txt fail.");
             return -1;
         }
-        printf("create client:[%d] ,url:[%s]\n",i,strUrl.c_str());
-        clientList.push_back(pClient);
+        try
+        {
+            while (!in.eof())
+            {
+                getline(in, strUrl);
+                if (in.fail())
+                {              
+                    in.close();
+                    break;
+                }
+                try {
+                    pClient = new rtxp_client(strUrl);
+                }
+                catch(...) {
+                    printf("create client:[%d] ,url:[%s] fail\n",i,strUrl.c_str());
+                    return -1;
+                }
+                printf("create client:[%d] ,url:[%s]\n",i,strUrl.c_str());
+                clientList.push_back(pClient);
+            }
+            break;
+        }
+        catch(...) {
+        }
     }
-    printf("create client url:[%s]\n",strUrl.c_str());
+    
     std::list<rtxp_client*>::iterator iter = clientList.begin();
     for(;iter != clientList.end();++iter) {
         pClient = *iter;
@@ -392,7 +416,7 @@ int main(int argc,char* argv[])
     uint32_t count = 0;
     while(true) {
         count ++;
-        if(count < 10)
+        if(count < 60)
         {
             std::list<rtxp_client*>::iterator iter = clientList.begin();
             for(;iter != clientList.end();++iter) {

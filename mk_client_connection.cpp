@@ -23,6 +23,7 @@ mk_client_connection::mk_client_connection()
     m_enType         = MK_CLIENT_TYPE_MAX;
     m_enStatus       = MR_CLIENT_STATUS_MAX;
     m_strurl         = "";
+    m_bSendRtcp      = false;
 }
 mk_client_connection::~mk_client_connection()
 {
@@ -102,6 +103,10 @@ void mk_client_connection::get_client_rtsp_sdp_info(char* info,uint32_t lens,uin
 {
     this->get_rtsp_sdp_info(info,lens,copylen);
     return;
+}
+void mk_client_connection::set_client_send_rtcp(bool bsend)
+{
+    m_bSendRtcp = bsend;
 }
 void    mk_client_connection::handle_connection_media(MEDIA_DATA_INFO* dataInfo,uint32_t len)
 {

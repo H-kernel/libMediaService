@@ -8,6 +8,7 @@
 #include "mk_rtsp_rtp_frame_organizer.h"
 #include "mk_client_connection.h"
 #include "mk_rtsp_packet.h"
+#include "mk_rtsp_rtcp_packet.h"
 
 
 typedef enum RTSP_SESSION_STATUS
@@ -82,6 +83,8 @@ private:
     int32_t handleRtspDescribeResp(mk_rtsp_packet &rtspMessage);
     int32_t handleRtspSetUpResp(mk_rtsp_packet &rtspMessage);
 private:
+    int32_t sendRtcpMessage();
+private:
     void    handleH264Frame(RTP_PACK_QUEUE &rtpFrameList);
     void    handleH265Frame(RTP_PACK_QUEUE &rtpFrameList);
     void    handleOtherFrame(uint8_t PayloadType,RTP_PACK_QUEUE &rtpFrameList);
@@ -98,6 +101,7 @@ private:
     mk_rtsp_udp_handle*          m_udpHandles[MK_RTSP_UDP_TYPE_MAX];
     as_url_t                     m_url;
     mk_media_sdp                 m_sdpInfo;
+    mk_rtcp_packet               m_rtcpPacket;
     MEDIA_INFO_LIST              m_mediaInfoList;
     char                         m_RecvTcpBuf[MAX_BYTES_PER_RECEIVE];
     uint32_t                     m_ulRecvSize;
@@ -113,6 +117,7 @@ private:
     uint8_t                      m_ucH265PayloadType;
 
     time_t                       m_ulLastRecv;
+    time_t                       m_ulLastRtcpSend;
     as_digest_t                  m_Authen;
     uint32_t                     m_ulAuthenTime;
     std::string                  m_strAuthenticate;
