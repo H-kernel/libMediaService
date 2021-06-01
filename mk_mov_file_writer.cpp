@@ -1,4 +1,5 @@
 #include "mk_mov_file_writer.h"
+#include "mk_nal_sps_parse.h"
 
 mk_mov_file_writer::mk_mov_file_writer()
 {
@@ -140,6 +141,21 @@ int32_t mk_mov_file_writer::write_h264_frame(MEDIA_DATA_INFO* info,char* data,ui
 
     if (m_lVideoTrack < 0)
     {
+        /* decode the width and height for sps */
+        if(0 == m_lWidth || 0 == m_lHeight) {
+            int width  = 0;
+			int height = 0;
+			int fps    = 0;
+            char* pPayload = (char*)(void*)&data[4];
+            uint32_t ulPayloadLen = lens - 4;
+            MK_H264_NALU_HEADER* nalu = (MK_H264_NALU_HEADER*)(void*)pPayload;
+            if(MK_H264_NALU_TYPE_SPS ==  nalu->TYPE) {
+                if(AS_ERROR_CODE_OK == mk_h264_decode_sps(pPayload,ulPayloadLen,width,height,fps)) {
+                    m_lWidth  = width;
+                    m_lHeight = height;
+                }
+            }
+        }
         if (m_avc.nb_sps < 1 || m_avc.nb_pps < 1)
         {
             MK_LOG(AS_LOG_INFO,"write_h264_frame waiting for sps/pps.");
@@ -198,6 +214,21 @@ int32_t mk_mov_file_writer::write_h265_frame(MEDIA_DATA_INFO* info,char* data,ui
 
 	if (m_lVideoTrack < 0)
 	{
+        /* decode the width and height for sps */
+        if(0 == m_lWidth || 0 == m_lHeight) {
+            int width  = 0;
+			int height = 0;
+			int fps    = 0;
+            char* pPayload = (char*)(void*)&data[4];
+            uint32_t ulPayloadLen = lens - 4;
+            MK_H265_NALU_HEADER* nalu = (MK_H265_NALU_HEADER*)(void*)pPayload;
+            if(MK_HEVC_NAL_SPS ==  nalu->TYPE) {
+                if(AS_ERROR_CODE_OK == mk_hevc_decode_sps(pPayload,ulPayloadLen,width,height,fps)) {
+                    m_lWidth  = width;
+                    m_lHeight = height;
+                }
+            }
+        }
 		if (m_hevc.numOfArrays < 1)
 		{
 			//ctx->ptr = end;
